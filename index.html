@@ -61,6 +61,10 @@
         <arcgis-map id="planning-map" class="planning-view" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" popup-component-enabled aria-label="California county planning map in 2D">
           <arcgis-zoom slot="top-left"></arcgis-zoom>
           <arcgis-home slot="top-left"></arcgis-home>
+          <div class="view-mode-toggle" slot="bottom-left" role="group" aria-label="Map view mode">
+            <button type="button" class="view-mode-button view-2d selected" aria-pressed="true">2D</button>
+            <button type="button" class="view-mode-button view-3d" aria-pressed="false">3D</button>
+          </div>
           <arcgis-expand class="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Map layers">
             <arcgis-layer-list class="map-layer-list"></arcgis-layer-list>
           </arcgis-expand>
@@ -72,6 +76,10 @@
         <arcgis-scene id="planning-scene" class="planning-view inactive" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" popup-component-enabled aria-label="California county planning scene in 3D" aria-hidden="true">
           <arcgis-zoom slot="top-left"></arcgis-zoom>
           <arcgis-home slot="top-left"></arcgis-home>
+          <div class="view-mode-toggle" slot="bottom-left" role="group" aria-label="Map view mode">
+            <button type="button" class="view-mode-button view-2d selected" aria-pressed="true">2D</button>
+            <button type="button" class="view-mode-button view-3d" aria-pressed="false">3D</button>
+          </div>
           <arcgis-expand class="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Scene layers">
             <arcgis-layer-list class="map-layer-list"></arcgis-layer-list>
           </arcgis-expand>
@@ -80,10 +88,6 @@
           </arcgis-expand>
           <arcgis-popup class="map-popup" slot="popup" dock-enabled></arcgis-popup>
         </arcgis-scene>
-        <div class="view-mode-toggle" role="group" aria-label="Map view mode">
-          <button id="view-2d" type="button" class="view-mode-button selected" aria-pressed="true">2D</button>
-          <button id="view-3d" type="button" class="view-mode-button" aria-pressed="false">3D</button>
-        </div>
       </div>
     </section>
 

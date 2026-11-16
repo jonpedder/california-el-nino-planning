@@ -32,8 +32,8 @@ const elements = {
   layersExpands: [...document.querySelectorAll(".layers-expand")],
   legendExpands: [...document.querySelectorAll(".legend-expand")],
   mapPopups: [...document.querySelectorAll(".map-popup")],
-  view2dButton: document.querySelector("#view-2d"),
-  view3dButton: document.querySelector("#view-3d"),
+  view2dButtons: [...document.querySelectorAll(".view-2d")],
+  view3dButtons: [...document.querySelectorAll(".view-3d")],
   appAlert: document.querySelector("#app-alert")
 };
 
@@ -57,8 +57,8 @@ const oauthInfo = new OAuthInfo({
 esriId.registerOAuthInfos([oauthInfo]);
 
 elements.authButton.addEventListener("click", handleAuthentication);
-elements.view2dButton.addEventListener("click", () => switchView("2d"));
-elements.view3dButton.addEventListener("click", () => switchView("3d"));
+elements.view2dButtons.forEach((button) => button.addEventListener("click", () => switchView("2d")));
+elements.view3dButtons.forEach((button) => button.addEventListener("click", () => switchView("3d")));
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -208,10 +208,14 @@ async function switchView(mode) {
 
 function updateViewToggleButtons() {
   const is2d = state.activeView === "2d";
-  elements.view2dButton.classList.toggle("selected", is2d);
-  elements.view3dButton.classList.toggle("selected", !is2d);
-  elements.view2dButton.setAttribute("aria-pressed", String(is2d));
-  elements.view3dButton.setAttribute("aria-pressed", String(!is2d));
+  elements.view2dButtons.forEach((button) => {
+    button.classList.toggle("selected", is2d);
+    button.setAttribute("aria-pressed", String(is2d));
+  });
+  elements.view3dButtons.forEach((button) => {
+    button.classList.toggle("selected", !is2d);
+    button.setAttribute("aria-pressed", String(!is2d));
+  });
 }
 
 async function loadOperationalLayers() {
