@@ -76,6 +76,16 @@ export const APP_CONFIG = Object.freeze({
       opacity: 0.58
     }),
     Object.freeze({
+      key: "censusDemographics",
+      itemId: "ebeb65deb5c14f4d8849fd68944b7ee6",
+      title: "USA 2020 Census Population Characteristics",
+      category: "Demographic context",
+      source: "U.S. Census Bureau / Esri Living Atlas",
+      cadence: "2020 decennial census vintage",
+      opacity: 0.34,
+      defaultVisible: false
+    }),
+    Object.freeze({
       key: "laDebrisFlow",
       itemId: "c940b2937a7e4554bccc436c92bef195",
       title: "Los Angeles County Post-Fire Debris Flow Hazards",

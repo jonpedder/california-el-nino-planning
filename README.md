@@ -2,7 +2,7 @@
 
 A no-build static ArcGIS application for county-level El Niño planning. It uses the ArcGIS Maps SDK for JavaScript 5.1 CDN/ESM loader, Calcite components supplied by that loader, and a CA Security Ops dark navy/gold visual system.
 
-> **Planning status:** The map connects to eight verified public ArcGIS Online/Living Atlas items for forecast, advisory, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators remain explicit placeholders; no connected layer yet drives a risk score or operational decision.
+> **Planning status:** The map connects to nine verified public ArcGIS Online/Living Atlas items for forecast, advisory, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators remain explicit placeholders; no connected layer yet drives a risk score or operational decision.
 
 ## What is included
 
@@ -11,8 +11,10 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - County-specific threats, capabilities, placeholder KPIs, viewpoints, and disclaimers.
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.
 - Verified public NWS, NIFC, FEMA, NOAA, and Los Angeles County portal items.
-- County-specific initial layer visibility, publisher-managed symbology/popups, a Layer List, and a Legend.
-- Scale controls for detailed flood and structure content; USA Structures is off by default.
+- County-specific initial layer visibility and publisher-managed symbology/popups.
+- Collapsible Layer List and Legend controls plus a docked, closable popup to prevent map-overlay collisions.
+- County demographic cards and generated ArcGIS Business Analyst Graphic Profile infographics.
+- Scale controls for detailed flood and structure content; USA Structures and Census demographics are off by default.
 - Independent layer loading with connected, partial, unavailable, map-failure, configuration-error, signed-in, and signed-out states.
 - Native/Calcite controls, visible keyboard focus, a skip link, semantic headings, and live status announcements.
 
@@ -27,7 +29,10 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 - USA Flood Hazard Areas — FEMA-derived planning/regulatory context, visible at 1:400,000 and larger.
 - USA Structures — exposure context, available at 1:50,000 and larger and off by default.
 - Employment in Coastal Inundation Zones — NOAA county-level coastal exposure planning.
+- USA 2020 Census Population Characteristics — public demographic map context, off by default.
 - Los Angeles County Post-Fire Debris Flow Hazards — LA County-specific planning context.
+
+County detail also includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. These are static snapshots; report regeneration uses GeoEnrichment credits, while viewing the committed reports does not.
 
 Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
 

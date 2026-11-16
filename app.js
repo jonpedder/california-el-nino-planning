@@ -19,12 +19,18 @@ const elements = {
   detailContent: document.querySelector("#detail-content"),
   threatList: document.querySelector("#threat-list"),
   kpiGrid: document.querySelector("#kpi-grid"),
+  demographicGrid: document.querySelector("#demographic-grid"),
+  demographicVintage: document.querySelector("#demographic-vintage"),
+  infographicLink: document.querySelector("#infographic-link"),
   capabilityList: document.querySelector("#capability-list"),
   layerList: document.querySelector("#layer-list"),
   disclaimer: document.querySelector("#county-disclaimer"),
   map: document.querySelector("#planning-map"),
   mapState: document.querySelector("#map-state"),
   mapSelection: document.querySelector("#map-selection"),
+  layersExpand: document.querySelector("#layers-expand"),
+  legendExpand: document.querySelector("#legend-expand"),
+  mapPopup: document.querySelector("#map-popup"),
   appAlert: document.querySelector("#app-alert")
 };
 
@@ -105,6 +111,7 @@ async function initializeMap() {
     await customElements.whenDefined("arcgis-map");
     await elements.map.viewOnReady();
     state.mapReady = true;
+    configureMapOverlays();
     await loadOperationalLayers();
     elements.mapState.hidden = true;
   } catch (error) {
@@ -114,6 +121,24 @@ async function initializeMap() {
     elements.mapState.classList.add("error");
     setDataStatus("Map unavailable", "error");
   }
+}
+
+function configureMapOverlays() {
+  elements.layersExpand?.addEventListener("arcgisPropertyChange", (event) => {
+    if (event.detail?.name === "expanded" && elements.layersExpand.expanded && elements.legendExpand) {
+      elements.legendExpand.expanded = false;
+    }
+  });
+  elements.legendExpand?.addEventListener("arcgisPropertyChange", (event) => {
+    if (event.detail?.name === "expanded" && elements.legendExpand.expanded && elements.layersExpand) {
+      elements.layersExpand.expanded = false;
+    }
+  });
+
+  elements.map.view.on("click", () => {
+    if (elements.layersExpand) elements.layersExpand.expanded = false;
+    if (elements.legendExpand) elements.legendExpand.expanded = false;
+  });
 }
 
 async function loadOperationalLayers() {
@@ -251,6 +276,7 @@ function renderCountyDetail(county) {
 
   renderThreats(county.threats);
   renderKpis(county.kpis);
+  renderDemographics(county.demographics);
   renderCapabilities(county.enabledCapabilities);
   renderSourceLayers(county.id);
   elements.disclaimer.textContent = county.disclaimer;
@@ -288,6 +314,55 @@ function renderKpis(kpis = []) {
   }
 }
 
+function renderDemographics(demographics) {
+  elements.demographicGrid.replaceChildren();
+  if (!demographics) {
+    appendEmpty(elements.demographicGrid, "Demographic context is unavailable.");
+    elements.demographicVintage.textContent = "";
+    elements.infographicLink.hidden = true;
+    return;
+  }
+
+  const metrics = [
+    ["Population", formatCount(demographics.population)],
+    ["Households", formatCount(demographics.households)],
+    ["Median household income", formatCurrency(demographics.medianHouseholdIncome)],
+    ["Median age", Number(demographics.medianAge).toFixed(1)],
+    ["2026–2031 population growth", formatPercent(demographics.populationGrowthRate)]
+  ];
+
+  for (const [labelText, valueText] of metrics) {
+    const card = document.createElement("div");
+    card.className = "demographic-stat";
+    const value = document.createElement("strong");
+    value.textContent = valueText;
+    const label = document.createElement("span");
+    label.textContent = labelText;
+    card.append(value, label);
+    elements.demographicGrid.append(card);
+  }
+
+  elements.demographicVintage.textContent = `${demographics.vintage}. County standard geography; estimates are context, not hazard exposure counts.`;
+  elements.infographicLink.href = demographics.infographicUrl;
+  elements.infographicLink.hidden = !demographics.infographicUrl;
+}
+
+function formatCount(value) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+function formatPercent(value) {
+  return `${Number(value).toFixed(2)}%`;
+}
+
 function renderCapabilities(capabilities = []) {
   elements.capabilityList.replaceChildren();
   if (!capabilities.length) return appendEmpty(elements.capabilityList, "No capabilities enabled.");
@@ -304,7 +379,8 @@ function renderCapabilities(capabilities = []) {
 
 function renderSourceLayers(countyId) {
   elements.layerList.replaceChildren();
-  const keys = APP_CONFIG.countyLayerVisibility[countyId] || [];
+  const visibleKeys = new Set(APP_CONFIG.countyLayerVisibility[countyId] || []);
+  const keys = [...visibleKeys, "censusDemographics"];
   const definitions = keys
     .map((key) => APP_CONFIG.operationalLayers.find((layer) => layer.key === key))
     .filter(Boolean);
@@ -317,13 +393,16 @@ function renderSourceLayers(countyId) {
     title.textContent = definition.title;
     const detail = document.createElement("small");
     const availability = state.operationalLayers.has(definition.key) ? "Loaded" : "Unavailable";
-    detail.textContent = `${definition.category} • ${definition.source} • ${availability}`;
+    const visibility = visibleKeys.has(definition.key) ? "Visible by default" : "Available in Map Layers";
+    detail.textContent = `${definition.category} • ${definition.source} • ${availability} • ${visibility}`;
     item.append(title, detail);
     elements.layerList.append(item);
   }
 }
 
 function updateMap(county) {
+  collapseMapOverlays();
+  elements.mapPopup?.close?.();
   applyCountyLayerVisibility(county.id);
   if (!state.mapReady) return;
   elements.map.view.goTo({
@@ -335,6 +414,11 @@ function updateMap(county) {
     elements.mapState.textContent = "Map could not navigate to the selected county.";
     elements.mapState.classList.add("error");
   });
+}
+
+function collapseMapOverlays() {
+  if (elements.layersExpand) elements.layersExpand.expanded = false;
+  if (elements.legendExpand) elements.legendExpand.expanded = false;
 }
 
 function applyCountyLayerVisibility(countyId) {

@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "1.0",
-  "status": "planning-placeholder",
-  "lastReviewed": null,
+  "schemaVersion": "1.1",
+  "status": "planning-with-demographics",
+  "lastReviewed": "2026-11-16",
   "counties": [
     {
       "id": "marin",
@@ -24,6 +24,15 @@
         { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
       ],
       "mapViewpoint": { "center": [-122.60, 38.05], "zoom": 9 },
+      "demographics": {
+        "vintage": "2026 Esri Updated Demographics",
+        "population": 260121,
+        "households": 103137,
+        "medianHouseholdIncome": 159709,
+        "medianAge": 46.9,
+        "populationGrowthRate": -0.01,
+        "infographicUrl": "./reports/marin-graphic-profile.html"
+      },
       "recommendedLayers": [
         "Marin County coastal flood hazard zones",
         "Marin County road closures and transportation constraints",
@@ -53,6 +62,15 @@
         { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
       ],
       "mapViewpoint": { "center": [-122.03, 36.98], "zoom": 9 },
+      "demographics": {
+        "vintage": "2026 Esri Updated Demographics",
+        "population": 266441,
+        "households": 95988,
+        "medianHouseholdIncome": 114404,
+        "medianAge": 40.9,
+        "populationGrowthRate": -0.14,
+        "infographicUrl": "./reports/santa-cruz-graphic-profile.html"
+      },
       "recommendedLayers": [
         "Santa Cruz County coastal flood hazard zones",
         "Santa Cruz County road closures and transportation constraints",
@@ -84,6 +102,15 @@
         { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
       ],
       "mapViewpoint": { "center": [-118.25, 34.05], "zoom": 8 },
+      "demographics": {
+        "vintage": "2026 Esri Updated Demographics",
+        "population": 9780643,
+        "households": 3483763,
+        "medianHouseholdIncome": 96134,
+        "medianAge": 38.5,
+        "populationGrowthRate": -0.08,
+        "infographicUrl": "./reports/los-angeles-graphic-profile.html"
+      },
       "recommendedLayers": [
         "Los Angeles County debris-flow and burn-scar planning areas",
         "Los Angeles County flash-flood hazard areas",
@@ -115,6 +142,15 @@
         { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
       ],
       "mapViewpoint": { "center": [-117.16, 32.80], "zoom": 8 },
+      "demographics": {
+        "vintage": "2026 Esri Updated Demographics",
+        "population": 3319513,
+        "households": 1199293,
+        "medianHouseholdIncome": 114860,
+        "medianAge": 38.1,
+        "populationGrowthRate": 0.11,
+        "infographicUrl": "./reports/san-diego-graphic-profile.html"
+      },
       "recommendedLayers": [
         "San Diego County flash-flood and drainage planning areas",
         "San Diego County burn-scar and debris-flow planning areas",

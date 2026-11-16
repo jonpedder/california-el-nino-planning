@@ -2,7 +2,7 @@
 
 ## Status
 
-Eight public portal items were verified and are connected as **map context**. They do not yet drive the placeholder KPIs or a composite risk score. The application distinguishes forecasts, advisories, planning hazards, exposure context, and incident/history layers in `config.js`.
+Nine public portal items were verified and are connected as **map context**. They do not yet drive the placeholder KPIs or a composite risk score. The application distinguishes forecasts, advisories, planning hazards, exposure context, and incident/history layers in `config.js`.
 
 Verification date: **2026-11-16**
 
@@ -17,6 +17,7 @@ Verification date: **2026-11-16**
 | `floodHazards` | `ccd29fb4bd5e4b44a2d61638829a5d7e` | FEMA via Esri Living Atlas | Regulatory/planning flood-hazard context | Annual snapshot | Approved for planning visualization. Item is limited to scales of 1:400,000 and larger. It is not a live flood extent or forecast. |
 | `structures` | `0ec8512ad21e4bb987d7e848d14e7e24` | FEMA / ORNL via Esri Living Atlas | Structure exposure context | Publisher-managed | Available in the Layer List but off by default and limited to 1:50,000 or larger to avoid statewide rendering/query load. No browser-wide count is performed. |
 | `coastalEmployment` | `7ac21b0dd7f340f28d11f9f85ae2f908` | NOAA Office for Coastal Management | County coastal-inundation employment exposure | October 2023 analysis | Approved as a planning/vulnerability layer for Marin and Santa Cruz. CC0 1.0. Not a live coastal flood extent. |
+| `censusDemographics` | `ebeb65deb5c14f4d8849fd68944b7ee6` | U.S. Census Bureau / Esri Living Atlas | Population characteristics by standard geography | 2020 decennial census | Public authoritative context layer. Available in Map Layers but off by default. Demographic totals are not hazard-exposure counts. |
 | `laDebrisFlow` | `c940b2937a7e4554bccc436c92bef195` | Los Angeles County Public Works | County post-fire debris-flow hazard context | Publisher-managed | Approved conditionally for Los Angeles County only. Do not extrapolate statewide. Exact analytical fields and validity rules must be audited before KPI use. |
 
 ## Portal and loading approach
@@ -36,7 +37,20 @@ Verification date: **2026-11-16**
 | Los Angeles | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, LA County post-fire debris-flow hazards |
 | San Diego | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards |
 
-Current fire perimeters and USA Structures remain available but off by default.
+Current fire perimeters, USA Structures, and USA 2020 Census Population Characteristics remain available but off by default.
+
+## Business Analyst demographic context
+
+County demographic cards and linked Graphic Profile infographics were generated on **2026-11-16** with ArcGIS GeoEnrichment / Business Analyst using the `esri2025` hierarchy and standard county geography IDs.
+
+| County | Geography ID | Graphic Profile |
+| --- | --- | --- |
+| Marin | `06041` | `reports/marin-graphic-profile.html` |
+| Santa Cruz | `06087` | `reports/santa-cruz-graphic-profile.html` |
+| Los Angeles | `06037` | `reports/los-angeles-graphic-profile.html` |
+| San Diego | `06073` | `reports/san-diego-graphic-profile.html` |
+
+The displayed variables are 2026 total population, 2026 households, 2026 median household income, 2026 median age, and the 2026–2031 population growth rate. Reports are static generated snapshots and do not consume credits when viewed. Regeneration consumes GeoEnrichment credits. County totals provide planning context only and are not populations exposed to any hazard.
 
 ## Sources not yet connected
 
