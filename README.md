@@ -12,6 +12,7 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.
 - Verified public NWS, NIFC, FEMA, NOAA, and Los Angeles County portal items.
 - County-specific initial layer visibility and publisher-managed symbology/popups.
+- Synchronized 2D map and 3D terrain scene with a lower-left view toggle.
 - Collapsible Layer List and Legend controls plus a docked, closable popup to prevent map-overlay collisions.
 - County demographic cards and generated ArcGIS Business Analyst Graphic Profile infographics.
 - Scale controls for detailed flood and structure content; USA Structures and Census demographics are off by default.

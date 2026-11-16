@@ -26,11 +26,14 @@ const elements = {
   layerList: document.querySelector("#layer-list"),
   disclaimer: document.querySelector("#county-disclaimer"),
   map: document.querySelector("#planning-map"),
+  scene: document.querySelector("#planning-scene"),
   mapState: document.querySelector("#map-state"),
   mapSelection: document.querySelector("#map-selection"),
-  layersExpand: document.querySelector("#layers-expand"),
-  legendExpand: document.querySelector("#legend-expand"),
-  mapPopup: document.querySelector("#map-popup"),
+  layersExpands: [...document.querySelectorAll(".layers-expand")],
+  legendExpands: [...document.querySelectorAll(".legend-expand")],
+  mapPopups: [...document.querySelectorAll(".map-popup")],
+  view2dButton: document.querySelector("#view-2d"),
+  view3dButton: document.querySelector("#view-3d"),
   appAlert: document.querySelector("#app-alert")
 };
 
@@ -39,6 +42,8 @@ const state = {
   selectedCountyId: null,
   signedIn: false,
   mapReady: false,
+  sceneReady: false,
+  activeView: "2d",
   operationalLayers: new Map(),
   layerFailures: []
 };
@@ -52,6 +57,8 @@ const oauthInfo = new OAuthInfo({
 esriId.registerOAuthInfos([oauthInfo]);
 
 elements.authButton.addEventListener("click", handleAuthentication);
+elements.view2dButton.addEventListener("click", () => switchView("2d"));
+elements.view3dButton.addEventListener("click", () => switchView("3d"));
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -108,9 +115,24 @@ async function handleAuthentication() {
 
 async function initializeMap() {
   try {
-    await customElements.whenDefined("arcgis-map");
+    await Promise.all([
+      customElements.whenDefined("arcgis-map"),
+      customElements.whenDefined("arcgis-scene")
+    ]);
     await elements.map.viewOnReady();
     state.mapReady = true;
+
+    elements.map.map.ground = "world-elevation";
+    elements.scene.map = elements.map.map;
+    await elements.scene.viewOnReady();
+    state.sceneReady = true;
+    elements.scene.view.qualityProfile = "medium";
+    elements.scene.view.environment = {
+      lighting: { type: "virtual", directShadowsEnabled: true },
+      atmosphereEnabled: true,
+      starsEnabled: false
+    };
+
     configureMapOverlays();
     await loadOperationalLayers();
     elements.mapState.hidden = true;
@@ -124,21 +146,72 @@ async function initializeMap() {
 }
 
 function configureMapOverlays() {
-  elements.layersExpand?.addEventListener("arcgisPropertyChange", (event) => {
-    if (event.detail?.name === "expanded" && elements.layersExpand.expanded && elements.legendExpand) {
-      elements.legendExpand.expanded = false;
-    }
-  });
-  elements.legendExpand?.addEventListener("arcgisPropertyChange", (event) => {
-    if (event.detail?.name === "expanded" && elements.legendExpand.expanded && elements.layersExpand) {
-      elements.layersExpand.expanded = false;
-    }
+  elements.layersExpands.forEach((layersExpand, index) => {
+    const legendExpand = elements.legendExpands[index];
+    layersExpand.addEventListener("arcgisPropertyChange", (event) => {
+      if (event.detail?.name === "expanded" && layersExpand.expanded && legendExpand) {
+        legendExpand.expanded = false;
+      }
+    });
+    legendExpand?.addEventListener("arcgisPropertyChange", (event) => {
+      if (event.detail?.name === "expanded" && legendExpand.expanded) {
+        layersExpand.expanded = false;
+      }
+    });
   });
 
-  elements.map.view.on("click", () => {
-    if (elements.layersExpand) elements.layersExpand.expanded = false;
-    if (elements.legendExpand) elements.legendExpand.expanded = false;
-  });
+  elements.map.view.on("click", collapseMapOverlays);
+  elements.scene.view.on("click", collapseMapOverlays);
+}
+
+async function switchView(mode) {
+  if (mode === state.activeView) return;
+  if (!state.mapReady || !state.sceneReady) {
+    announce("The alternate view is still loading.");
+    return;
+  }
+
+  const source = state.activeView === "2d" ? elements.map : elements.scene;
+  const target = mode === "2d" ? elements.map : elements.scene;
+  const sourceView = source.view;
+  const targetView = target.view;
+
+  collapseMapOverlays();
+  elements.mapPopups.forEach((popup) => popup.close?.());
+  target.classList.remove("inactive");
+  target.setAttribute("aria-hidden", "false");
+  source.classList.add("inactive");
+  source.setAttribute("aria-hidden", "true");
+  state.activeView = mode;
+  updateViewToggleButtons();
+
+  try {
+    if (mode === "3d") {
+      await targetView.goTo({
+        center: sourceView.center,
+        scale: sourceView.scale,
+        heading: 0,
+        tilt: 55
+      }, { duration: 700, easing: "ease-in-out" });
+    } else {
+      await targetView.goTo({
+        center: sourceView.center,
+        scale: sourceView.scale
+      }, { duration: 700, easing: "ease-in-out" });
+    }
+    announce(`${mode.toUpperCase()} view active.`);
+  } catch (error) {
+    console.error(`Could not switch to ${mode} view.`, error);
+    announce(`Could not activate ${mode.toUpperCase()} view.`);
+  }
+}
+
+function updateViewToggleButtons() {
+  const is2d = state.activeView === "2d";
+  elements.view2dButton.classList.toggle("selected", is2d);
+  elements.view3dButton.classList.toggle("selected", !is2d);
+  elements.view2dButton.setAttribute("aria-pressed", String(is2d));
+  elements.view3dButton.setAttribute("aria-pressed", String(!is2d));
 }
 
 async function loadOperationalLayers() {
@@ -402,23 +475,37 @@ function renderSourceLayers(countyId) {
 
 function updateMap(county) {
   collapseMapOverlays();
-  elements.mapPopup?.close?.();
+  elements.mapPopups.forEach((popup) => popup.close?.());
   applyCountyLayerVisibility(county.id);
   if (!state.mapReady) return;
-  elements.map.view.goTo({
+
+  const navigation = [elements.map.view.goTo({
     center: county.mapViewpoint.center,
     zoom: county.mapViewpoint.zoom
-  }, { duration: 500 }).catch((error) => {
-    console.error("Map navigation failed.", error);
-    elements.mapState.hidden = false;
-    elements.mapState.textContent = "Map could not navigate to the selected county.";
-    elements.mapState.classList.add("error");
+  }, { duration: 500 })];
+
+  if (state.sceneReady) {
+    navigation.push(elements.scene.view.goTo({
+      center: county.mapViewpoint.center,
+      zoom: county.mapViewpoint.zoom,
+      heading: 0,
+      tilt: 55
+    }, { duration: 700, easing: "ease-in-out" }));
+  }
+
+  Promise.allSettled(navigation).then((results) => {
+    if (results.some((result) => result.status === "rejected")) {
+      console.error("One or more map views could not navigate.", results);
+      elements.mapState.hidden = false;
+      elements.mapState.textContent = "A map view could not navigate to the selected county.";
+      elements.mapState.classList.add("error");
+    }
   });
 }
 
 function collapseMapOverlays() {
-  if (elements.layersExpand) elements.layersExpand.expanded = false;
-  if (elements.legendExpand) elements.legendExpand.expanded = false;
+  elements.layersExpands.forEach((expand) => { expand.expanded = false; });
+  elements.legendExpands.forEach((expand) => { expand.expanded = false; });
 }
 
 function applyCountyLayerVisibility(countyId) {

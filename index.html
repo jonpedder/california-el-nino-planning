@@ -57,17 +57,34 @@
         <span id="map-selection" class="selection-label">No county selected</span>
       </div>
       <div id="map-state" class="map-state" role="status" aria-live="polite">Loading map…</div>
-      <arcgis-map id="planning-map" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" popup-component-enabled aria-label="California county planning map">
-        <arcgis-zoom slot="top-left"></arcgis-zoom>
-        <arcgis-home slot="top-left"></arcgis-home>
-        <arcgis-expand id="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Map layers">
-          <arcgis-layer-list id="map-layer-list"></arcgis-layer-list>
-        </arcgis-expand>
-        <arcgis-expand id="legend-expand" slot="bottom-right" expand-icon="legend" expand-tooltip="Map legend">
-          <arcgis-legend id="map-legend"></arcgis-legend>
-        </arcgis-expand>
-        <arcgis-popup id="map-popup" slot="popup" dock-enabled></arcgis-popup>
-      </arcgis-map>
+      <div class="view-stage">
+        <arcgis-map id="planning-map" class="planning-view" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" popup-component-enabled aria-label="California county planning map in 2D">
+          <arcgis-zoom slot="top-left"></arcgis-zoom>
+          <arcgis-home slot="top-left"></arcgis-home>
+          <arcgis-expand class="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Map layers">
+            <arcgis-layer-list class="map-layer-list"></arcgis-layer-list>
+          </arcgis-expand>
+          <arcgis-expand class="legend-expand" slot="bottom-right" expand-icon="legend" expand-tooltip="Map legend">
+            <arcgis-legend class="map-legend"></arcgis-legend>
+          </arcgis-expand>
+          <arcgis-popup class="map-popup" slot="popup" dock-enabled></arcgis-popup>
+        </arcgis-map>
+        <arcgis-scene id="planning-scene" class="planning-view inactive" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" popup-component-enabled aria-label="California county planning scene in 3D" aria-hidden="true">
+          <arcgis-zoom slot="top-left"></arcgis-zoom>
+          <arcgis-home slot="top-left"></arcgis-home>
+          <arcgis-expand class="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Scene layers">
+            <arcgis-layer-list class="map-layer-list"></arcgis-layer-list>
+          </arcgis-expand>
+          <arcgis-expand class="legend-expand" slot="bottom-right" expand-icon="legend" expand-tooltip="Scene legend">
+            <arcgis-legend class="map-legend"></arcgis-legend>
+          </arcgis-expand>
+          <arcgis-popup class="map-popup" slot="popup" dock-enabled></arcgis-popup>
+        </arcgis-scene>
+        <div class="view-mode-toggle" role="group" aria-label="Map view mode">
+          <button id="view-2d" type="button" class="view-mode-button selected" aria-pressed="true">2D</button>
+          <button id="view-3d" type="button" class="view-mode-button" aria-pressed="false">3D</button>
+        </div>
+      </div>
     </section>
 
     <aside class="panel detail-panel" aria-labelledby="detail-heading">
