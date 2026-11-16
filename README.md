@@ -39,7 +39,7 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 
 County detail includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. Those county cards and committed reports are documented snapshots. In addition, signed-in users receive current on-demand Business Analyst demographic context inside each polygon popup. Polygon results are cached for the browser session to prevent repeat requests for the same feature. Each new polygon enrichment consumes GeoEnrichment credits; viewing committed reports does not. Graphic Profile templates carry their own labeled data vintages, which can differ from current-year popup and county-card values.
 
-The FEMA National Risk Index popups preserve the publisher popup, append current polygon demographics for signed-in users, and expose every FEMA source attribute in collapsible categories. The National Risk Index is a December 2025 planning dataset for broad comparisons, not a real-time forecast or a substitute for localized risk analysis.
+The FEMA National Risk Index popups use Arcade expressions for a concise risk snapshot and El Niño-relevant hazard ratings, append on-demand polygon demographics for signed-in users, and expose every FEMA source attribute in nested collapsible categories. The National Risk Index is a December 2025 planning dataset for broad comparisons, not a real-time forecast or a substitute for localized risk analysis.
 
 Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
 

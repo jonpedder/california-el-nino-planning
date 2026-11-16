@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=risk1";
+import { APP_CONFIG } from "./config.js?v=risk2";
 
 const [OAuthInfo, esriId, Portal, esriConfig, Layer, esriRequest] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -270,10 +270,83 @@ async function configureOperationalLayer(layer, definition) {
     }
 
     if (candidate.geometryType === "polygon") {
+      if (definition.includeAllPopupFields) installFemaRiskArcadePopup(candidate);
       installDynamicDemographicPopup(candidate, definition);
       if (definition.includeAllPopupFields) installAllFieldValuesPopup(candidate);
     }
   }));
+}
+
+function installFemaRiskArcadePopup(layer) {
+  if (layer.__femaArcadePopupInstalled) return;
+
+  const template = layer.popupTemplate?.clone?.() || layer.createPopupTemplate?.();
+  if (!template) return;
+
+  const isTract = layer.fields.some((field) => field.name === "TRACT");
+  template.title = isTract
+    ? "Census Tract {TRACT} — {COUNTY}, {STATEABBRV}"
+    : "{COUNTY}, {STATEABBRV} — FEMA Risk Index";
+  template.expressionInfos = [
+    {
+      name: "riskHeadline",
+      title: "Overall risk",
+      returnType: "string",
+      expression: "var rating = DefaultValue($feature.RISK_RATNG, 'Not available'); var score = When(IsEmpty($feature.RISK_SCORE), 'No score', Text($feature.RISK_SCORE, '#,###.0')); return rating + ' — score ' + score;"
+    },
+    {
+      name: "expectedAnnualLoss",
+      title: "Expected annual loss",
+      returnType: "string",
+      expression: "return When(IsEmpty($feature.EAL_VALT), 'Not available', '$' + Text($feature.EAL_VALT, '#,###'));"
+    },
+    {
+      name: "socialVulnerability",
+      title: "Social vulnerability",
+      returnType: "string",
+      expression: "var rating = DefaultValue($feature.SOVI_RATNG, 'Not available'); var score = When(IsEmpty($feature.SOVI_SCORE), 'No score', Text($feature.SOVI_SCORE, '#,###.0')); return rating + ' — score ' + score;"
+    },
+    {
+      name: "communityResilience",
+      title: "Community resilience",
+      returnType: "string",
+      expression: "var rating = DefaultValue($feature.RESL_RATNG, 'Not available'); var score = When(IsEmpty($feature.RESL_SCORE), 'No score', Text($feature.RESL_SCORE, '#,###.0')); return rating + ' — score ' + score;"
+    },
+    ...[
+      ["coastalFlooding", "CFLD_RISKR", "CFLD_RISKS"],
+      ["inlandFlooding", "IFLD_RISKR", "IFLD_RISKS"],
+      ["landslide", "LNDS_RISKR", "LNDS_RISKS"],
+      ["strongWind", "SWND_RISKR", "SWND_RISKS"],
+      ["wildfire", "WFIR_RISKR", "WFIR_RISKS"]
+    ].map(([name, ratingField, scoreField]) => ({
+      name,
+      title: name,
+      returnType: "string",
+      expression: `var rating = DefaultValue($feature.${ratingField}, 'Not available'); var score = When(IsEmpty($feature.${scoreField}), 'No score', Text($feature.${scoreField}, '#,###.0')); return rating + ' — ' + score;`
+    }))
+  ];
+
+  template.content = [{
+    type: "text",
+    text: `
+      <div class="nri-arcade-summary">
+        <h3>Risk snapshot</h3>
+        <p><strong>Overall risk</strong><br>{expression/riskHeadline}</p>
+        <p><strong>Expected annual loss</strong><br>{expression/expectedAnnualLoss}</p>
+        <p><strong>Social vulnerability</strong><br>{expression/socialVulnerability}</p>
+        <p><strong>Community resilience</strong><br>{expression/communityResilience}</p>
+        <h4>El Niño-relevant hazard ratings</h4>
+        <ul>
+          <li><strong>Coastal flooding:</strong> {expression/coastalFlooding}</li>
+          <li><strong>Inland flooding:</strong> {expression/inlandFlooding}</li>
+          <li><strong>Landslide:</strong> {expression/landslide}</li>
+          <li><strong>Strong wind:</strong> {expression/strongWind}</li>
+          <li><strong>Wildfire:</strong> {expression/wildfire}</li>
+        </ul>
+      </div>`
+  }];
+  layer.popupTemplate = template;
+  layer.__femaArcadePopupInstalled = true;
 }
 
 function installDynamicDemographicPopup(layer, definition) {
@@ -327,13 +400,15 @@ function createAllFieldValuesContent(graphic, fields) {
   const section = document.createElement("section");
   section.className = "popup-risk-values";
 
-  const heading = document.createElement("h4");
-  heading.textContent = `All FEMA National Risk Index values (${fields.length})`;
-  section.append(heading);
+  const master = document.createElement("details");
+  master.className = "popup-risk-values-master";
+  const masterSummary = document.createElement("summary");
+  masterSummary.textContent = `Explore all FEMA values (${fields.length})`;
+  master.append(masterSummary);
 
   const intro = document.createElement("p");
   intro.textContent = "Expand a category to inspect every source attribute supplied for this FEMA polygon.";
-  section.append(intro);
+  master.append(intro);
 
   const groups = new Map();
   fields.forEach((field) => {
@@ -347,7 +422,6 @@ function createAllFieldValuesContent(graphic, fields) {
 
   groups.forEach((groupFields, groupName) => {
     const details = document.createElement("details");
-    details.open = groupName === "National Risk Index";
     const summary = document.createElement("summary");
     summary.textContent = `${groupName} (${groupFields.length})`;
     details.append(summary);
@@ -364,13 +438,14 @@ function createAllFieldValuesContent(graphic, fields) {
       values.append(row);
     });
     details.append(values);
-    section.append(details);
+    master.append(details);
   });
 
   const citation = document.createElement("p");
   citation.className = "popup-risk-values-note";
   citation.textContent = "FEMA National Risk Index v1.20 (December 2025). Planning comparison only; this application is not endorsed by FEMA.";
-  section.append(citation);
+  master.append(citation);
+  section.append(master);
   return section;
 }
 
@@ -392,28 +467,38 @@ function createDynamicDemographicContent(graphic, definition) {
   const section = document.createElement("section");
   section.className = "popup-demographics";
 
-  const heading = document.createElement("h4");
-  heading.textContent = "Live demographic context";
-  section.append(heading);
+  const details = document.createElement("details");
+  const summary = document.createElement("summary");
+  summary.textContent = "Live demographic context";
+  const panel = document.createElement("div");
+  panel.className = "popup-demographics-panel";
+  details.append(summary, panel);
+  section.append(details);
 
   const source = document.createElement("p");
   source.className = "popup-demographics-source";
   source.textContent = definition.refreshInterval
-    ? `${definition.source} layer refreshes every ${definition.refreshInterval} minutes; demographics are calculated for this polygon when opened.`
-    : `${definition.source}; demographics are calculated for this polygon when opened.`;
-  section.append(source);
+    ? `${definition.source} layer refreshes every ${definition.refreshInterval} minutes; demographics are calculated for this polygon on demand.`
+    : `${definition.source}; demographics are calculated for this polygon on demand.`;
+  panel.append(source);
 
   const status = document.createElement("p");
   status.className = "popup-demographics-status";
-  section.append(status);
+  panel.append(status);
 
   if (!state.signedIn) {
     status.textContent = "Sign in to load current Business Analyst demographics for this polygon.";
     return section;
   }
 
-  status.textContent = "Calculating current demographics…";
-  void hydrateDynamicDemographics(section, status, graphic);
+  status.textContent = "Expand this section to calculate current demographics.";
+  let requested = false;
+  details.addEventListener("toggle", () => {
+    if (!details.open || requested) return;
+    requested = true;
+    status.textContent = "Calculating current demographics…";
+    void hydrateDynamicDemographics(panel, status, graphic);
+  });
   return section;
 }
 

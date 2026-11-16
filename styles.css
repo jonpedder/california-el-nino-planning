@@ -124,8 +124,14 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .planning-view.inactive { z-index: 0; visibility: hidden; pointer-events: none; }
 .map-layer-list, .map-legend { width: min(340px, 78vw); max-height: min(55vh, 520px); overflow: auto; }
 .map-popup { max-width: min(420px, 84vw); }
+.nri-arcade-summary h3, .nri-arcade-summary h4 { margin: 0.55rem 0 0.3rem; color: var(--gold); }
+.nri-arcade-summary p { margin: 0.4rem 0; padding: 0.45rem; border-left: 2px solid var(--gold); background: var(--panel2); }
+.nri-arcade-summary ul { margin: 0.35rem 0 0.75rem; padding-left: 1.2rem; }
+.nri-arcade-summary li { margin: 0.3rem 0; }
 .popup-demographics { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
-.popup-demographics h4 { margin: 0 0 0.35rem; color: var(--gold); font-size: 0.9rem; }
+.popup-demographics details { border: 1px solid var(--border); background: var(--panel2); }
+.popup-demographics summary { padding: 0.55rem; color: var(--gold); font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.popup-demographics-panel { padding: 0 0.55rem 0.55rem; }
 .popup-demographics-source, .popup-demographics-status, .popup-demographics-note { margin: 0.35rem 0; color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
 .popup-demographics-status.error { color: var(--high); }
 .popup-demographics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; margin: 0.65rem 0; }
@@ -133,10 +139,11 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .popup-demographics-grid dt { color: var(--muted); font-size: 0.65rem; }
 .popup-demographics-grid dd { margin: 0 0 0.15rem; color: var(--text); font-size: 0.85rem; font-weight: 700; }
 .popup-risk-values { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
-.popup-risk-values h4 { margin: 0 0 0.35rem; color: var(--gold); font-size: 0.9rem; }
-.popup-risk-values > p { color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
-.popup-risk-values details { margin: 0.35rem 0; border: 1px solid var(--border); background: var(--panel2); }
+.popup-risk-values details { margin: 0.35rem; border: 1px solid var(--border); background: var(--panel2); }
 .popup-risk-values summary { padding: 0.5rem; color: var(--text); font-size: 0.74rem; font-weight: 700; cursor: pointer; }
+.popup-risk-values-master { margin: 0 !important; }
+.popup-risk-values-master > summary { color: var(--gold); font-size: 0.78rem; }
+.popup-risk-values-master > p { margin: 0.55rem; color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
 .popup-risk-values-grid { margin: 0; }
 .popup-risk-values-grid div { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 0.5rem; padding: 0.4rem 0.5rem; border-top: 1px solid var(--border); }
 .popup-risk-values-grid dt { color: var(--muted); font-size: 0.65rem; line-height: 1.35; }
