@@ -123,8 +123,9 @@ async function initializeMap() {
     state.mapReady = true;
 
     elements.map.map.ground = "world-elevation";
-    elements.scene.map = elements.map.map;
     await elements.scene.viewOnReady();
+    elements.scene.view.map = elements.map.map;
+    await elements.scene.view.when();
     state.sceneReady = true;
     elements.scene.view.qualityProfile = "medium";
     elements.scene.view.environment = {
