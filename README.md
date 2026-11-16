@@ -6,7 +6,8 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 
 ## What is included
 
-- Responsive command-center layout with a header, status strip, county threat queue, map, and capability detail.
+- Responsive command-center layout with Planning Map and Analysis pages, shared navigation, and source-status reporting.
+- Region-filtered analysis for past fire impacts, current NWS advisories and USGS gauge conditions, 72-hour precipitation forecasts, and FEMA risk baselines.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
 - County-specific threats, capabilities, placeholder KPIs, viewpoints, and disclaimers.
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.

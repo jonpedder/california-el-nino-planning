@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=risk2";
+import { APP_CONFIG } from "./config.js?v=analysis1";
 
 const [OAuthInfo, esriId, Portal, esriConfig, Layer, esriRequest] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",

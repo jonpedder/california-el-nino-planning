@@ -2,7 +2,7 @@
 
 ## Status
 
-Eleven public portal items were verified and are connected as **map context**. They do not yet drive the placeholder KPIs or a composite risk score. The application distinguishes forecasts, advisories, planning hazards, exposure context, and incident/history layers in `config.js`.
+Twelve public portal items were verified and are connected as **map context**. They do not yet drive the placeholder KPIs or a composite risk score. The application distinguishes forecasts, advisories, planning hazards, exposure context, and incident/history layers in `config.js`.
 
 Verification date: **2026-11-16**
 
@@ -12,6 +12,7 @@ Verification date: **2026-11-16**
 | --- | --- | --- | --- | --- | --- |
 | `precipitationForecast` | `f9e9283b9c9741d09aad633f68758bf6` | NWS via Esri Living Atlas | 72-hour quantitative precipitation **forecast** | NWS source hourly; service advertises 15-minute refresh | Approved for visualization. Multilayer item; do not present as observed rainfall. Informational and not monitored 24/7. |
 | `weatherWarnings` | `a6134ae01aad44c499d12feec782b386` | NWS via Esri Living Atlas | Current watches, warnings, and advisories | Approximately 5 minutes | Approved for visualization. Advisory issuance does not prove local impact. |
+| `liveStreamGauges` | `81c5a9f2a2704d54a49042a44eefa5d3` | USGS, NWS, and other contributors via Esri Living Atlas | Current stream stage, flow, status, forecast status, and observation freshness | Approximately hourly | Approved for visualization and freshness-aware analysis. California USGS records are filtered spatially on the Analysis page. Many USGS records do not supply a flood `statusClass`; gauge-specific reviewed thresholds are required before operational alerting. Stale records must not be treated as current. |
 | `fireHistory` | `5e72b1699bf74eefb3f3aff6f4ba5511` | NIFC / WFIGS | Fire-perimeter history and recent burn context | Approximately 5 minutes | Approved conditionally. Records before 2021 are incomplete; no relative-date query is issued by the app. A perimeter is not a debris-flow probability. |
 | `currentFirePerimeters` | `d1c32af3212341869b3c810f1a215824` | NIFC / WFIGS | Current incident context | Approximately 5 minutes | Available in the Layer List but off by default. Not a substitute for recent-burn-scar analysis. |
 | `floodHazards` | `ccd29fb4bd5e4b44a2d61638829a5d7e` | FEMA via Esri Living Atlas | Regulatory/planning flood-hazard context | Annual snapshot | Approved for planning visualization. Item is limited to scales of 1:400,000 and larger. It is not a live flood extent or forecast. |
@@ -34,10 +35,10 @@ Verification date: **2026-11-16**
 
 | County | Initially visible sources |
 | --- | --- |
-| Marin | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
-| Santa Cruz | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
-| Los Angeles | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, LA County post-fire debris-flow hazards |
-| San Diego | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers |
+| Marin | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
+| Santa Cruz | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
+| Los Angeles | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, LA County post-fire debris-flow hazards |
+| San Diego | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers |
 
 The NRI county layer displays at broader county scales and the tract layer takes over at 1:700,000 and larger. Current fire perimeters, USA Structures, and USA 2020 Census Population Characteristics remain available but off by default.
 

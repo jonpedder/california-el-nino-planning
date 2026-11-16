@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" class="calcite-mode-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Regional El Niño trend and impact analysis for California emergency managers.">
+  <meta name="color-scheme" content="dark">
+  <title>El Niño Regional Analysis</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
+  <link rel="stylesheet" href="./styles.css?v=analysis1">
+  <link rel="stylesheet" href="./analysis.css?v=analysis1">
+  <script type="module" src="https://js.arcgis.com/5.1/"></script>
+  <script type="module" src="./analysis.js?v=analysis1"></script>
+</head>
+<body class="analysis-body">
+  <a class="skip-link" href="#analysis-main">Skip to analysis</a>
+
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">California Security Operations</p>
+      <h1>El Niño Analysis</h1>
+      <p class="subtitle">Regional history, current impacts, and 72-hour outlook</p>
+    </div>
+    <nav class="app-nav" aria-label="Primary navigation">
+      <a class="app-nav-link" href="./index.html">Planning Map</a>
+      <a class="app-nav-link active" href="./analysis.html" aria-current="page">Analysis</a>
+    </nav>
+    <div class="analysis-freshness" aria-live="polite">
+      <span id="analysis-status">Connecting to public sources…</span>
+      <span id="analysis-updated"></span>
+    </div>
+  </header>
+
+  <section class="command-strip" aria-label="Analysis status">
+    <div><span class="command-label">Mode</span><strong>Analysis</strong></div>
+    <div><span class="command-label">Regions</span><strong>4 counties</strong></div>
+    <div><span class="command-label">Temporal sources</span><strong>Forecast + incidents</strong></div>
+    <div><span class="command-label">Refresh</span><strong>Every 15 minutes</strong></div>
+  </section>
+
+  <section class="analysis-controls" aria-label="Analysis filters">
+    <label>
+      <span>Region</span>
+      <calcite-select id="region-filter" label="Region">
+        <calcite-option value="all">All planning regions</calcite-option>
+        <calcite-option value="marin">Marin County</calcite-option>
+        <calcite-option value="santa-cruz">Santa Cruz County</calcite-option>
+        <calcite-option value="los-angeles">Los Angeles County</calcite-option>
+        <calcite-option value="san-diego">San Diego County</calcite-option>
+      </calcite-select>
+    </label>
+    <label>
+      <span>Historical window</span>
+      <calcite-select id="history-filter" label="Historical window">
+        <calcite-option value="30">Past 30 days</calcite-option>
+        <calcite-option value="90">Past 90 days</calcite-option>
+        <calcite-option value="365" selected>Past 12 months</calcite-option>
+        <calcite-option value="1825">Past 5 years</calcite-option>
+      </calcite-select>
+    </label>
+    <calcite-button id="refresh-analysis" icon-start="refresh" appearance="solid" kind="brand">Refresh analysis</calcite-button>
+    <p class="analysis-filter-note">Changing a filter reruns bounded spatial queries against the selected public source layers.</p>
+  </section>
+
+  <main id="analysis-main" class="analysis-main" tabindex="-1">
+    <div id="analysis-loading" class="analysis-loading" role="status" aria-live="polite">
+      <calcite-loader label="Loading regional analysis"></calcite-loader>
+      <span>Loading regional history and forecast…</span>
+    </div>
+
+    <section id="analysis-content" hidden>
+      <section class="analysis-kpis" aria-label="Regional indicators">
+        <article class="analysis-kpi"><span>72-hour precipitation</span><strong id="kpi-precip">—</strong><small>Maximum forecast range intersecting the region</small></article>
+        <article class="analysis-kpi"><span>Active advisories</span><strong id="kpi-warnings">—</strong><small>NWS warning polygons intersecting the region</small></article>
+        <article class="analysis-kpi"><span>Fresh USGS gauges</span><strong id="kpi-gauges">—</strong><small>Observations updated within six hours</small></article>
+        <article class="analysis-kpi"><span>Elevated gauges</span><strong id="kpi-elevated">—</strong><small>Action stage or higher where status is supplied</small></article>
+        <article class="analysis-kpi"><span>Recent fire footprint</span><strong id="kpi-fire-acres">—</strong><small>Maximum perimeter acres by incident in the selected window</small></article>
+        <article class="analysis-kpi"><span>FEMA risk baseline</span><strong id="kpi-risk">—</strong><small>Highest composite rating among selected counties</small></article>
+      </section>
+
+      <section class="analysis-grid">
+        <article class="analysis-card analysis-card-wide">
+          <header><div><p class="eyebrow">Future trend</p><h2>Precipitation forecast timeline</h2></div><span id="forecast-period" class="analysis-badge">Next 72 hours</span></header>
+          <p class="analysis-helper">Bars show the maximum NWS precipitation class intersecting the selected region for each forecast period. They are regional maxima, not countywide averages.</p>
+          <div id="forecast-empty" class="analysis-empty" hidden>No precipitation forecast polygons intersect the selected region.</div>
+          <svg id="forecast-chart" class="forecast-chart" role="img" aria-labelledby="forecast-chart-title forecast-chart-desc" viewBox="0 0 900 300" preserveAspectRatio="none">
+            <title id="forecast-chart-title">Regional precipitation forecast</title>
+            <desc id="forecast-chart-desc">Maximum precipitation range by forecast time period.</desc>
+          </svg>
+          <div id="forecast-table-wrap" class="analysis-table-wrap"></div>
+        </article>
+
+        <article class="analysis-card">
+          <header><div><p class="eyebrow">Current conditions</p><h2>Stream-gauge snapshot</h2></div><span class="analysis-badge">USGS</span></header>
+          <p class="analysis-helper">Current observations are sourced from Living Atlas Live Stream Gauges. Historical gauge charts require the planned Velocity history output.</p>
+          <div id="gauge-table-wrap" class="analysis-table-wrap"></div>
+        </article>
+
+        <article class="analysis-card">
+          <header><div><p class="eyebrow">Planning baseline</p><h2>FEMA risk profile</h2></div><span class="analysis-badge">NRI v1.20</span></header>
+          <div id="risk-profile" class="risk-profile"></div>
+        </article>
+
+        <article class="analysis-card analysis-card-wide">
+          <header><div><p class="eyebrow">Past and future</p><h2>Operational timeline</h2></div><span id="timeline-count" class="analysis-badge">0 events</span></header>
+          <p class="analysis-helper">The timeline combines recent fire discoveries, current NWS advisory windows, gauge observation times, and precipitation forecast periods. The vertical marker separates past and forecast information.</p>
+          <ol id="timeline-list" class="timeline-list"></ol>
+        </article>
+
+        <article class="analysis-card analysis-card-wide">
+          <header><div><p class="eyebrow">Source accountability</p><h2>Coverage and temporal suitability</h2></div><span class="analysis-badge">12 sources</span></header>
+          <div class="analysis-table-wrap">
+            <table>
+              <thead><tr><th>Source</th><th>Role in analysis</th><th>Temporal treatment</th><th>Status</th></tr></thead>
+              <tbody id="source-matrix"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <aside class="analysis-disclaimer">
+        <strong>Interpretation:</strong> Forecast polygons, active advisories, current observations, incident history, and static planning baselines are intentionally kept separate. Missing history is shown as unavailable rather than estimated. No displayed value is a validated exposure count or operational trigger unless an approved method is connected.
+      </aside>
+    </section>
+  </main>
+
+  <footer>Analysis application • Public authoritative context layers • Partial-source and stale-data conditions are surfaced</footer>
+</body>
+</html>

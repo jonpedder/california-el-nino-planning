@@ -32,6 +32,17 @@ export const APP_CONFIG = Object.freeze({
       opacity: 0.72
     }),
     Object.freeze({
+      key: "liveStreamGauges",
+      itemId: "81c5a9f2a2704d54a49042a44eefa5d3",
+      title: "USGS and Community Live Stream Gauges",
+      category: "Near-real-time hydrology",
+      source: "USGS / NWS / Living Atlas contributors",
+      cadence: "Approximately hourly",
+      refreshInterval: 60,
+      minScale: 1500000,
+      opacity: 0.92
+    }),
+    Object.freeze({
       key: "fireHistory",
       itemId: "5e72b1699bf74eefb3f3aff6f4ba5511",
       title: "WFIGS Interagency Fire Perimeters",
@@ -126,10 +137,10 @@ export const APP_CONFIG = Object.freeze({
   ]),
 
   countyLayerVisibility: Object.freeze({
-    marin: Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
-    "santa-cruz": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
-    "los-angeles": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "laDebrisFlow"]),
-    "san-diego": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts"])
+    marin: Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
+    "santa-cruz": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
+    "los-angeles": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "laDebrisFlow"]),
+    "san-diego": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts"])
   }),
 
   defaultViewpoint: Object.freeze({
