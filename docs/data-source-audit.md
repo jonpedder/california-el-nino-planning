@@ -41,7 +41,7 @@ Current fire perimeters, USA Structures, and USA 2020 Census Population Characte
 
 ## Business Analyst demographic context
 
-County demographic cards and linked Graphic Profile infographics were generated on **2026-11-16** with ArcGIS GeoEnrichment / Business Analyst using the `esri2025` hierarchy and standard county geography IDs.
+County demographic cards and linked Graphic Profile infographics were generated on **2026-11-16** with ArcGIS GeoEnrichment / Business Analyst using standard county geography IDs. The cards use current 2026/2031 variables. The Graphic Profile template renders its own labeled vintages (including 2024/2029 and 2025/2030 in the generated report), which may differ from the cards and must be read from the report itself.
 
 | County | Geography ID | Graphic Profile |
 | --- | --- | --- |

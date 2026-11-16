@@ -32,7 +32,7 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 - USA 2020 Census Population Characteristics — public demographic map context, off by default.
 - Los Angeles County Post-Fire Debris Flow Hazards — LA County-specific planning context.
 
-County detail also includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. These are static snapshots; report regeneration uses GeoEnrichment credits, while viewing the committed reports does not.
+County detail also includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. These are static snapshots; report regeneration uses GeoEnrichment credits, while viewing the committed reports does not. Graphic Profile templates carry their own labeled data vintages, which can differ from the current-year demographic cards.
 
 Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
 
