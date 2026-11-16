@@ -76,9 +76,11 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .status-error { color: #ff9cab; }
 
 .workspace {
-  min-height: calc(100vh - 192px);
+  height: calc(100vh - 192px);
+  min-height: 520px;
   display: grid;
   grid-template-columns: minmax(230px, 18rem) minmax(320px, 1fr) minmax(270px, 22rem);
+  overflow: hidden;
 }
 .panel, .map-region { min-width: 0; background: var(--panel); }
 .panel { overflow: auto; }
@@ -173,7 +175,7 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
   .app-header { align-items: flex-start; flex-direction: column; }
   .identity { width: 100%; justify-content: space-between; }
   .command-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .workspace { display: block; }
+  .workspace { display: block; height: auto; min-height: 0; overflow: visible; }
   .threat-panel, .detail-panel { border: 0; border-bottom: 1px solid var(--border); }
   .county-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .county-card { margin: 0.25rem; }
