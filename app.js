@@ -1,15 +1,17 @@
 import { APP_CONFIG } from "./config.js";
 
-const [OAuthInfo, esriId, Portal, esriConfig] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, Layer] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
-  "@arcgis/core/config.js"
+  "@arcgis/core/config.js",
+  "@arcgis/core/layers/Layer.js"
 ]);
 
 const elements = {
   authButton: document.querySelector("#auth-button"),
   authStatus: document.querySelector("#auth-status"),
+  dataStatus: document.querySelector("#data-status"),
   countyState: document.querySelector("#county-state"),
   countyList: document.querySelector("#county-list"),
   detailHeading: document.querySelector("#detail-heading"),
@@ -30,7 +32,9 @@ const state = {
   counties: [],
   selectedCountyId: null,
   signedIn: false,
-  mapReady: false
+  mapReady: false,
+  operationalLayers: new Map(),
+  layerFailures: []
 };
 
 esriConfig.portalUrl = APP_CONFIG.portalUrl;
@@ -65,7 +69,7 @@ async function initializeAuthentication() {
     elements.authButton.textContent = "Sign out";
   } catch {
     state.signedIn = false;
-    elements.authStatus.textContent = "Signed out — public planning shell available";
+    elements.authStatus.textContent = "Signed out — public planning layers available";
     elements.authButton.textContent = "Sign in";
   } finally {
     elements.authButton.disabled = false;
@@ -79,7 +83,7 @@ async function handleAuthentication() {
     if (state.signedIn) {
       esriId.destroyCredentials();
       state.signedIn = false;
-      elements.authStatus.textContent = "Signed out — public planning shell available";
+      elements.authStatus.textContent = "Signed out — public planning layers available";
       elements.authButton.textContent = "Sign in";
       announce("Signed out.");
     } else {
@@ -101,13 +105,64 @@ async function initializeMap() {
     await customElements.whenDefined("arcgis-map");
     await elements.map.viewOnReady();
     state.mapReady = true;
+    await loadOperationalLayers();
     elements.mapState.hidden = true;
   } catch (error) {
     console.error("Map initialization failed.", error);
     elements.mapState.hidden = false;
     elements.mapState.textContent = "Map unavailable. County planning details remain accessible.";
     elements.mapState.classList.add("error");
+    setDataStatus("Map unavailable", "error");
   }
+}
+
+async function loadOperationalLayers() {
+  elements.mapState.hidden = false;
+  elements.mapState.textContent = "Loading verified public layers…";
+  setDataStatus("Connecting…", "loading");
+
+  const results = await Promise.allSettled(APP_CONFIG.operationalLayers.map(async (definition) => {
+    const layer = await Layer.fromPortalItem({ portalItem: { id: definition.itemId } });
+    layer.title = definition.title;
+    layer.visible = false;
+    if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
+    if (typeof definition.minScale === "number") layer.minScale = definition.minScale;
+    await layer.load();
+    state.operationalLayers.set(definition.key, layer);
+    return layer;
+  }));
+
+  const loadedLayers = [];
+  state.layerFailures = [];
+  results.forEach((result, index) => {
+    const definition = APP_CONFIG.operationalLayers[index];
+    if (result.status === "fulfilled") {
+      loadedLayers.push(result.value);
+    } else {
+      state.layerFailures.push(definition.key);
+      console.error(`Layer failed to load: ${definition.title}`, result.reason);
+    }
+  });
+
+  if (loadedLayers.length) elements.map.map.addMany(loadedLayers);
+  updateSourceStatus(loadedLayers.length, APP_CONFIG.operationalLayers.length);
+}
+
+function updateSourceStatus(loaded, total) {
+  if (loaded === total) {
+    setDataStatus(`${loaded} public sources`, "connected");
+    return;
+  }
+  if (loaded > 0) {
+    setDataStatus(`${loaded} of ${total} sources`, "partial");
+    return;
+  }
+  setDataStatus("Sources unavailable", "error");
+}
+
+function setDataStatus(text, status) {
+  elements.dataStatus.textContent = text;
+  elements.dataStatus.className = `status-${status}`;
 }
 
 async function loadCountyData() {
@@ -197,7 +252,7 @@ function renderCountyDetail(county) {
   renderThreats(county.threats);
   renderKpis(county.kpis);
   renderCapabilities(county.enabledCapabilities);
-  renderCandidateLayers(county.recommendedLayers);
+  renderSourceLayers(county.id);
   elements.disclaimer.textContent = county.disclaimer;
 }
 
@@ -247,17 +302,29 @@ function renderCapabilities(capabilities = []) {
   }
 }
 
-function renderCandidateLayers(layers = []) {
+function renderSourceLayers(countyId) {
   elements.layerList.replaceChildren();
-  if (!layers.length) return appendEmpty(elements.layerList, "No candidate layers listed.");
-  for (const layer of layers) {
+  const keys = APP_CONFIG.countyLayerVisibility[countyId] || [];
+  const definitions = keys
+    .map((key) => APP_CONFIG.operationalLayers.find((layer) => layer.key === key))
+    .filter(Boolean);
+
+  if (!definitions.length) return appendEmpty(elements.layerList, "No public context layers assigned.");
+
+  for (const definition of definitions) {
     const item = document.createElement("li");
-    item.textContent = layer;
+    const title = document.createElement("strong");
+    title.textContent = definition.title;
+    const detail = document.createElement("small");
+    const availability = state.operationalLayers.has(definition.key) ? "Loaded" : "Unavailable";
+    detail.textContent = `${definition.category} • ${definition.source} • ${availability}`;
+    item.append(title, detail);
     elements.layerList.append(item);
   }
 }
 
 function updateMap(county) {
+  applyCountyLayerVisibility(county.id);
   if (!state.mapReady) return;
   elements.map.view.goTo({
     center: county.mapViewpoint.center,
@@ -268,6 +335,13 @@ function updateMap(county) {
     elements.mapState.textContent = "Map could not navigate to the selected county.";
     elements.mapState.classList.add("error");
   });
+}
+
+function applyCountyLayerVisibility(countyId) {
+  const visibleKeys = new Set(APP_CONFIG.countyLayerVisibility[countyId] || []);
+  for (const [key, layer] of state.operationalLayers) {
+    layer.visible = visibleKeys.has(key);
+  }
 }
 
 function appendEmpty(container, message) {

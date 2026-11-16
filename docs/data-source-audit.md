@@ -2,106 +2,83 @@
 
 ## Status
 
-No operational source has been verified or connected. The names in `data/county-capabilities.json` are candidate discovery phrases, not confirmed ArcGIS Online items, services, feeds, or authoritative products. The application must continue to display `Not connected` / `Unverified` until this audit is completed and approved.
+Eight public portal items were verified and are connected as **map context**. They do not yet drive the placeholder KPIs or a composite risk score. The application distinguishes forecasts, advisories, planning hazards, exposure context, and incident/history layers in `config.js`.
 
-## Audit rules
+Verification date: **2026-11-16**
 
-1. Never turn a search result into an application binding based on title alone.
-2. Record the portal item ID only after independently verifying portal, item type, owner, sharing, service dependency, and intended use.
-3. Prefer a portal item over a bare service URL when the item carries approved symbology, popups, labels, clustering, filters, or attribution.
-4. Do not claim a refresh cadence, observation time, forecast validity, or live status without source evidence.
-5. Test with an intended non-owner account; owner access does not prove group/organization access.
-6. Verify all dependent layers, tables, views, joins, related records, and external services.
-7. Document nulls, suppressed values, geometry gaps, transfer limits, pagination, and county coverage.
-8. Record a stale threshold and user-visible behavior before treating a source as operational.
+## Connected sources
 
-## Candidate source inventory
+| Key | Portal item | Publisher / authority | Role | Refresh or vintage | Decision and constraints |
+| --- | --- | --- | --- | --- | --- |
+| `precipitationForecast` | `f9e9283b9c9741d09aad633f68758bf6` | NWS via Esri Living Atlas | 72-hour quantitative precipitation **forecast** | NWS source hourly; service advertises 15-minute refresh | Approved for visualization. Multilayer item; do not present as observed rainfall. Informational and not monitored 24/7. |
+| `weatherWarnings` | `a6134ae01aad44c499d12feec782b386` | NWS via Esri Living Atlas | Current watches, warnings, and advisories | Approximately 5 minutes | Approved for visualization. Advisory issuance does not prove local impact. |
+| `fireHistory` | `5e72b1699bf74eefb3f3aff6f4ba5511` | NIFC / WFIGS | Fire-perimeter history and recent burn context | Approximately 5 minutes | Approved conditionally. Records before 2021 are incomplete; no relative-date query is issued by the app. A perimeter is not a debris-flow probability. |
+| `currentFirePerimeters` | `d1c32af3212341869b3c810f1a215824` | NIFC / WFIGS | Current incident context | Approximately 5 minutes | Available in the Layer List but off by default. Not a substitute for recent-burn-scar analysis. |
+| `floodHazards` | `ccd29fb4bd5e4b44a2d61638829a5d7e` | FEMA via Esri Living Atlas | Regulatory/planning flood-hazard context | Annual snapshot | Approved for planning visualization. Item is limited to scales of 1:400,000 and larger. It is not a live flood extent or forecast. |
+| `structures` | `0ec8512ad21e4bb987d7e848d14e7e24` | FEMA / ORNL via Esri Living Atlas | Structure exposure context | Publisher-managed | Available in the Layer List but off by default and limited to 1:50,000 or larger to avoid statewide rendering/query load. No browser-wide count is performed. |
+| `coastalEmployment` | `7ac21b0dd7f340f28d11f9f85ae2f908` | NOAA Office for Coastal Management | County coastal-inundation employment exposure | October 2023 analysis | Approved as a planning/vulnerability layer for Marin and Santa Cruz. CC0 1.0. Not a live coastal flood extent. |
+| `laDebrisFlow` | `c940b2937a7e4554bccc436c92bef195` | Los Angeles County Public Works | County post-fire debris-flow hazard context | Publisher-managed | Approved conditionally for Los Angeles County only. Do not extrapolate statewide. Exact analytical fields and validity rules must be audited before KPI use. |
 
-All entries below are **unverified candidate names only**.
+## Portal and loading approach
 
-| County | Planning need | Candidate discovery name | Verification status |
-| --- | --- | --- | --- |
-| Marin | Coastal flooding | Marin County coastal flood hazard zones | Unverified |
-| Marin | Transportation | Marin County road closures and transportation constraints | Unverified |
-| Marin | Facilities | Marin County critical facilities | Unverified |
-| Marin | Coastal context | NOAA coastal water-level planning products | Unverified |
-| Santa Cruz | Coastal flooding | Santa Cruz County coastal flood hazard zones | Unverified |
-| Santa Cruz | Transportation | Santa Cruz County road closures and transportation constraints | Unverified |
-| Santa Cruz | Facilities | Santa Cruz County critical facilities | Unverified |
-| Santa Cruz | Road status | California highway and local road status | Unverified |
-| Los Angeles | Debris flow | Los Angeles County debris-flow and burn-scar planning areas | Unverified |
-| Los Angeles | Flash flooding | Los Angeles County flash-flood hazard areas | Unverified |
-| Los Angeles | Exposure | Los Angeles County population exposure indicators | Unverified |
-| Los Angeles | Facilities/routes | Los Angeles County critical facilities and evacuation routes | Unverified |
-| San Diego | Flash flooding | San Diego County flash-flood and drainage planning areas | Unverified |
-| San Diego | Debris flow | San Diego County burn-scar and debris-flow planning areas | Unverified |
-| San Diego | Exposure | San Diego County population exposure indicators | Unverified |
-| San Diego | Facilities/routes | San Diego County critical facilities and evacuation routes | Unverified |
+- Public items are resolved by item ID through the ArcGIS Maps SDK, preserving publisher-managed symbology, popups, sublayer organization, and attribution.
+- The app uses the Public Safety ArcGIS Online organization for OAuth while loading public ArcGIS Online content across publisher organizations.
+- Each source loads independently. A failed item produces a partial/unavailable status instead of blocking county planning content.
+- County selection controls initial visibility. The map Layer List allows an analyst to adjust visibility afterward.
+- No access token, API key, service credential, or confidential value is stored in the repository.
 
-## Source review record
+## County visibility profiles
 
-Create one record per candidate after discovery. Do not put tokens or confidential values in this document.
-
-| Field | Required evidence |
+| County | Initially visible sources |
 | --- | --- |
-| Review decision | Approved / conditional / rejected with reviewer and date |
-| Portal | Exact portal hostname |
-| Item title and type | Item metadata read directly from portal |
-| Item ID | Verified 32-character portal item ID; blank until approved |
-| Owner / steward | Named accountable owner and support contact |
-| Authoritative designation | Portal badge, steward confirmation, or governance record |
-| Sharing | Private, group, organization, or public; intended audience confirmed |
-| Dependent service | Exact service and sublayer/table indexes |
-| Capabilities | Query, statistics, pagination, time, attachments, editing as applicable |
-| Schema contract | Required fields, aliases, types, domains, null rules, object/global ID |
-| Geometry | Type, spatial reference, validity, county coverage, generalization |
-| Time semantics | Observation, valid, publish, and update fields with timezone |
-| Refresh behavior | Documented cadence, expected latency, and stale threshold |
-| Scale / visibility | Min/max scale and clustering/generalization behavior |
-| Symbology / popup | Approved renderer, labels, popup fields, field formatting |
-| Quality | Completeness, accuracy, duplicates, known gaps, suppression |
-| Licensing | Reuse, attribution, redistribution, and derivative-work requirements |
-| Privacy / sensitivity | Aggregation, restricted attributes, retention, and disclosure review |
-| Failure behavior | Empty, partial, unauthorized, timeout, and stale presentation |
-| Test evidence | Date, account type, query samples, counts, and reviewer |
+| Marin | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, NOAA coastal-employment exposure |
+| Santa Cruz | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, NOAA coastal-employment exposure |
+| Los Angeles | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards, LA County post-fire debris-flow hazards |
+| San Diego | NWS precipitation forecast, NWS warnings, WFIGS fire history, FEMA flood hazards |
+
+Current fire perimeters and USA Structures remain available but off by default.
+
+## Sources not yet connected
+
+The following needs remain discovery or validation work and are not represented as operational layers:
+
+- State or county road closures and passability.
+- Critical facilities, shelters, capacities, and operational status.
+- Statewide post-fire debris-flow probability/volume products.
+- Flash-flood observations or forecast polygons beyond NWS advisory context.
+- County population exposure with an approved allocation method.
+- Coastal water-level observations and event-specific inundation forecasts.
+- San Diego, Marin, and Santa Cruz local debris-flow or drainage products.
+
+`USA Primary Roads` (`a8bb9832ae2c493a906a7f814b8258a7`) was reviewed as older Census TIGER network context but is not connected because it does not provide operational closure/passability status.
+
+## Required next audit before analytical use
+
+Before any connected layer drives a KPI, priority score, alert, or workflow action, record:
+
+1. Exact service URL, sublayer/table index, fields, aliases, types, domains, null rules, and stable identifiers.
+2. Observation, forecast-valid, publication, and update timestamps with timezone semantics.
+3. County clipping/filter logic, pagination behavior, transfer limits, and expected record counts.
+4. Stale thresholds and user-visible behavior for unauthorized, empty, partial, slow, stale, and failed states.
+5. Numerator, denominator, units, rounding, aggregation, and independent validation for every derived indicator.
+6. Licensing, attribution, privacy, sensitivity, and redistribution constraints.
+7. Suitability for the intended decision, including explicit separation of forecast, observation, regulatory planning, exposure, and incident-history products.
 
 ## KPI provenance requirements
 
-Before replacing any placeholder KPI, document:
-
-- Plain-language definition and decision supported.
-- Source item/layer and exact fields.
-- Filter expression and county boundary logic.
-- Numerator, denominator, units, rounding, and aggregation.
-- Time window, timezone, observation time, and refresh cadence.
-- Treatment of null, zero, suppressed, duplicate, and out-of-range records.
-- Expected count/range and an independent validation result.
-- User-visible source attribution, last-updated value, and stale threshold.
-- Behavior when unauthorized, empty, partial, slow, stale, or failed.
-
-### Planned KPI placeholders
+All current KPI cards remain placeholders. Activating one requires a plain-language definition, exact layer/field bindings, spatial and temporal methods, null/suppression handling, expected range, independent validation, attribution, last-updated display, and stale/error behavior.
 
 | KPI | Current state | Minimum inputs before activation |
 | --- | --- | --- |
-| Coastal assets/areas exposed | Not connected | Approved coastal hazard geometry, asset/exposure layer, time/forecast context |
-| Routes/road segments at risk | Not connected | Audited transportation network or closures, intersection rule, status time |
-| Shelter capacity | Not connected | Validated facilities, capacity definition, operational status, update owner |
-| Population exposed | Not connected | Approved hazard extent, population source, allocation method, vintage |
-| Debris-flow or slope areas | Not connected | Authoritative hazard polygons, burn-scar/rain context, validity date |
-| Critical facilities | Not connected | Approved facility inventory, sensitivity review, hazard overlay method |
-| Flood-prone crossings | Not connected | Audited crossing inventory, hazard/status field, update cadence |
-| Planning confidence | Unverified | Published scoring method tied to source completeness and freshness |
+| Coastal assets/areas exposed | Placeholder | Event/planning hazard geometry, approved exposure layer, overlay method, time context |
+| Routes/road segments at risk | Placeholder | Audited network or closure feed, intersection rule, passability/status time |
+| Shelter capacity | Placeholder | Validated facilities, capacity definition, operational status, update owner |
+| Population exposed | Placeholder | Approved hazard extent, population source, allocation method, vintage |
+| Debris-flow or slope areas | Placeholder | Authoritative hazard polygons, burn-scar/rain linkage, validity date |
+| Critical facilities | Placeholder | Approved inventory, sensitivity review, hazard-overlay method |
+| Flood-prone crossings | Placeholder | Audited crossing inventory, hazard/status field, update cadence |
+| Planning confidence | Unverified | Published method tied to source completeness, suitability, and freshness |
 
-## Approval gate
+## Approval gate for future sources
 
-A source may be added to `config.js` only when:
-
-- The source review record is complete.
-- The owner and intended audience approve its use.
-- Sharing is least-privilege and tested with a representative user.
-- Required fields and sublayers are stable and documented.
-- Time/freshness semantics are known.
-- Empty, unauthorized, stale, partial, and error states have defined UI behavior.
-- Security, privacy, licensing, and accessibility implications are accepted.
-
-Until then, keep the source as plain candidate text and retain all planning disclaimers.
+A future source may be added to `config.js` only after item identity, publisher, sharing, service dependency, intended use, temporal semantics, scale behavior, licensing, failure behavior, and representative-user access are documented. Titles alone are never sufficient evidence.

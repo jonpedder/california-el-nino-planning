@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="California El Niño planning starter for county threat and capability review.">
+  <meta name="description" content="California El Niño planning application for county threat and capability review.">
   <meta name="color-scheme" content="dark">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
@@ -18,7 +18,7 @@
     <div>
       <p class="eyebrow">California Security Operations</p>
       <h1>El Niño Planning Console</h1>
-      <p class="subtitle">County threat posture and capability planning starter</p>
+      <p class="subtitle">County threat posture and capability planning</p>
     </div>
     <div class="identity" aria-live="polite">
       <span id="auth-status">Checking sign-in status…</span>
@@ -31,7 +31,7 @@
   <section class="command-strip" aria-label="Planning status">
     <div><span class="command-label">Mode</span><strong>Planning</strong></div>
     <div><span class="command-label">Coverage</span><strong>4 counties</strong></div>
-    <div><span class="command-label">Data status</span><strong class="status-unverified">Not connected</strong></div>
+    <div><span class="command-label">Data status</span><strong id="data-status" class="status-loading">Connecting…</strong></div>
     <div><span class="command-label">Portal</span><strong>Public Safety</strong></div>
   </section>
 
@@ -60,6 +60,8 @@
       <arcgis-map id="planning-map" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" aria-label="California county planning map">
         <arcgis-zoom slot="top-left"></arcgis-zoom>
         <arcgis-home slot="top-left"></arcgis-home>
+        <arcgis-layer-list slot="top-right"></arcgis-layer-list>
+        <arcgis-legend slot="bottom-right"></arcgis-legend>
       </arcgis-map>
     </section>
 
@@ -85,8 +87,8 @@
           <ul id="capability-list" class="capability-list"></ul>
         </section>
         <section aria-labelledby="layers-heading">
-          <h3 id="layers-heading">Candidate layers</h3>
-          <p class="helper">Unverified names for discovery only; no service is loaded.</p>
+          <h3 id="layers-heading">Active public sources</h3>
+          <p class="helper">Verified public context selected for this county. Use the map Layer List to adjust visibility.</p>
           <ul id="layer-list" class="layer-list"></ul>
         </section>
         <p id="county-disclaimer" class="disclaimer"></p>
@@ -95,7 +97,7 @@
   </main>
 
   <footer>
-    Prototype planning scaffold • Static files on GitHub Pages • ArcGIS Online provides identity and configured content
+    Planning application • Public authoritative context layers • Indicators remain placeholders until analytical methods are approved
   </footer>
 
   <div id="app-alert" class="sr-only" role="alert" aria-live="assertive"></div>

@@ -71,7 +71,9 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .command-strip > div { padding: 0.65rem 1rem; border-right: 1px solid var(--border); }
 .command-label { display: block; color: var(--muted); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; }
 .command-strip strong { font-size: 0.82rem; }
-.status-unverified { color: var(--medium); }
+.status-loading, .status-partial { color: var(--medium); }
+.status-connected { color: var(--low); }
+.status-error { color: #ff9cab; }
 
 .workspace {
   min-height: calc(100vh - 192px);
@@ -131,7 +133,11 @@ arcgis-map { display: block; width: 100%; height: 100%; min-height: 520px; }
 .capability-list strong, .capability-list span { display: block; }
 .capability-list strong { font-size: 0.8rem; }
 .capability-list span { margin-top: 0.2rem; color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
-.layer-list { padding-left: 1rem; list-style: square; color: var(--muted); font-size: 0.75rem; line-height: 1.55; }
+.layer-list { color: var(--muted); font-size: 0.75rem; line-height: 1.45; }
+.layer-list li { margin-bottom: 0.55rem; padding-left: 0.65rem; border-left: 2px solid var(--border); }
+.layer-list strong, .layer-list small { display: block; }
+.layer-list strong { color: var(--text); font-size: 0.75rem; }
+.layer-list small { margin-top: 0.15rem; color: var(--muted); font-size: 0.66rem; }
 .helper, .disclaimer, .empty-message { color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
 .disclaimer { margin-top: 1rem; padding: 0.75rem; border: 1px solid var(--border); background: #081e2c; }
 

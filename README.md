@@ -1,110 +1,111 @@
 # California El Niño Planning
 
-A no-build, static starter application for county-level El Niño planning. It uses the ArcGIS Maps SDK for JavaScript 5.1 CDN/ESM loader, Calcite components supplied by that loader, and a CA Security Ops dark navy/gold visual system.
+A no-build static ArcGIS application for county-level El Niño planning. It uses the ArcGIS Maps SDK for JavaScript 5.1 CDN/ESM loader, Calcite components supplied by that loader, and a CA Security Ops dark navy/gold visual system.
 
-> **Planning status:** This repository does not connect to operational feeds and does not claim that any data is live. County indicators are explicit placeholders. Candidate layer names are unverified discovery prompts only.
+> **Planning status:** The map connects to eight verified public ArcGIS Online/Living Atlas items for forecast, advisory, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators remain explicit placeholders; no connected layer yet drives a risk score or operational decision.
 
 ## What is included
 
-- Responsive command-center layout: header, status strip, county threat queue, map, and capability detail.
+- Responsive command-center layout with a header, status strip, county threat queue, map, and capability detail.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
-- County-specific threats, capability modules, placeholder KPIs, viewpoints, candidate layer names, and disclaimers.
+- County-specific threats, capabilities, placeholder KPIs, viewpoints, and disclaimers.
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.
-- A dark-gray basemap without a fabricated Web Map or layer item ID.
-- Loading, empty, map-failure, configuration-error, signed-in, and signed-out states.
+- Verified public NWS, NIFC, FEMA, NOAA, and Los Angeles County portal items.
+- County-specific initial layer visibility, publisher-managed symbology/popups, a Layer List, and a Legend.
+- Scale controls for detailed flood and structure content; USA Structures is off by default.
+- Independent layer loading with connected, partial, unavailable, map-failure, configuration-error, signed-in, and signed-out states.
 - Native/Calcite controls, visible keyboard focus, a skip link, semantic headings, and live status announcements.
+
+## Data sources
+
+The connected items are documented in [`docs/data-source-audit.md`](docs/data-source-audit.md):
+
+- National Weather Service Precipitation Forecast — 72-hour forecast.
+- USA Weather Watches and Warnings — current NWS advisories.
+- WFIGS Interagency Fire Perimeters — history/recent-burn context.
+- WFIGS Current Interagency Fire Perimeters — available but off by default.
+- USA Flood Hazard Areas — FEMA-derived planning/regulatory context, visible at 1:400,000 and larger.
+- USA Structures — exposure context, available at 1:50,000 and larger and off by default.
+- Employment in Coastal Inundation Zones — NOAA county-level coastal exposure planning.
+- Los Angeles County Post-Fire Debris Flow Hazards — LA County-specific planning context.
+
+Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
 
 ## Architecture and hosting boundary
 
-**GitHub Pages hosts the static files** in this repository: HTML, CSS, JavaScript, documentation, and the county planning JSON.
+**GitHub Pages hosts the static files** in this repository: HTML, CSS, JavaScript, documentation, and county planning JSON.
 
-**ArcGIS Online hosts identity and configured GIS content.** The app is registered against the Public Safety organization and uses ArcGIS Online for OAuth. Future approved Web Maps, hosted layers, and secured services remain ArcGIS Online content; they are not copied into GitHub Pages.
+**ArcGIS Online hosts identity and GIS content.** The app is registered against the Public Safety organization and uses ArcGIS Online for OAuth. Public and future secured layers remain portal content; they are not copied into GitHub Pages.
 
-No access token belongs in this repository. OAuth credentials are issued at runtime by ArcGIS Online and managed by the ArcGIS Maps SDK `IdentityManager`.
+No access token belongs in this repository. OAuth credentials are issued at runtime and managed by the ArcGIS Maps SDK `IdentityManager`.
 
-## Run and deployment model
+## Run and deploy
 
-This is a no-build project. Because ES modules and `fetch()` require an HTTP origin, do not rely on opening `index.html` with a `file://` URL.
+This is a no-build project. ES modules and `fetch()` require an HTTP origin, so do not open `index.html` with a `file://` URL.
 
-### Deploy to GitHub Pages
+### GitHub Pages
 
-1. Create a repository and commit the files in this directory.
-2. In GitHub, open **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select the deployment branch (commonly `main`) and `/ (root)`.
-5. Save, then note the final HTTPS URL, for example:
-   - User/organization site: `https://ACCOUNT.github.io/`
-   - Project site: `https://ACCOUNT.github.io/REPOSITORY/`
-6. Add the exact final Pages URL to the ArcGIS Online application's redirect URI list before testing sign-in.
+1. In GitHub, open **Settings → Pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**.
+3. Select `main` and `/ (root)`.
+4. Save and note the final HTTPS URL.
+5. Add that exact URL to the ArcGIS Online application's redirect URI list before testing sign-in.
 
-All internal asset paths are relative, so the starter works from a project-site subpath.
+All internal asset paths are relative, so the app works from a project-site subpath.
 
 ### Private-ready considerations
 
-- The source repository can be private if the GitHub plan supports Pages for private repositories.
-- A private repository does **not automatically make a GitHub Pages site private**. Confirm the Pages visibility offered by your GitHub plan and organization policy.
-- Treat every file deployed to Pages, including `data/county-capabilities.json`, as browser-readable.
-- Keep sensitive GIS content private in ArcGIS Online and require OAuth. Never put secrets, tokens, restricted attributes, or confidential exports in this repository.
-- Review ArcGIS Online item sharing separately; the static site's visibility does not grant access to private portal content.
+- The repository can remain private if the GitHub plan supports Pages for private repositories.
+- A private repository does not automatically make a Pages site private; confirm the plan and organization policy.
+- Treat every file deployed to Pages as browser-readable.
+- Keep sensitive GIS content private in ArcGIS Online and require OAuth.
+- Never store secrets, tokens, restricted attributes, or confidential exports in this repository.
 
 ## ArcGIS Online app registration
 
-The configured portal is:
+Portal:
 
 ```text
 https://publicsafety.maps.arcgis.com
 ```
 
-The configured OAuth client ID is already present in `config.js`:
+OAuth client ID:
 
 ```text
 2eURPxapfMdaZiS7
 ```
 
-In ArcGIS Online:
-
-1. Sign in to the Public Safety organization with permission to manage the registered application.
-2. Open the application item associated with the client ID.
-3. Add the exact GitHub Pages URL as an allowed redirect URI. Match scheme, hostname, path, and trailing-slash behavior exactly.
-4. Add local development redirect URIs only when explicitly needed, using the exact local origin/path served by your static server.
-5. Save and test both first-time sign-in and returning-user sign-in.
-6. Confirm sign-out destroys the browser-held ArcGIS credential and returns the shell to its signed-out state.
-
-The starter uses a redirect OAuth flow (`popup: false`) to avoid popup-blocker problems. Do not replace the client ID with a token and do not commit a token.
+The client ID is a public application identifier, not a secret. In ArcGIS Online, add the exact deployed URL and any explicitly required development URL as allowed redirect URIs. The app uses redirect OAuth (`popup: false`).
 
 ## ArcGIS Online content and sharing
 
-No Web Map or operational layer item ID is included. `config.js` intentionally keeps these bindings empty:
+`config.js` contains verified public item IDs from multiple authoritative publishers. Items are loaded by portal item ID rather than fabricated service URLs so publisher-managed symbology, popups, sublayer organization, and attribution are retained.
 
-- `webMapItemId: null`
-- `operationalLayerItems: {}`
+Future restricted sources must remain in ArcGIS Online and use the narrowest appropriate item sharing plus OAuth authorization. The static site never grants access to secured content.
 
-When real content is approved:
+Before adding a source:
 
-1. Complete the source audit in `docs/data-source-audit.md`.
-2. Prefer portal item IDs for saved symbology, popups, and sharing behavior.
-3. Add only verified item IDs from the target portal to `config.js` or a reviewed deployment-specific configuration file.
-4. Share private items only with the required ArcGIS Online groups or organization members.
-5. Verify that the OAuth user can access every item and any dependent services.
-6. Test signed-out, unauthorized, empty, stale, and service-error behavior.
-
-Private ArcGIS Online sharing is enforced by ArcGIS Online, not by GitHub Pages. A user may load the public static shell yet remain unable to load secured map content until authenticated and authorized.
+1. Complete its source record in `docs/data-source-audit.md`.
+2. Validate the portal item, publisher, sharing, dependencies, service layers, fields, time semantics, scale behavior, licensing, and failure states.
+3. Prefer a portal item ID when it carries approved presentation and attribution.
+4. Test with a representative non-owner account.
+5. Never commit credentials or confidential attributes.
 
 ## Configuration
 
 `config.js` is the deployment boundary:
 
-| Setting | Current value | Purpose |
-| --- | --- | --- |
-| `portalUrl` | Public Safety portal URL | OAuth and portal context |
-| `oauthClientId` | Registered client ID | OAuth application registration |
-| `basemap` | `dark-gray-vector` | Initial dark-gray basemap |
-| `countyDataUrl` | Relative JSON path | County planning profiles |
-| `webMapItemId` | `null` | Placeholder for a future audited Web Map |
-| `operationalLayerItems` | Empty object | Placeholder for future approved layer item IDs |
-| `defaultViewpoint` | California | Signed-out/default map view |
+| Setting | Purpose |
+| --- | --- |
+| `portalUrl` | OAuth and portal context |
+| `oauthClientId` | Public OAuth application registration |
+| `basemap` | Initial dark-gray basemap |
+| `countyDataUrl` | County planning profiles |
+| `operationalLayers` | Verified public items, roles, attribution notes, opacity, and scale controls |
+| `countyLayerVisibility` | Sources initially visible for each county |
+| `defaultViewpoint` | California default view |
 
-County planning content is in `data/county-capabilities.json`. Keep the schema data-only: do not place HTML, executable code, credentials, service tokens, or sensitive operational records in it.
+County planning content is in `data/county-capabilities.json`. Keep it data-only: no HTML, executable code, credentials, tokens, or sensitive records.
 
 ## Repository structure
 
@@ -126,14 +127,15 @@ County planning content is in `data/county-capabilities.json`. Keep the schema d
 
 ## Production hardening checklist
 
-- Validate the application redirect URIs against the final Pages URL.
-- Audit and approve each GIS source, owner, sharing level, refresh expectation, and field contract.
-- Add an approved Web Map or layers only after source verification.
+- Validate redirect URIs against the final Pages URL.
+- Revalidate every connected item, owner, sharing level, refresh expectation, and dependency before release.
+- Complete field/time/schema audits before using any source in a KPI, score, filter, alert, or workflow action.
+- Establish stale thresholds and visible partial/error behavior.
 - Confirm basemap entitlement and organization policy for signed-in and signed-out users.
-- Add Content Security Policy headers through the chosen hosting layer if available; GitHub Pages itself offers limited header control.
+- Add Content Security Policy headers through the chosen hosting layer where supported.
 - Run accessibility checks at 200% zoom, keyboard-only navigation, reduced motion, and mobile breakpoints.
 - Test authorization failures without downgrading secured content to anonymous access.
-- Add observability that does not log tokens, credentials, private attributes, or sensitive locations.
+- Add observability that does not log credentials, private attributes, or sensitive locations.
 - Establish an owner, review date, incident process, and rollback procedure.
 
 ## License
