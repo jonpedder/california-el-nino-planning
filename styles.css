@@ -132,6 +132,16 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .popup-demographics-grid div { padding: 0.45rem; border: 1px solid var(--border); background: var(--panel2); }
 .popup-demographics-grid dt { color: var(--muted); font-size: 0.65rem; }
 .popup-demographics-grid dd { margin: 0 0 0.15rem; color: var(--text); font-size: 0.85rem; font-weight: 700; }
+.popup-risk-values { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.popup-risk-values h4 { margin: 0 0 0.35rem; color: var(--gold); font-size: 0.9rem; }
+.popup-risk-values > p { color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
+.popup-risk-values details { margin: 0.35rem 0; border: 1px solid var(--border); background: var(--panel2); }
+.popup-risk-values summary { padding: 0.5rem; color: var(--text); font-size: 0.74rem; font-weight: 700; cursor: pointer; }
+.popup-risk-values-grid { margin: 0; }
+.popup-risk-values-grid div { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 0.5rem; padding: 0.4rem 0.5rem; border-top: 1px solid var(--border); }
+.popup-risk-values-grid dt { color: var(--muted); font-size: 0.65rem; line-height: 1.35; }
+.popup-risk-values-grid dd { margin: 0; color: var(--text); font-size: 0.68rem; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.popup-risk-values-note { padding-top: 0.5rem; border-top: 1px solid var(--border); }
 .view-mode-toggle { display: inline-flex; padding: 2px; border: 1px solid #4d7185; background: rgb(7 24 36 / 92%); box-shadow: 0 2px 8px rgb(0 0 0 / 35%); pointer-events: auto; }
 .view-mode-button { min-width: 42px; padding: 0.45rem 0.65rem; border: 0; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
 .view-mode-button:hover { color: var(--text); background: var(--panel2); }

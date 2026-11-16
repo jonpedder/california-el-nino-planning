@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=dynamic1";
+import { APP_CONFIG } from "./config.js?v=risk1";
 
 const [OAuthInfo, esriId, Portal, esriConfig, Layer, esriRequest] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -233,6 +233,7 @@ async function loadOperationalLayers() {
     layer.visible = false;
     if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
     if (typeof definition.minScale === "number") layer.minScale = definition.minScale;
+    if (typeof definition.maxScale === "number") layer.maxScale = definition.maxScale;
     await layer.load();
     await configureOperationalLayer(layer, definition);
     state.operationalLayers.set(definition.key, layer);
@@ -270,6 +271,7 @@ async function configureOperationalLayer(layer, definition) {
 
     if (candidate.geometryType === "polygon") {
       installDynamicDemographicPopup(candidate, definition);
+      if (definition.includeAllPopupFields) installAllFieldValuesPopup(candidate);
     }
   }));
 }
@@ -295,6 +297,95 @@ function installDynamicDemographicPopup(layer, definition) {
   template.content = existingContent;
   layer.popupTemplate = template;
   layer.__dynamicDemographicsInstalled = true;
+}
+
+function installAllFieldValuesPopup(layer) {
+  if (layer.__allFieldValuesInstalled) return;
+
+  const template = layer.popupTemplate?.clone?.() || layer.createPopupTemplate?.();
+  if (!template) return;
+
+  const existingContent = Array.isArray(template.content)
+    ? [...template.content]
+    : typeof template.content === "string"
+      ? [{ type: "text", text: template.content }]
+      : [];
+  const fields = [...layer.fields];
+
+  existingContent.push({
+    type: "custom",
+    outFields: ["*"],
+    creator: (event) => createAllFieldValuesContent(event.graphic, fields)
+  });
+
+  template.content = existingContent;
+  layer.popupTemplate = template;
+  layer.__allFieldValuesInstalled = true;
+}
+
+function createAllFieldValuesContent(graphic, fields) {
+  const section = document.createElement("section");
+  section.className = "popup-risk-values";
+
+  const heading = document.createElement("h4");
+  heading.textContent = `All FEMA National Risk Index values (${fields.length})`;
+  section.append(heading);
+
+  const intro = document.createElement("p");
+  intro.textContent = "Expand a category to inspect every source attribute supplied for this FEMA polygon.";
+  section.append(intro);
+
+  const groups = new Map();
+  fields.forEach((field) => {
+    const alias = field.alias || field.name;
+    const groupName = alias.includes(" - ")
+      ? alias.split(" - ")[0]
+      : "Identification and exposure";
+    if (!groups.has(groupName)) groups.set(groupName, []);
+    groups.get(groupName).push(field);
+  });
+
+  groups.forEach((groupFields, groupName) => {
+    const details = document.createElement("details");
+    details.open = groupName === "National Risk Index";
+    const summary = document.createElement("summary");
+    summary.textContent = `${groupName} (${groupFields.length})`;
+    details.append(summary);
+
+    const values = document.createElement("dl");
+    values.className = "popup-risk-values-grid";
+    groupFields.forEach((field) => {
+      const row = document.createElement("div");
+      const term = document.createElement("dt");
+      const description = document.createElement("dd");
+      term.textContent = field.alias || field.name;
+      description.textContent = formatRiskFieldValue(graphic.attributes?.[field.name], field);
+      row.append(term, description);
+      values.append(row);
+    });
+    details.append(values);
+    section.append(details);
+  });
+
+  const citation = document.createElement("p");
+  citation.className = "popup-risk-values-note";
+  citation.textContent = "FEMA National Risk Index v1.20 (December 2025). Planning comparison only; this application is not endorsed by FEMA.";
+  section.append(citation);
+  return section;
+}
+
+function formatRiskFieldValue(value, field) {
+  if (value === null || value === undefined || value === "") return "Not available";
+  if (field.type === "esriFieldTypeDate") return new Date(value).toLocaleString();
+  if (typeof value !== "number") return String(value);
+
+  const currencyField = field.name === "BUILDVALUE"
+    || field.name === "AGRIVALUE"
+    || /^(EAL_VAL|EAL_EXPB|EAL_EXPA)/.test(field.name)
+    || /\(\$\)/.test(field.alias || "");
+  if (currencyField) return formatCurrency(value);
+  if (field.type === "esriFieldTypeInteger" || field.type === "esriFieldTypeSmallInteger") return formatCount(value);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 }).format(value);
 }
 
 function createDynamicDemographicContent(graphic, definition) {

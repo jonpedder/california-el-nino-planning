@@ -2,7 +2,7 @@
 
 A no-build static ArcGIS application for county-level El Niño planning. It uses the ArcGIS Maps SDK for JavaScript 5.1 CDN/ESM loader, Calcite components supplied by that loader, and a CA Security Ops dark navy/gold visual system.
 
-> **Planning status:** The map connects to nine verified public ArcGIS Online/Living Atlas items for forecast, advisory, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators remain explicit placeholders; no connected layer yet drives a risk score or operational decision.
+> **Planning status:** The map connects to eleven verified public ArcGIS Online/Living Atlas items for forecast, advisory, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators remain explicit placeholders; no connected layer yet drives a risk score or operational decision.
 
 ## What is included
 
@@ -30,12 +30,16 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 - WFIGS Interagency Fire Perimeters — history/recent-burn context.
 - WFIGS Current Interagency Fire Perimeters — available but off by default.
 - USA Flood Hazard Areas — FEMA-derived planning/regulatory context, visible at 1:400,000 and larger.
+- FEMA National Risk Index Counties — composite and individual values for 18 natural hazards, shown at county-scale views.
+- FEMA National Risk Index Census Tracts — detailed composite and individual hazard-risk values, shown automatically at 1:700,000 and larger.
 - USA Structures — exposure context, available at 1:50,000 and larger and off by default.
 - Employment in Coastal Inundation Zones — NOAA county-level coastal exposure planning.
 - USA 2020 Census Population Characteristics — public demographic map context, off by default.
 - Los Angeles County Post-Fire Debris Flow Hazards — LA County-specific planning context.
 
 County detail includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. Those county cards and committed reports are documented snapshots. In addition, signed-in users receive current on-demand Business Analyst demographic context inside each polygon popup. Polygon results are cached for the browser session to prevent repeat requests for the same feature. Each new polygon enrichment consumes GeoEnrichment credits; viewing committed reports does not. Graphic Profile templates carry their own labeled data vintages, which can differ from current-year popup and county-card values.
+
+The FEMA National Risk Index popups preserve the publisher popup, append current polygon demographics for signed-in users, and expose every FEMA source attribute in collapsible categories. The National Risk Index is a December 2025 planning dataset for broad comparisons, not a real-time forecast or a substitute for localized risk analysis.
 
 Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
 

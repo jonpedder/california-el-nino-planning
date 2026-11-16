@@ -63,6 +63,28 @@ export const APP_CONFIG = Object.freeze({
       minScale: 400000
     }),
     Object.freeze({
+      key: "femaRiskCounties",
+      itemId: "39485e8035d446a5bff03259508ae355",
+      title: "FEMA National Risk Index Counties",
+      category: "Multi-hazard risk planning",
+      source: "Federal Emergency Management Agency",
+      cadence: "December 2025 National Risk Index v1.20",
+      opacity: 0.38,
+      maxScale: 700000,
+      includeAllPopupFields: true
+    }),
+    Object.freeze({
+      key: "femaRiskTracts",
+      itemId: "9da4eeb936544335a6db0cd7a8448a51",
+      title: "FEMA National Risk Index Census Tracts",
+      category: "Detailed multi-hazard risk planning",
+      source: "Federal Emergency Management Agency",
+      cadence: "December 2025 National Risk Index v1.20",
+      opacity: 0.42,
+      minScale: 700000,
+      includeAllPopupFields: true
+    }),
+    Object.freeze({
       key: "structures",
       itemId: "0ec8512ad21e4bb987d7e848d14e7e24",
       title: "USA Structures",
@@ -104,10 +126,10 @@ export const APP_CONFIG = Object.freeze({
   ]),
 
   countyLayerVisibility: Object.freeze({
-    marin: Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "coastalEmployment"]),
-    "santa-cruz": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "coastalEmployment"]),
-    "los-angeles": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "laDebrisFlow"]),
-    "san-diego": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards"])
+    marin: Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
+    "santa-cruz": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
+    "los-angeles": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "laDebrisFlow"]),
+    "san-diego": Object.freeze(["precipitationForecast", "weatherWarnings", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts"])
   }),
 
   defaultViewpoint: Object.freeze({
