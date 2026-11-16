@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1.0",
+  "status": "planning-placeholder",
+  "lastReviewed": null,
+  "counties": [
+    {
+      "id": "marin",
+      "name": "Marin",
+      "planningFocus": "Coastal flooding and transportation continuity",
+      "threats": [
+        { "label": "Coastal flooding", "severity": "high" },
+        { "label": "Transportation disruption", "severity": "high" },
+        { "label": "Heavy rain", "severity": "medium" }
+      ],
+      "enabledCapabilities": [
+        { "name": "Coastal impact review", "description": "Compare shoreline exposure, tide-sensitive assets, and evacuation constraints once approved data is connected." },
+        { "name": "Transportation continuity", "description": "Review candidate road closures, bridge access, transit dependencies, and alternate routes." },
+        { "name": "Operational briefing", "description": "Summarize planning assumptions and unresolved data gaps for county coordination." }
+      ],
+      "kpis": [
+        { "label": "Coastal assets exposed", "value": "Not connected", "note": "Placeholder pending an approved asset inventory and hazard surface." },
+        { "label": "Routes at risk", "value": "Not connected", "note": "Placeholder pending transportation and closure data." },
+        { "label": "Shelter capacity", "value": "Not connected", "note": "Placeholder pending validated facility data." },
+        { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
+      ],
+      "mapViewpoint": { "center": [-122.60, 38.05], "zoom": 9 },
+      "recommendedLayers": [
+        "Marin County coastal flood hazard zones",
+        "Marin County road closures and transportation constraints",
+        "Marin County critical facilities",
+        "NOAA coastal water-level planning products"
+      ],
+      "disclaimer": "Planning scaffold only. Candidate layer names are unverified, indicators are placeholders, and this profile does not represent live conditions or an official forecast."
+    },
+    {
+      "id": "santa-cruz",
+      "name": "Santa Cruz",
+      "planningFocus": "Coastal flooding and transportation disruption",
+      "threats": [
+        { "label": "Coastal flooding", "severity": "high" },
+        { "label": "Transportation disruption", "severity": "high" },
+        { "label": "Slope instability", "severity": "medium" }
+      ],
+      "enabledCapabilities": [
+        { "name": "Coastal corridor review", "description": "Assess planning exposure along coastal communities and access corridors after authoritative data is approved." },
+        { "name": "Route resilience", "description": "Review transportation chokepoints, detours, and isolated-community access assumptions." },
+        { "name": "Public facility readiness", "description": "Organize candidate shelters, response facilities, and critical service dependencies." }
+      ],
+      "kpis": [
+        { "label": "Coastal areas exposed", "value": "Not connected", "note": "Placeholder pending an approved coastal hazard layer." },
+        { "label": "Critical road segments", "value": "Not connected", "note": "Placeholder pending an audited transportation network." },
+        { "label": "Facilities in focus", "value": "Not connected", "note": "Placeholder pending facility validation." },
+        { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
+      ],
+      "mapViewpoint": { "center": [-122.03, 36.98], "zoom": 9 },
+      "recommendedLayers": [
+        "Santa Cruz County coastal flood hazard zones",
+        "Santa Cruz County road closures and transportation constraints",
+        "Santa Cruz County critical facilities",
+        "California highway and local road status"
+      ],
+      "disclaimer": "Planning scaffold only. Candidate layer names are unverified, indicators are placeholders, and this profile does not represent live conditions or an official forecast."
+    },
+    {
+      "id": "los-angeles",
+      "name": "Los Angeles",
+      "planningFocus": "Heavy rain, slope hazards, flash flooding, and population exposure",
+      "threats": [
+        { "label": "Heavy rain", "severity": "high" },
+        { "label": "Landslides", "severity": "high" },
+        { "label": "Debris flow / flash flood", "severity": "critical" },
+        { "label": "Population exposure", "severity": "high" }
+      ],
+      "enabledCapabilities": [
+        { "name": "Burn-scar and debris-flow review", "description": "Compare approved burn-scar, slope, rainfall, and downstream exposure data when connected." },
+        { "name": "Population exposure", "description": "Summarize potentially affected population and vulnerable-community indicators using validated sources." },
+        { "name": "Flash-flood planning", "description": "Review channels, low crossings, warning areas, and response access constraints." },
+        { "name": "Interagency operating picture", "description": "Organize county, municipal, transportation, and public-safety planning layers." }
+      ],
+      "kpis": [
+        { "label": "Population exposed", "value": "Not connected", "note": "Placeholder pending an approved hazard area and population dataset." },
+        { "label": "Debris-flow areas", "value": "Not connected", "note": "Placeholder pending authoritative hazard mapping." },
+        { "label": "Critical facilities", "value": "Not connected", "note": "Placeholder pending facility and dependency review." },
+        { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
+      ],
+      "mapViewpoint": { "center": [-118.25, 34.05], "zoom": 8 },
+      "recommendedLayers": [
+        "Los Angeles County debris-flow and burn-scar planning areas",
+        "Los Angeles County flash-flood hazard areas",
+        "Los Angeles County population exposure indicators",
+        "Los Angeles County critical facilities and evacuation routes"
+      ],
+      "disclaimer": "Planning scaffold only. Candidate layer names are unverified, indicators are placeholders, and this profile does not represent live conditions or an official forecast."
+    },
+    {
+      "id": "san-diego",
+      "name": "San Diego",
+      "planningFocus": "Heavy rain, landslides, debris flow, flash flooding, and population exposure",
+      "threats": [
+        { "label": "Heavy rain", "severity": "high" },
+        { "label": "Landslides", "severity": "high" },
+        { "label": "Debris flow / flash flood", "severity": "critical" },
+        { "label": "Population exposure", "severity": "high" }
+      ],
+      "enabledCapabilities": [
+        { "name": "Watershed and flash-flood review", "description": "Review approved watershed, drainage, crossing, and warning-area data when connected." },
+        { "name": "Burn-scar and slope screening", "description": "Organize burn-scar, terrain, rain, and downstream exposure assumptions for planning." },
+        { "name": "Population exposure", "description": "Summarize potentially affected communities using authoritative demographic and hazard inputs." },
+        { "name": "Cross-jurisdiction coordination", "description": "Support a shared planning picture across county, city, tribal, and public-safety partners." }
+      ],
+      "kpis": [
+        { "label": "Population exposed", "value": "Not connected", "note": "Placeholder pending an approved hazard area and population dataset." },
+        { "label": "Flood-prone crossings", "value": "Not connected", "note": "Placeholder pending audited crossing and closure data." },
+        { "label": "Slope hazard areas", "value": "Not connected", "note": "Placeholder pending authoritative hazard mapping." },
+        { "label": "Planning confidence", "value": "Unverified", "note": "Candidate sources require audit." }
+      ],
+      "mapViewpoint": { "center": [-117.16, 32.80], "zoom": 8 },
+      "recommendedLayers": [
+        "San Diego County flash-flood and drainage planning areas",
+        "San Diego County burn-scar and debris-flow planning areas",
+        "San Diego County population exposure indicators",
+        "San Diego County critical facilities and evacuation routes"
+      ],
+      "disclaimer": "Planning scaffold only. Candidate layer names are unverified, indicators are placeholders, and this profile does not represent live conditions or an official forecast."
+    }
+  ]
+}

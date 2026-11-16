@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" class="calcite-mode-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="California El Niño planning starter for county threat and capability review.">
+  <meta name="color-scheme" content="dark">
+  <title>California El Niño Planning</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="https://js.arcgis.com/5.1/"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#map-region">Skip to map</a>
+
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">California Security Operations</p>
+      <h1>El Niño Planning Console</h1>
+      <p class="subtitle">County threat posture and capability planning starter</p>
+    </div>
+    <div class="identity" aria-live="polite">
+      <span id="auth-status">Checking sign-in status…</span>
+      <calcite-button id="auth-button" appearance="outline-fill" kind="brand" scale="s" disabled>
+        Sign in
+      </calcite-button>
+    </div>
+  </header>
+
+  <section class="command-strip" aria-label="Planning status">
+    <div><span class="command-label">Mode</span><strong>Planning</strong></div>
+    <div><span class="command-label">Coverage</span><strong>4 counties</strong></div>
+    <div><span class="command-label">Data status</span><strong class="status-unverified">Not connected</strong></div>
+    <div><span class="command-label">Portal</span><strong>Public Safety</strong></div>
+  </section>
+
+  <main class="workspace">
+    <aside class="panel threat-panel" aria-labelledby="county-heading">
+      <div class="panel-heading">
+        <p class="eyebrow">Threat queue</p>
+        <h2 id="county-heading">Counties</h2>
+      </div>
+      <div id="county-state" class="state" role="status" aria-live="polite">
+        <calcite-loader label="Loading county planning configuration"></calcite-loader>
+        <span>Loading county configuration…</span>
+      </div>
+      <div id="county-list" class="county-list" role="list" hidden></div>
+    </aside>
+
+    <section id="map-region" class="map-region" aria-labelledby="map-heading" tabindex="-1">
+      <div class="map-titlebar">
+        <div>
+          <p class="eyebrow">Operational picture</p>
+          <h2 id="map-heading">County planning map</h2>
+        </div>
+        <span id="map-selection" class="selection-label">No county selected</span>
+      </div>
+      <div id="map-state" class="map-state" role="status" aria-live="polite">Loading map…</div>
+      <arcgis-map id="planning-map" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" aria-label="California county planning map">
+        <arcgis-zoom slot="top-left"></arcgis-zoom>
+        <arcgis-home slot="top-left"></arcgis-home>
+      </arcgis-map>
+    </section>
+
+    <aside class="panel detail-panel" aria-labelledby="detail-heading">
+      <div class="panel-heading">
+        <p class="eyebrow">Capability detail</p>
+        <h2 id="detail-heading">Select a county</h2>
+      </div>
+      <div id="detail-state" class="state" role="status" aria-live="polite">
+        Choose a county from the threat queue to review its planning profile.
+      </div>
+      <div id="detail-content" hidden>
+        <section aria-labelledby="threats-heading">
+          <h3 id="threats-heading">Priority threats</h3>
+          <ul id="threat-list" class="threat-list"></ul>
+        </section>
+        <section aria-labelledby="kpi-heading">
+          <h3 id="kpi-heading">Planning indicators</h3>
+          <div id="kpi-grid" class="kpi-grid"></div>
+        </section>
+        <section aria-labelledby="capabilities-heading">
+          <h3 id="capabilities-heading">Enabled capabilities</h3>
+          <ul id="capability-list" class="capability-list"></ul>
+        </section>
+        <section aria-labelledby="layers-heading">
+          <h3 id="layers-heading">Candidate layers</h3>
+          <p class="helper">Unverified names for discovery only; no service is loaded.</p>
+          <ul id="layer-list" class="layer-list"></ul>
+        </section>
+        <p id="county-disclaimer" class="disclaimer"></p>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    Prototype planning scaffold • Static files on GitHub Pages • ArcGIS Online provides identity and configured content
+  </footer>
+
+  <div id="app-alert" class="sr-only" role="alert" aria-live="assertive"></div>
+  <noscript>This application requires JavaScript to display the map and county planning profiles.</noscript>
+</body>
+</html>

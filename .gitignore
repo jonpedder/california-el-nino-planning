@@ -1,0 +1,26 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local-only configuration and secrets
+.env
+.env.*
+!.env.example
+config.local.js
+*.token
+*.pem
+*.key
+
+# Logs and temporary output
+*.log
+.tmp/
+tmp/
+coverage/
+
+# Optional package-manager artifacts if tooling is added later
+node_modules/
+dist/
