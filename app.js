@@ -1,11 +1,12 @@
-import { APP_CONFIG } from "./config.js";
+import { APP_CONFIG } from "./config.js?v=dynamic1";
 
-const [OAuthInfo, esriId, Portal, esriConfig, Layer] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, Layer, esriRequest] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
   "@arcgis/core/config.js",
-  "@arcgis/core/layers/Layer.js"
+  "@arcgis/core/layers/Layer.js",
+  "@arcgis/core/request.js"
 ]);
 
 const elements = {
@@ -47,6 +48,8 @@ const state = {
   operationalLayers: new Map(),
   layerFailures: []
 };
+
+const enrichmentCache = new Map();
 
 esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
@@ -231,6 +234,7 @@ async function loadOperationalLayers() {
     if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
     if (typeof definition.minScale === "number") layer.minScale = definition.minScale;
     await layer.load();
+    await configureOperationalLayer(layer, definition);
     state.operationalLayers.set(definition.key, layer);
     return layer;
   }));
@@ -249,6 +253,150 @@ async function loadOperationalLayers() {
 
   if (loadedLayers.length) elements.map.map.addMany(loadedLayers);
   updateSourceStatus(loadedLayers.length, APP_CONFIG.operationalLayers.length);
+}
+
+async function configureOperationalLayer(layer, definition) {
+  const candidates = layer.type === "feature"
+    ? [layer]
+    : layer.allLayers?.toArray?.() || [];
+
+  await Promise.allSettled(candidates.map(async (candidate) => {
+    if (candidate.type !== "feature") return;
+    await candidate.load();
+
+    if (typeof definition.refreshInterval === "number") {
+      candidate.refreshInterval = definition.refreshInterval;
+    }
+
+    if (candidate.geometryType === "polygon") {
+      installDynamicDemographicPopup(candidate, definition);
+    }
+  }));
+}
+
+function installDynamicDemographicPopup(layer, definition) {
+  if (layer.__dynamicDemographicsInstalled) return;
+
+  const template = layer.popupTemplate?.clone?.() || layer.createPopupTemplate?.();
+  if (!template) return;
+
+  const existingContent = Array.isArray(template.content)
+    ? [...template.content]
+    : typeof template.content === "string"
+      ? [{ type: "text", text: template.content }]
+      : [];
+
+  existingContent.push({
+    type: "custom",
+    outFields: ["*"],
+    creator: (event) => createDynamicDemographicContent(event.graphic, definition)
+  });
+
+  template.content = existingContent;
+  layer.popupTemplate = template;
+  layer.__dynamicDemographicsInstalled = true;
+}
+
+function createDynamicDemographicContent(graphic, definition) {
+  const section = document.createElement("section");
+  section.className = "popup-demographics";
+
+  const heading = document.createElement("h4");
+  heading.textContent = "Live demographic context";
+  section.append(heading);
+
+  const source = document.createElement("p");
+  source.className = "popup-demographics-source";
+  source.textContent = definition.refreshInterval
+    ? `${definition.source} layer refreshes every ${definition.refreshInterval} minutes; demographics are calculated for this polygon when opened.`
+    : `${definition.source}; demographics are calculated for this polygon when opened.`;
+  section.append(source);
+
+  const status = document.createElement("p");
+  status.className = "popup-demographics-status";
+  section.append(status);
+
+  if (!state.signedIn) {
+    status.textContent = "Sign in to load current Business Analyst demographics for this polygon.";
+    return section;
+  }
+
+  status.textContent = "Calculating current demographics…";
+  void hydrateDynamicDemographics(section, status, graphic);
+  return section;
+}
+
+async function hydrateDynamicDemographics(section, status, graphic) {
+  try {
+    const attributes = await enrichPolygon(graphic);
+    status.remove();
+
+    const metrics = [
+      ["Population", formatCount(attributes.TOTPOP_CY)],
+      ["Households", formatCount(attributes.TOTHH_CY)],
+      ["Median household income", formatCurrency(attributes.MEDHINC_CY)],
+      ["Median age", Number(attributes.MEDAGE_CY).toFixed(1)],
+      ["Population growth", formatPercent(attributes.POPGRWCYFY)]
+    ];
+
+    const grid = document.createElement("dl");
+    grid.className = "popup-demographics-grid";
+    metrics.forEach(([label, value]) => {
+      const item = document.createElement("div");
+      const term = document.createElement("dt");
+      const description = document.createElement("dd");
+      term.textContent = label;
+      description.textContent = value;
+      item.append(description, term);
+      grid.append(item);
+    });
+
+    const note = document.createElement("p");
+    note.className = "popup-demographics-note";
+    note.textContent = `Business Analyst result generated ${new Date().toLocaleString()}. Cached for this browser session to avoid repeat credit use.`;
+    section.append(grid, note);
+  } catch (error) {
+    console.error("Dynamic polygon enrichment failed.", error);
+    status.textContent = "Current demographics could not be calculated. Confirm your account has GeoEnrichment privileges and credits.";
+    status.classList.add("error");
+  }
+}
+
+async function enrichPolygon(graphic) {
+  const layer = graphic.layer;
+  const objectIdField = layer?.objectIdField;
+  const objectId = objectIdField ? graphic.attributes?.[objectIdField] : null;
+  const extent = graphic.geometry?.extent;
+  const cacheKey = `${layer?.url || layer?.id || "polygon"}:${objectId ?? `${extent?.xmin}:${extent?.ymin}:${extent?.xmax}:${extent?.ymax}`}`;
+
+  if (!enrichmentCache.has(cacheKey)) {
+    const request = esriRequest(APP_CONFIG.geoenrichmentUrl, {
+      method: "post",
+      authMode: "immediate",
+      responseType: "json",
+      query: {
+        f: "json",
+        studyAreas: JSON.stringify([{ geometry: graphic.geometry.toJSON() }]),
+        analysisVariables: APP_CONFIG.geoenrichmentVariables,
+        useData: JSON.stringify({
+          sourceCountry: "US",
+          hierarchy: APP_CONFIG.geoenrichmentHierarchy
+        }),
+        returnGeometry: false,
+        forStorage: false
+      }
+    }).then((response) => {
+      const attributes = response.data?.results?.[0]?.value?.FeatureSet?.[0]?.features?.[0]?.attributes;
+      if (!attributes) throw new Error("GeoEnrichment returned no demographic attributes.");
+      return attributes;
+    }).catch((error) => {
+      enrichmentCache.delete(cacheKey);
+      throw error;
+    });
+    enrichmentCache.set(cacheKey, request);
+  }
+
+  return enrichmentCache.get(cacheKey);
 }
 
 function updateSourceStatus(loaded, total) {

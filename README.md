@@ -12,6 +12,8 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.
 - Verified public NWS, NIFC, FEMA, NOAA, and Los Angeles County portal items.
 - County-specific initial layer visibility and publisher-managed symbology/popups.
+- Automatic source refresh for NWS forecast/advisory and WFIGS incident layers at their advertised service cadence.
+- Signed-in, on-demand Business Analyst demographics calculated for each opened polygon and cached for the browser session.
 - Synchronized 2D map and 3D terrain scene with a lower-left view toggle.
 - Collapsible Layer List and Legend controls plus a docked, closable popup to prevent map-overlay collisions.
 - County demographic cards and generated ArcGIS Business Analyst Graphic Profile infographics.
@@ -33,7 +35,7 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 - USA 2020 Census Population Characteristics — public demographic map context, off by default.
 - Los Angeles County Post-Fire Debris Flow Hazards — LA County-specific planning context.
 
-County detail also includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. These are static snapshots; report regeneration uses GeoEnrichment credits, while viewing the committed reports does not. Graphic Profile templates carry their own labeled data vintages, which can differ from the current-year demographic cards.
+County detail includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. Those county cards and committed reports are documented snapshots. In addition, signed-in users receive current on-demand Business Analyst demographic context inside each polygon popup. Polygon results are cached for the browser session to prevent repeat requests for the same feature. Each new polygon enrichment consumes GeoEnrichment credits; viewing committed reports does not. Graphic Profile templates carry their own labeled data vintages, which can differ from current-year popup and county-card values.
 
 Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
 

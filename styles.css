@@ -124,6 +124,14 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .planning-view.inactive { z-index: 0; visibility: hidden; pointer-events: none; }
 .map-layer-list, .map-legend { width: min(340px, 78vw); max-height: min(55vh, 520px); overflow: auto; }
 .map-popup { max-width: min(420px, 84vw); }
+.popup-demographics { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.popup-demographics h4 { margin: 0 0 0.35rem; color: var(--gold); font-size: 0.9rem; }
+.popup-demographics-source, .popup-demographics-status, .popup-demographics-note { margin: 0.35rem 0; color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
+.popup-demographics-status.error { color: var(--high); }
+.popup-demographics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; margin: 0.65rem 0; }
+.popup-demographics-grid div { padding: 0.45rem; border: 1px solid var(--border); background: var(--panel2); }
+.popup-demographics-grid dt { color: var(--muted); font-size: 0.65rem; }
+.popup-demographics-grid dd { margin: 0 0 0.15rem; color: var(--text); font-size: 0.85rem; font-weight: 700; }
 .view-mode-toggle { display: inline-flex; padding: 2px; border: 1px solid #4d7185; background: rgb(7 24 36 / 92%); box-shadow: 0 2px 8px rgb(0 0 0 / 35%); pointer-events: auto; }
 .view-mode-button { min-width: 42px; padding: 0.45rem 0.65rem; border: 0; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
 .view-mode-button:hover { color: var(--text); background: var(--panel2); }

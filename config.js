@@ -3,6 +3,9 @@ export const APP_CONFIG = Object.freeze({
   oauthClientId: "2eURPxapfMdaZiS7",
   basemap: "dark-gray-vector",
   countyDataUrl: "./data/county-capabilities.json",
+  geoenrichmentUrl: "https://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/GeoEnrichment/enrich",
+  geoenrichmentHierarchy: "esri2025",
+  geoenrichmentVariables: "KeyUSFacts.TOTPOP_CY,KeyUSFacts.TOTHH_CY,KeyUSFacts.MEDHINC_CY,gender.MEDAGE_CY,KeyUSFacts.POPGRWCYFY",
 
   // Public, authoritative planning/context sources verified on 2026-11-16.
   // Portal item IDs preserve publisher-managed symbology, popups, and attribution.
@@ -15,6 +18,7 @@ export const APP_CONFIG = Object.freeze({
       category: "Forecast",
       source: "National Weather Service / Living Atlas",
       cadence: "Hourly source update; service advertises 15-minute refresh",
+      refreshInterval: 15,
       opacity: 0.68
     }),
     Object.freeze({
@@ -24,6 +28,7 @@ export const APP_CONFIG = Object.freeze({
       category: "Live advisory",
       source: "National Weather Service / Living Atlas",
       cadence: "Approximately 5 minutes",
+      refreshInterval: 5,
       opacity: 0.72
     }),
     Object.freeze({
@@ -33,6 +38,7 @@ export const APP_CONFIG = Object.freeze({
       category: "Planning history",
       source: "National Interagency Fire Center",
       cadence: "Approximately 5 minutes; pre-2021 records are incomplete",
+      refreshInterval: 5,
       opacity: 0.52
     }),
     Object.freeze({
@@ -42,6 +48,7 @@ export const APP_CONFIG = Object.freeze({
       category: "Current incident context",
       source: "National Interagency Fire Center",
       cadence: "Approximately 5 minutes",
+      refreshInterval: 5,
       opacity: 0.66,
       defaultVisible: false
     }),
