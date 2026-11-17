@@ -67,6 +67,7 @@ const state = {
   mapReady: false,
   sceneReady: false,
   sceneRecoveryPromise: null,
+  sceneLastError: null,
   activeView: "2d",
   operationalLayers: new Map(),
   sceneOperationalLayers: new Map(),
@@ -212,7 +213,6 @@ async function initializeMap() {
 
   try {
     await waitForComponentView(elements.scene);
-    elements.scene.view.map.ground = "world-elevation";
     state.sceneReady = true;
     elements.scene.view.qualityProfile = "medium";
     elements.scene.view.environment = {
@@ -222,6 +222,7 @@ async function initializeMap() {
     };
   } catch (sceneError) {
     state.sceneReady = false;
+    state.sceneLastError = { name: sceneError?.name, message: sceneError?.message, stack: sceneError?.stack };
     console.warn("3D scene initialization unavailable; continuing with the 2D planning map.", sceneError);
     elements.view3dButtons.forEach((button) => {
       button.disabled = false;
@@ -279,7 +280,6 @@ async function recoverSceneFor3D() {
     announce("Loading the 3D scene. Please wait.");
     try {
       await waitForComponentView(elements.scene, 3);
-      elements.scene.view.map.ground = "world-elevation";
       elements.scene.view.qualityProfile = "medium";
       elements.scene.view.environment = {
         lighting: { type: "virtual", directShadowsEnabled: true },
@@ -287,6 +287,7 @@ async function recoverSceneFor3D() {
         starsEnabled: false
       };
       state.sceneReady = true;
+      state.sceneLastError = null;
 
       const sceneLayers = await loadLayerSet(
         elements.scene.view.map,
