@@ -25,7 +25,7 @@ Verification date: **2026-11-16**
 
 ## Portal and loading approach
 
-- Public items are resolved by item ID through the ArcGIS Maps SDK, preserving publisher-managed symbology, popups, sublayer organization, and attribution.
+- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133`, which persists the twelve verified portal layers, basemap, extent, order, visibility, symbology, popups, sublayer organization, and attribution.
 - The app uses the Public Safety ArcGIS Online organization for OAuth while loading public ArcGIS Online content across publisher organizations.
 - Each source loads independently. A failed item produces a partial/unavailable status instead of blocking county planning content.
 - County selection controls initial visibility. The map Layer List allows an analyst to adjust visibility afterward.

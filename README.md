@@ -48,7 +48,9 @@ Forecasts, observations/advisories, planning hazards, exposure layers, and incid
 
 **GitHub Pages hosts the static files** in this repository: HTML, CSS, JavaScript, documentation, and county planning JSON.
 
-**ArcGIS Online hosts identity and GIS content.** The app is registered against the Public Safety organization and uses ArcGIS Online for OAuth. Public and future secured layers remain portal content; they are not copied into GitHub Pages.
+**ArcGIS Online hosts identity and GIS content.** The app is registered against the Public Safety organization and uses ArcGIS Online for OAuth. The Planning Map loads the public ArcGIS Web Map `bc6d9edf97a0425eb53a1f7776c80133`, while the Analysis page performs bounded source queries for its regional summaries. Public and future secured layers remain portal content; they are not copied into GitHub Pages.
+
+The Web Map is the persisted map definition for basemap, extent, layer order, visibility, publisher symbology, and saved popup configuration. Application code adds runtime-only behaviors such as county visibility profiles, dynamic GeoEnrichment content, synchronized 3D display, and refresh intervals.
 
 No access token belongs in this repository. OAuth credentials are issued at runtime and managed by the ArcGIS Maps SDK `IdentityManager`.
 

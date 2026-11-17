@@ -1,11 +1,10 @@
-import { APP_CONFIG } from "./config.js?v=analysis1";
+import { APP_CONFIG } from "./config.js?v=webmap1";
 
-const [OAuthInfo, esriId, Portal, esriConfig, Layer, esriRequest] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, esriRequest] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
   "@arcgis/core/config.js",
-  "@arcgis/core/layers/Layer.js",
   "@arcgis/core/request.js"
 ]);
 
@@ -227,10 +226,14 @@ async function loadOperationalLayers() {
   elements.mapState.textContent = "Loading verified public layers…";
   setDataStatus("Connecting…", "loading");
 
+  await elements.map.map.loadAll();
+  const savedLayers = elements.map.map.layers.toArray();
   const results = await Promise.allSettled(APP_CONFIG.operationalLayers.map(async (definition) => {
-    const layer = await Layer.fromPortalItem({ portalItem: { id: definition.itemId } });
+    const layer = savedLayers.find((candidate) =>
+      candidate.portalItem?.id === definition.itemId || candidate.title === definition.title
+    );
+    if (!layer) throw new Error(`The saved Web Map does not contain ${definition.title}.`);
     layer.title = definition.title;
-    layer.visible = false;
     if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
     if (typeof definition.minScale === "number") layer.minScale = definition.minScale;
     if (typeof definition.maxScale === "number") layer.maxScale = definition.maxScale;
@@ -248,11 +251,14 @@ async function loadOperationalLayers() {
       loadedLayers.push(result.value);
     } else {
       state.layerFailures.push(definition.key);
-      console.error(`Layer failed to load: ${definition.title}`, result.reason);
+      console.error(`Saved Web Map layer failed to load: ${definition.title}`, result.reason);
     }
   });
 
-  if (loadedLayers.length) elements.map.map.addMany(loadedLayers);
+  window.__esriView = elements.map.view;
+  window.__esriMap = elements.map.map;
+  window.__esriLayers = Object.fromEntries(loadedLayers.map((layer) => [layer.title, layer]));
+  window.__app = { APP_CONFIG, state, elements };
   updateSourceStatus(loadedLayers.length, APP_CONFIG.operationalLayers.length);
 }
 
