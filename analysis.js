@@ -42,6 +42,8 @@ const elements = {
   forecastTableWrap: document.querySelector("#forecast-table-wrap"),
   gaugeTableWrap: document.querySelector("#gauge-table-wrap"),
   riskProfile: document.querySelector("#risk-profile"),
+  riskRegionStatus: document.querySelector("#risk-region-status"),
+  riskRegionButtons: [...document.querySelectorAll("[data-risk-region]")],
   timelineList: document.querySelector("#timeline-list"),
   timelineCount: document.querySelector("#timeline-count"),
   sourceMatrix: document.querySelector("#source-matrix"),
@@ -67,6 +69,7 @@ elements.refreshButton.addEventListener("click", runAnalysis);
 elements.regionFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.historyFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.tabs.forEach((tab) => tab.addEventListener("click", () => setAnalysisTab(tab.id)));
+elements.riskRegionButtons.forEach((button) => button.addEventListener("click", () => selectAnalysisRegion(button.dataset.riskRegion)));
 document.querySelector(".analysis-tabs")?.addEventListener("keydown", handleAnalysisTabKeydown);
 elements.clearSelection.addEventListener("click", clearElementFilter);
 [...document.querySelectorAll(".analysis-kpi")].forEach((card, index) => {
@@ -104,6 +107,32 @@ function handleAnalysisTabKeydown(event) {
   const current = elements.tabs.indexOf(event.target);
   const next = event.key === "Home" ? 0 : event.key === "End" ? elements.tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + elements.tabs.length) % elements.tabs.length;
   setAnalysisTab(elements.tabs[next].id, { focus: true });
+}
+
+function updateRiskRegionSwitcher() {
+  const selected = elements.regionFilter.value || "all";
+  const region = ANALYSIS_CONFIG.regions.find((item) => item.id === selected);
+  elements.riskRegionStatus.textContent = region?.label || "All planning regions";
+  elements.riskRegionButtons.forEach((button) => {
+    const active = button.dataset.riskRegion === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+async function selectAnalysisRegion(regionId) {
+  if (state.running) return;
+  if ((elements.regionFilter.value || "all") === regionId) {
+    clearElementFilter();
+    updateRiskRegionSwitcher();
+    setAnalysisTab("riskTab");
+    return;
+  }
+  clearElementFilter({ rerender: false });
+  elements.regionFilter.value = regionId;
+  updateRiskRegionSwitcher();
+  await runAnalysis();
+  setAnalysisTab("riskTab");
 }
 
 function setElementFilter(type, label, key = null) {
@@ -271,6 +300,7 @@ async function runAnalysis() {
       ? `Partial analysis — ${failed.length} unavailable, ${partial.length} truncated`
       : "Analysis current";
     elements.updated.textContent = `Updated ${new Date().toLocaleString()}`;
+    updateRiskRegionSwitcher();
   } catch (error) {
     console.error("Analysis refresh failed.", error);
     elements.loading.hidden = false;
@@ -581,12 +611,7 @@ function renderRisk(risk) {
       list.append(container);
     });
     article.append(header, list);
-    makeSelectable(article, `${item.label} risk profile`, async () => {
-      if (elements.regionFilter.value === item.id) return;
-      elements.regionFilter.value = item.id;
-      await runAnalysis();
-      setAnalysisTab("riskTab");
-    });
+    makeSelectable(article, `${item.label} risk profile`, () => selectAnalysisRegion(item.id));
     elements.riskProfile.append(article);
   });
 }

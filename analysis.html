@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./analysis.css?v=header1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=header1"></script>
-  <script type="module" src="./analysis.js?v=header1"></script>
+  <script type="module" src="./analysis.js?v=risk-switch1"></script>
 </head>
 <body class="analysis-body">
   <a class="skip-link" href="#analysis-main">Skip to analysis</a>
@@ -95,6 +95,16 @@
       </section>
 
       <section id="riskPanel" class="analysis-tab-panel" role="tabpanel" aria-labelledby="riskTab" hidden>
+        <section class="risk-region-switcher" aria-label="Change Risk and Timeline region">
+          <div><strong>Change region</strong><span id="risk-region-status">All planning regions</span></div>
+          <div class="risk-region-buttons">
+            <button type="button" data-risk-region="all" aria-pressed="true">All regions</button>
+            <button type="button" data-risk-region="marin" aria-pressed="false">Marin</button>
+            <button type="button" data-risk-region="santa-cruz" aria-pressed="false">Santa Cruz</button>
+            <button type="button" data-risk-region="los-angeles" aria-pressed="false">Los Angeles</button>
+            <button type="button" data-risk-region="san-diego" aria-pressed="false">San Diego</button>
+          </div>
+        </section>
         <section class="analysis-grid">
           <article class="analysis-card analysis-card-wide">
             <header><div><p class="eyebrow">Planning baseline</p><h2>FEMA risk profile</h2></div><span class="analysis-badge">NRI v1.20</span></header>

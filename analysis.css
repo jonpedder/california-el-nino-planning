@@ -36,6 +36,14 @@
 .analysis-tab-intro { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; padding: 0.75rem; border-left: 3px solid var(--gold); background: var(--panel); }
 .analysis-tab-intro strong { color: var(--text); font-size: 0.8rem; }
 .analysis-tab-intro span { color: var(--muted); font-size: 0.68rem; line-height: 1.4; text-align: right; }
+.risk-region-switcher { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; padding: 0.7rem 0.8rem; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: var(--panel); }
+.risk-region-switcher > div:first-child { display: grid; gap: 0.2rem; min-width: 150px; }
+.risk-region-switcher strong { color: var(--gold); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.risk-region-switcher span { color: var(--muted); font-size: 0.68rem; }
+.risk-region-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem; }
+.risk-region-buttons button { min-height: 34px; padding: 0.4rem 0.6rem; border: 1px solid var(--border); background: #0a2332; color: var(--muted); font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+.risk-region-buttons button:hover { border-color: var(--gold); color: var(--text); }
+.risk-region-buttons button.active { border-color: var(--gold); background: rgb(242 169 0 / 18%); color: var(--gold); }
 .analysis-collapse { margin-top: 0.75rem; border: 1px solid var(--border); background: #081c29; }
 .analysis-collapse > summary { padding: 0.65rem 0.75rem; color: var(--gold); font-size: 0.7rem; font-weight: 700; cursor: pointer; }
 .analysis-collapse[open] > summary { border-bottom: 1px solid var(--border); }
@@ -112,6 +120,8 @@
   .analysis-freshness { justify-items: start; }
   .analysis-tabs { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analysis-selection { align-items: flex-start; flex-direction: column; }
+  .risk-region-switcher { align-items: flex-start; flex-direction: column; }
+  .risk-region-buttons { justify-content: flex-start; }
   .analysis-tab-intro { align-items: flex-start; flex-direction: column; }
   .analysis-tab-intro span { text-align: left; }
   .analysis-controls, .analysis-grid { display: block; }
