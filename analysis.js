@@ -29,6 +29,8 @@ const elements = {
   updated: document.querySelector("#analysis-updated"),
   loading: document.querySelector("#analysis-loading"),
   content: document.querySelector("#analysis-content"),
+  tabs: [...document.querySelectorAll(".analysis-tab")],
+  tabPanels: [...document.querySelectorAll(".analysis-tab-panel")],
   kpiPrecip: document.querySelector("#kpi-precip"),
   kpiWarnings: document.querySelector("#kpi-warnings"),
   kpiGauges: document.querySelector("#kpi-gauges"),
@@ -55,15 +57,42 @@ const state = {
   lastResults: null
 };
 
-window.__app = { ANALYSIS_CONFIG, layers, state, refresh: runAnalysis };
+window.__app = { ANALYSIS_CONFIG, layers, state, refresh: runAnalysis, setTab: setAnalysisTab };
 
 elements.refreshButton.addEventListener("click", runAnalysis);
 elements.regionFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.historyFilter.addEventListener("calciteSelectChange", runAnalysis);
+elements.tabs.forEach((tab) => tab.addEventListener("click", () => setAnalysisTab(tab.id)));
+document.querySelector(".analysis-tabs")?.addEventListener("keydown", handleAnalysisTabKeydown);
 
 initialize().catch((error) => showFatalError(error));
 
+function setAnalysisTab(tabId, { focus = false, updateHash = true } = {}) {
+  const activeTab = elements.tabs.find((tab) => tab.id === tabId) || elements.tabs[0];
+  for (const tab of elements.tabs) {
+    const active = tab === activeTab;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (panel) panel.hidden = !active;
+  }
+  if (focus) activeTab?.focus();
+  if (updateHash) history.replaceState({}, document.title, `${location.pathname}${location.search}#${activeTab.getAttribute("aria-controls")}`);
+}
+
+function handleAnalysisTabKeydown(event) {
+  if (!event.target.matches(".analysis-tab") || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const current = elements.tabs.indexOf(event.target);
+  const next = event.key === "Home" ? 0 : event.key === "End" ? elements.tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + elements.tabs.length) % elements.tabs.length;
+  setAnalysisTab(elements.tabs[next].id, { focus: true });
+}
+
 async function initialize() {
+  const requestedPanel = location.hash.slice(1);
+  const requestedTab = elements.tabs.find((tab) => tab.getAttribute("aria-controls") === requestedPanel);
+  setAnalysisTab(requestedTab?.id || "summaryTab", { updateHash: false });
   await customElements.whenDefined("calcite-select");
   const layerLoads = await Promise.allSettled(Object.values(layers).map((layer) => layer.load()));
   if (layerLoads.every((result) => result.status === "rejected")) {

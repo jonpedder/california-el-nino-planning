@@ -18,6 +18,19 @@
 .analysis-loading { min-height: 320px; display: flex; align-items: center; justify-content: center; gap: 0.75rem; color: var(--muted); }
 .analysis-loading.error { color: #ff9cab; }
 
+.analysis-tabs { position: sticky; z-index: 10; top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 0.85rem; border: 1px solid var(--border); background: rgb(8 30 44 / 96%); box-shadow: 0 6px 14px rgb(0 0 0 / 20%); }
+.analysis-tab { min-width: 0; padding: 0.75rem 0.5rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+.analysis-tab:hover { color: var(--text); background: var(--panel2); }
+.analysis-tab.active { border-bottom-color: var(--gold); color: var(--gold); background: #0c2b3d; }
+.analysis-tab-panel { min-height: 280px; }
+.analysis-tab-intro { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; padding: 0.75rem; border-left: 3px solid var(--gold); background: var(--panel); }
+.analysis-tab-intro strong { color: var(--text); font-size: 0.8rem; }
+.analysis-tab-intro span { color: var(--muted); font-size: 0.68rem; line-height: 1.4; text-align: right; }
+.analysis-collapse { margin-top: 0.75rem; border: 1px solid var(--border); background: #081c29; }
+.analysis-collapse > summary { padding: 0.65rem 0.75rem; color: var(--gold); font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+.analysis-collapse[open] > summary { border-bottom: 1px solid var(--border); }
+.analysis-collapse > .analysis-table-wrap, .analysis-collapse > .timeline-list { padding: 0.6rem; }
+
 .analysis-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.65rem; margin-bottom: 0.8rem; }
 .analysis-kpi { min-width: 0; padding: 0.75rem; border-top: 3px solid var(--gold); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); background: var(--panel); }
 .analysis-kpi span, .analysis-kpi strong, .analysis-kpi small { display: block; }
@@ -87,6 +100,9 @@
 
 @media (max-width: 760px) {
   .analysis-freshness { justify-items: start; }
+  .analysis-tabs { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analysis-tab-intro { align-items: flex-start; flex-direction: column; }
+  .analysis-tab-intro span { text-align: left; }
   .analysis-controls, .analysis-grid { display: block; }
   .analysis-controls > * { margin-bottom: 0.65rem; }
   .analysis-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
