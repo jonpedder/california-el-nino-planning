@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=postfire2";
+import { APP_CONFIG } from "./config.js?v=postfire3";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -851,12 +851,26 @@ async function refreshPostFireReadiness(county) {
     await Promise.all([firePoints.load(), firePerimeters.load()]);
     const countyFires = await firePoints.queryFeatures({ geometry, spatialRelationship: "intersects", where: "1=1", outFields: ["fire", "Fire_ID", "start_date", "assessment_date", "location"], returnGeometry: true });
     if (run !== state.readinessRun) return;
-    state.readinessRecords = countyFires.features.map((feature) => ({
-      feature,
-      id: String(feature.attributes?.Fire_ID || ""),
-      name: String(feature.attributes?.fire || "Unnamed fire"),
-      year: feature.attributes?.start_date ? String(new Date(feature.attributes.start_date).getUTCFullYear()) : ""
-    })).filter((record) => record.id);
+    state.readinessRecords = countyFires.features.map((feature) => {
+      feature.popupTemplate = {
+        title: "{fire} — USGS post-fire assessment",
+        content: [{
+          type: "fields",
+          fieldInfos: [
+            { fieldName: "Fire_ID", label: "Fire ID" },
+            { fieldName: "location", label: "Location" },
+            { fieldName: "start_date", label: "Fire start date", format: { dateFormat: "long-month-day-year" } },
+            { fieldName: "assessment_date", label: "Assessment date", format: { dateFormat: "long-month-day-year" } }
+          ]
+        }]
+      };
+      return {
+        feature,
+        id: String(feature.attributes?.Fire_ID || ""),
+        name: String(feature.attributes?.fire || "Unnamed fire"),
+        year: feature.attributes?.start_date ? String(new Date(feature.attributes.start_date).getUTCFullYear()) : ""
+      };
+    }).filter((record) => record.id);
     populateReadinessFilters();
     elements.readinessAssessments.textContent = formatCount(state.readinessRecords.length);
 
