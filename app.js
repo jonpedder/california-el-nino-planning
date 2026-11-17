@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=webmap1";
+import { APP_CONFIG } from "./config.js?v=webmap2";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
