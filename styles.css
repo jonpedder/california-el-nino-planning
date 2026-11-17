@@ -167,6 +167,12 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .map-state { position: absolute; z-index: 6; top: 78px; left: 50%; transform: translateX(-50%); padding: 0.55rem 0.75rem; border: 1px solid var(--border); background: var(--panel); color: var(--muted); }
 
 #detail-content { padding: 0 1rem; }
+.detail-tabs { position: sticky; z-index: 4; top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 -1rem 0.75rem; border-bottom: 1px solid var(--border); background: var(--panel); }
+.detail-tab { min-width: 0; padding: 0.65rem 0.25rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); font-size: 0.66rem; font-weight: 700; cursor: pointer; }
+.detail-tab:hover { color: var(--text); background: var(--panel2); }
+.detail-tab.active { border-bottom-color: var(--gold); color: var(--gold); background: #0b293a; }
+.detail-tab-panel { padding-bottom: 0.75rem; }
+.detail-tab-panel > :first-child { margin-top: 0.35rem; }
 .threat-list, .capability-list, .layer-list { margin: 0; padding: 0; list-style: none; }
 .threat-list li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
 .kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
@@ -238,8 +244,7 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
 @media (max-width: 980px) {
   .workspace { grid-template-columns: 15rem minmax(320px, 1fr); }
   .detail-panel { grid-column: 1 / -1; border-top: 1px solid var(--border); border-left: 0; }
-  #detail-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.25rem; }
-  #detail-content .disclaimer { grid-column: 1 / -1; }
+  #detail-content { display: block; }
 }
 
 @media (max-width: 680px) {

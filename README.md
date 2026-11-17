@@ -11,7 +11,7 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - Accessible Settings, Configuration, and Help & How-to tabs plus a printable operator guide.
 - Region-filtered analysis for past fire impacts, current NWS advisories and USGS gauge conditions, 72-hour precipitation forecasts, and FEMA risk baselines.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
-- County-specific threats, capabilities, source-backed screening KPIs, viewpoints, and disclaimers.
+- County-specific threats, capabilities, source-backed screening KPIs, viewpoints, and disclaimers organized into Overview, Readiness, Community, and Sources tabs.
 - Fire/El Niño readiness workflow with NOAA Day 1–3 excessive-rainfall outlooks, Days 3–7 and 8–14 precipitation hazards, USGS post-fire assessment intersection counts, fire/year filters, age-scaled flame symbols, map highlighting, and fire selection.
 - Area-weighted ACS population estimates in fire and weather-polygon popups, with explicit method and limitation text.
 - ALERTCalifornia live cameras, a dedicated flood-stage-only gauge layer, generalized state boundaries, Caltrans roads, FEMA hospitals, FEMA planning shelters, and Cal OES active shelters.

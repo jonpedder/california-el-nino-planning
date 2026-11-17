@@ -7,7 +7,7 @@
   <meta name="color-scheme" content="dark">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=webmap2">
+  <link rel="stylesheet" href="./styles.css?v=details1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./app.js?v=settings1"></script>
 </head>
@@ -128,6 +128,13 @@
         Choose a county from the threat queue to review its planning profile.
       </div>
       <div id="detail-content" hidden>
+        <nav class="detail-tabs" role="tablist" aria-label="Capability detail sections">
+          <button id="overviewTab" class="detail-tab active" type="button" role="tab" aria-selected="true" aria-controls="overviewPanel">Overview</button>
+          <button id="readinessTab" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="readinessPanel">Readiness</button>
+          <button id="contextTab" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="contextPanel">Community</button>
+          <button id="sourcesTab" class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="sourcesPanel">Sources</button>
+        </nav>
+        <section id="overviewPanel" class="detail-tab-panel" role="tabpanel" aria-labelledby="overviewTab">
         <section aria-labelledby="threats-heading">
           <h3 id="threats-heading">Priority threats</h3>
           <ul id="threat-list" class="threat-list"></ul>
@@ -136,7 +143,8 @@
           <h3 id="kpi-heading">Planning indicators</h3>
           <div id="kpi-grid" class="kpi-grid"></div>
         </section>
-        <section class="readiness-panel" aria-labelledby="readiness-heading">
+        </section>
+        <section id="readinessPanel" class="detail-tab-panel readiness-panel" role="tabpanel" aria-labelledby="readinessTab" hidden>
           <h3 id="readiness-heading">Post-fire rainfall readiness</h3>
           <p class="helper">Screens authoritative USGS assessment perimeters against the selected NOAA precipitation outlook. This is monitoring-priority context, not a debris-flow prediction.</p>
           <label for="readiness-outlook">Forecast horizon</label>
@@ -178,6 +186,7 @@
             </nav>
           </details>
         </section>
+        <section id="contextPanel" class="detail-tab-panel" role="tabpanel" aria-labelledby="contextTab" hidden>
         <section aria-labelledby="demographics-heading">
           <h3 id="demographics-heading">Demographic context</h3>
           <div id="demographic-grid" class="demographic-grid"></div>
@@ -190,12 +199,13 @@
           <h3 id="capabilities-heading">Enabled capabilities</h3>
           <ul id="capability-list" class="capability-list"></ul>
         </section>
-        <section aria-labelledby="layers-heading">
+        </section>
+        <section id="sourcesPanel" class="detail-tab-panel" role="tabpanel" aria-labelledby="sourcesTab" hidden>
           <h3 id="layers-heading">Public map sources</h3>
           <p class="helper">Verified context selected for this county, plus optional demographics. Use the collapsible Map Layers control to adjust visibility.</p>
           <ul id="layer-list" class="layer-list"></ul>
+          <p id="county-disclaimer" class="disclaimer"></p>
         </section>
-        <p id="county-disclaimer" class="disclaimer"></p>
       </div>
     </aside>
   </main>

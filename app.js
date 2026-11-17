@@ -25,6 +25,8 @@ const elements = {
   detailHeading: document.querySelector("#detail-heading"),
   detailState: document.querySelector("#detail-state"),
   detailContent: document.querySelector("#detail-content"),
+  detailTabs: [...document.querySelectorAll(".detail-tab")],
+  detailPanels: [...document.querySelectorAll(".detail-tab-panel")],
   threatList: document.querySelector("#threat-list"),
   kpiGrid: document.querySelector("#kpi-grid"),
   readinessOutlook: document.querySelector("#readiness-outlook"),
@@ -95,6 +97,8 @@ esriId.registerOAuthInfos([oauthInfo]);
 elements.authButton.addEventListener("click", handleAuthentication);
 elements.view2dButtons.forEach((button) => button.addEventListener("click", () => switchView("2d")));
 elements.view3dButtons.forEach((button) => button.addEventListener("click", () => switchView("3d")));
+elements.detailTabs.forEach((button) => button.addEventListener("click", () => setDetailTab(button.id)));
+document.querySelector(".detail-tabs")?.addEventListener("keydown", handleDetailTabKeydown);
 elements.readinessOutlook.addEventListener("change", () => refreshReadinessForSelectedCounty());
 elements.readinessYear.addEventListener("change", renderReadinessFireOptions);
 elements.readinessSearch.addEventListener("input", renderReadinessFireOptions);
@@ -269,6 +273,31 @@ function updateViewToggleButtons() {
     button.classList.toggle("selected", !is2d);
     button.setAttribute("aria-pressed", String(!is2d));
   });
+}
+
+function setDetailTab(tabId, { focus = false } = {}) {
+  const activeTab = elements.detailTabs.find((tab) => tab.id === tabId) || elements.detailTabs[0];
+  for (const tab of elements.detailTabs) {
+    const active = tab === activeTab;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (panel) panel.hidden = !active;
+  }
+  if (focus) activeTab?.focus();
+}
+
+function handleDetailTabKeydown(event) {
+  if (!event.target.matches(".detail-tab") || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const current = elements.detailTabs.indexOf(event.target);
+  const next = event.key === "Home"
+    ? 0
+    : event.key === "End"
+      ? elements.detailTabs.length - 1
+      : (current + (event.key === "ArrowRight" ? 1 : -1) + elements.detailTabs.length) % elements.detailTabs.length;
+  setDetailTab(elements.detailTabs[next].id, { focus: true });
 }
 
 function normalizeLayerTitle(value) {
@@ -773,6 +802,7 @@ function selectCounty(countyId, { moveFocus = false } = {}) {
   }
 
   state.selectedCountyId = county.id;
+  setDetailTab("overviewTab");
   for (const button of elements.countyList.querySelectorAll(".county-card")) {
     const selected = button.dataset.countyId === county.id;
     button.classList.toggle("selected", selected);
