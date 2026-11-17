@@ -9,7 +9,7 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - Responsive command-center layout with Planning Map, Analysis, and Settings & Help pages, shared navigation, and source-status reporting.
 - Browser-local branding, theme, initial county/view, layer-default, portal, OAuth, Web Map, and Web Scene overrides with validation and reset.
 - Accessible Settings, Configuration, and Help & How-to tabs plus a printable operator guide.
-- Region-filtered analysis organized into Summary, Forecast & Gauges, Risk & Timeline, and Sources tabs, with collapsible forecast-table and operational-event details.
+- Region-filtered analysis organized into Summary, Forecast & Gauges, Risk & Timeline, and Sources tabs, with collapsible details and selectable KPIs, forecast bars, gauges, events, county profiles, and source rows for cross-filtering.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
 - County-specific threats, capabilities, source-backed screening KPIs, viewpoints, and disclaimers organized into Overview, Readiness, Community, and Sources tabs.
 - Fire/El Niño readiness workflow with NOAA Day 1–3 excessive-rainfall outlooks, Days 3–7 and 8–14 precipitation hazards, USGS post-fire assessment intersection counts, fire/year filters, age-scaled flame symbols, map highlighting, and fire selection.

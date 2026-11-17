@@ -7,10 +7,10 @@
   <meta name="color-scheme" content="dark">
   <title>El Niño Regional Analysis</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=analysis-tabs2">
-  <link rel="stylesheet" href="./analysis.css?v=analysis-tabs2">
+  <link rel="stylesheet" href="./styles.css?v=analysis-filter1">
+  <link rel="stylesheet" href="./analysis.css?v=analysis-filter1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./analysis.js?v=analysis-tabs2"></script>
+  <script type="module" src="./analysis.js?v=analysis-filter1"></script>
 </head>
 <body class="analysis-body">
   <a class="skip-link" href="#analysis-main">Skip to analysis</a>
@@ -56,6 +56,10 @@
         <button id="riskTab" class="analysis-tab" type="button" role="tab" aria-selected="false" aria-controls="riskPanel">Risk &amp; Timeline</button>
         <button id="sourcesAnalysisTab" class="analysis-tab" type="button" role="tab" aria-selected="false" aria-controls="sourcesAnalysisPanel">Sources</button>
       </nav>
+      <div id="analysis-selection" class="analysis-selection" role="status" aria-live="polite" hidden>
+        <span><strong>Filtered:</strong> <span id="analysis-selection-label"></span></span>
+        <button id="clear-analysis-selection" type="button">Clear selection</button>
+      </div>
 
       <section id="summaryPanel" class="analysis-tab-panel" role="tabpanel" aria-labelledby="summaryTab">
         <div class="analysis-tab-intro"><strong>Regional summary</strong><span>Use the tabs to move from headline indicators into forecast details, risk history, and source accountability.</span></div>
@@ -80,7 +84,7 @@
           </article>
           <article class="analysis-card analysis-card-wide">
             <header><div><p class="eyebrow">Current conditions</p><h2>Stream-gauge snapshot</h2></div><span class="analysis-badge">USGS</span></header>
-            <p class="analysis-helper">Current observations are sourced from Living Atlas Live Stream Gauges. Historical gauge charts require the planned Velocity history output.</p>
+            <p class="analysis-helper">Current observations are sourced from Living Atlas Live Stream Gauges. Historical gauge charts require the planned Velocity history output. Expand the table and select a gauge to focus the table and timeline.</p>
             <details class="analysis-collapse"><summary>Gauge observations table</summary><div id="gauge-table-wrap" class="analysis-table-wrap"></div></details>
           </article>
         </section>
@@ -103,6 +107,7 @@
       <section id="sourcesAnalysisPanel" class="analysis-tab-panel" role="tabpanel" aria-labelledby="sourcesAnalysisTab" hidden>
         <article class="analysis-card">
           <header><div><p class="eyebrow">Source accountability</p><h2>Coverage and temporal suitability</h2></div><span class="analysis-badge">12 sources</span></header>
+          <p class="analysis-helper">Select a source row to isolate its role, temporal treatment, and connection status.</p>
           <div class="analysis-table-wrap"><table><thead><tr><th>Source</th><th>Role in analysis</th><th>Temporal treatment</th><th>Status</th></tr></thead><tbody id="source-matrix"></tbody></table></div>
         </article>
         <aside class="analysis-disclaimer"><strong>Interpretation:</strong> Forecast polygons, active advisories, current observations, incident history, and static planning baselines are intentionally kept separate. Missing history is shown as unavailable rather than estimated. No displayed value is a validated exposure count or operational trigger unless an approved method is connected.</aside>
@@ -111,5 +116,8 @@
   </main>
 
   <footer>Analysis application • Public authoritative context layers • Partial-source and stale-data conditions are surfaced</footer>
+</body>
+</html>
+ditions are surfaced</footer>
 </body>
 </html>

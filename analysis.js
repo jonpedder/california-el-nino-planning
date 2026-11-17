@@ -44,7 +44,10 @@ const elements = {
   riskProfile: document.querySelector("#risk-profile"),
   timelineList: document.querySelector("#timeline-list"),
   timelineCount: document.querySelector("#timeline-count"),
-  sourceMatrix: document.querySelector("#source-matrix")
+  sourceMatrix: document.querySelector("#source-matrix"),
+  selection: document.querySelector("#analysis-selection"),
+  selectionLabel: document.querySelector("#analysis-selection-label"),
+  clearSelection: document.querySelector("#clear-analysis-selection")
 };
 
 const layers = Object.fromEntries(
@@ -54,7 +57,8 @@ const layers = Object.fromEntries(
 const state = {
   running: false,
   timer: null,
-  lastResults: null
+  lastResults: null,
+  selection: null
 };
 
 window.__app = { ANALYSIS_CONFIG, layers, state, refresh: runAnalysis, setTab: setAnalysisTab };
@@ -64,6 +68,19 @@ elements.regionFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.historyFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.tabs.forEach((tab) => tab.addEventListener("click", () => setAnalysisTab(tab.id)));
 document.querySelector(".analysis-tabs")?.addEventListener("keydown", handleAnalysisTabKeydown);
+elements.clearSelection.addEventListener("click", clearElementFilter);
+[...document.querySelectorAll(".analysis-kpi")].forEach((card, index) => {
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `${card.querySelector("span")?.textContent || "Indicator"}. Select to filter related analysis.`);
+  card.addEventListener("click", () => selectKpi(index));
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      selectKpi(index);
+    }
+  });
+});
 
 initialize().catch((error) => showFatalError(error));
 
@@ -89,6 +106,89 @@ function handleAnalysisTabKeydown(event) {
   setAnalysisTab(elements.tabs[next].id, { focus: true });
 }
 
+function setElementFilter(type, label, key = null) {
+  state.selection = { type, label, key };
+  elements.selectionLabel.textContent = label;
+  elements.selection.hidden = false;
+}
+
+function clearElementFilter({ rerender = true } = {}) {
+  state.selection = null;
+  elements.selection.hidden = true;
+  document.querySelectorAll(".analysis-selected").forEach((element) => element.classList.remove("analysis-selected"));
+  if (!rerender || !state.lastResults) return;
+  const data = state.lastResults;
+  renderForecast(data.forecast);
+  renderGauges(data.gauges);
+  renderRisk(data.risk);
+  renderTimeline(data.timeline);
+  renderSourceMatrix(data.queryResults);
+}
+
+function selectKpi(index) {
+  if (!state.lastResults) return;
+  clearElementFilter();
+  const data = state.lastResults;
+  if (index === 0) {
+    const maximum = data.forecast.reduce((best, period, periodIndex) => !best || period.upper > best.period.upper ? { period, periodIndex } : best, null);
+    setAnalysisTab("conditionsTab");
+    if (maximum) selectForecastPeriod(maximum.periodIndex);
+  } else if (index === 1) {
+    setAnalysisTab("riskTab");
+    const warnings = data.timeline.filter((item) => item.category === "warning");
+    renderTimeline(warnings);
+    setElementFilter("warning", "Active and upcoming weather advisories");
+  } else if (index === 2 || index === 3) {
+    setAnalysisTab("conditionsTab");
+    const gauges = data.gauges.filter((gauge) => gauge.fresh && (index === 2 || gauge.elevated));
+    renderGauges(gauges);
+    setElementFilter("gauge", index === 2 ? "Fresh USGS gauges" : "Fresh elevated USGS gauges");
+  } else if (index === 4) {
+    setAnalysisTab("riskTab");
+    renderTimeline(data.timeline.filter((item) => item.category === "fire"));
+    setElementFilter("fire", "Fire incidents in the selected historical window");
+  } else {
+    setAnalysisTab("riskTab");
+    setElementFilter("risk", "FEMA risk profiles");
+  }
+}
+
+function selectForecastPeriod(index) {
+  const period = state.lastResults?.forecast[index];
+  if (!period) return;
+  setElementFilter("forecast", `${formatDateTime(period.start)} – ${formatTime(period.end)} · ${period.label}`, String(period.start.valueOf()));
+  renderForecast([period]);
+  renderTimeline(state.lastResults.timeline.filter((item) => item.time >= period.start && item.time <= period.end));
+}
+
+function selectGauge(stationId) {
+  const gauge = state.lastResults?.gauges.find((item) => String(item.stationid || item.OBJECTID) === String(stationId));
+  if (!gauge) return;
+  setElementFilter("gauge", gauge.name || gauge.stationid || "Selected gauge", String(stationId));
+  renderGauges([gauge]);
+  renderTimeline(state.lastResults.timeline.filter((item) => item.category === "gauge" && item.key === String(stationId)));
+}
+
+function selectTimelineItem(item) {
+  renderTimeline([item]);
+  setElementFilter("timeline", `${item.title} · ${formatTimelineTime(item.time)}`);
+}
+
+function makeSelectable(element, label, handler) {
+  element.tabIndex = 0;
+  element.setAttribute("tabindex", "0");
+  element.classList.add("analysis-selectable");
+  element.setAttribute("role", "button");
+  element.setAttribute("aria-label", `${label}. Select to filter analysis.`);
+  element.addEventListener("click", handler);
+  element.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handler();
+    }
+  });
+}
+
 async function initialize() {
   const requestedPanel = location.hash.slice(1);
   const requestedTab = elements.tabs.find((tab) => tab.getAttribute("aria-controls") === requestedPanel);
@@ -104,6 +204,7 @@ async function initialize() {
 
 async function runAnalysis() {
   if (state.running) return;
+  clearElementFilter({ rerender: false });
   state.running = true;
   elements.refreshButton.loading = true;
   elements.refreshButton.disabled = true;
@@ -153,16 +254,17 @@ async function runAnalysis() {
     const fires = normalizeFires(data.fireHistory.features, historyDays);
     const risk = selectedRegions.map((region) => normalizeRisk(region.feature.attributes, region));
 
+    const timeline = buildTimeline({ forecast, warnings, gauges, fires });
     renderKpis({ cumulative, warnings, gauges, fires, risk });
     renderForecast(forecast);
     renderGauges(gauges);
     renderRisk(risk);
-    renderTimeline(buildTimeline({ forecast, warnings, gauges, fires }));
+    renderTimeline(timeline);
     renderSourceMatrix(results);
 
     const failed = names.filter((name) => results[name].status === "rejected");
     const partial = names.filter((name) => data[name].partial);
-    state.lastResults = { selectedRegions, historyDays, forecast, cumulative, warnings, gauges, fires, risk, failed, partial };
+    state.lastResults = { selectedRegions, historyDays, forecast, cumulative, warnings, gauges, fires, risk, timeline, queryResults: results, failed, partial };
     elements.content.hidden = false;
     elements.loading.hidden = true;
     elements.status.textContent = failed.length || partial.length
@@ -402,6 +504,9 @@ function renderForecast(periods) {
     value.textContent = period.label.replace(" inches", " in");
     const time = svgNode("text", { x: x + barWidth / 2, y: height - 36, class: "chart-time" });
     time.textContent = formatChartTime(period.start);
+    const sourceIndex = state.lastResults?.forecast.findIndex((item) => item.start.valueOf() === period.start.valueOf()) ?? index;
+    makeSelectable(bar, `${formatDateTime(period.start)}, ${period.label}`, () => selectForecastPeriod(sourceIndex));
+    if (state.selection?.type === "forecast" && state.selection.key === String(period.start.valueOf())) bar.classList.add("analysis-selected");
     svg.append(bar, value, time);
   });
 
@@ -422,7 +527,7 @@ function renderGauges(gauges) {
     return;
   }
   const displayed = gauges.slice(0, 60);
-  elements.gaugeTableWrap.append(createTable(
+  const table = createTable(
     ["Gauge", "Stage", "Flow", "Status", "Freshness"],
     displayed.map((gauge) => [
       gauge.name || gauge.stationid,
@@ -431,7 +536,14 @@ function renderGauges(gauges) {
       gauge.status || statusClassLabel(gauge.statusClass),
       { text: gauge.age === null ? "Unknown" : `${formatCount(gauge.age)} hr`, className: gauge.fresh ? "value-fresh" : "value-stale" }
     ])
-  ));
+  );
+  elements.gaugeTableWrap.append(table);
+  [...table.querySelectorAll("tbody tr")].forEach((row, index) => {
+    const gauge = displayed[index];
+    const id = String(gauge.stationid || gauge.OBJECTID);
+    makeSelectable(row, gauge.name || gauge.stationid || "Gauge", () => selectGauge(id));
+    if (state.selection?.type === "gauge" && state.selection.key === id) row.classList.add("analysis-selected");
+  });
   if (gauges.length > displayed.length) {
     const note = document.createElement("p");
     note.className = "analysis-helper";
@@ -469,6 +581,12 @@ function renderRisk(risk) {
       list.append(container);
     });
     article.append(header, list);
+    makeSelectable(article, `${item.label} risk profile`, async () => {
+      if (elements.regionFilter.value === item.id) return;
+      elements.regionFilter.value = item.id;
+      await runAnalysis();
+      setAnalysisTab("riskTab");
+    });
     elements.riskProfile.append(article);
   });
 }
@@ -484,12 +602,16 @@ function buildTimeline({ forecast, warnings, gauges, fires }) {
   warnings.forEach((warning) => items.push({
     time: warning.start,
     type: warning.active ? "current" : "forecast",
+    category: "warning",
+    key: String(warning.id),
     title: warning.event,
     detail: `${warning.severity} · ${warning.affected}${warning.end ? ` · until ${formatDateTime(warning.end)}` : ""}`
   }));
   gauges.filter((gauge) => gauge.updated && (gauge.elevated || gauge.fresh)).slice(0, 12).forEach((gauge) => items.push({
     time: gauge.updated,
     type: "current",
+    category: "gauge",
+    key: String(gauge.stationid || gauge.OBJECTID),
     title: gauge.name || gauge.stationid,
     detail: `${formatMeasurement(gauge.stage_ft, "ft")} · ${formatMeasurement(gauge.flow_cfs, "cfs")} · ${gauge.fresh ? "fresh" : "stale"}`
   }));
@@ -534,6 +656,8 @@ function renderTimeline(items) {
     detail.textContent = item.detail;
     content.append(title, detail);
     listItem.append(time, dot, content);
+    makeSelectable(listItem, `${item.title}, ${formatTimelineTime(item.time)}`, () => selectTimelineItem(item));
+    if (state.selection?.type === "timeline" && state.selection.key === item.key) listItem.classList.add("analysis-selected");
     elements.timelineList.append(listItem);
   });
   if (!nowInserted) elements.timelineList.append(createNowMarker());
@@ -552,7 +676,7 @@ function createNowMarker() {
   return item;
 }
 
-function renderSourceMatrix(results) {
+function renderSourceMatrix(results, selectedIndex = null) {
   const queryStatus = (name) => results[name]?.status === "fulfilled"
     ? (results[name].value.partial ? "Partial / truncated" : "Connected")
     : "Unavailable";
@@ -571,7 +695,8 @@ function renderSourceMatrix(results) {
     ["LA post-fire debris flow", "County-specific hazard context", "Publisher-managed", "Available for Los Angeles"]
   ];
   elements.sourceMatrix.replaceChildren();
-  rows.forEach((row) => {
+  const displayedRows = selectedIndex === null ? rows.map((row, index) => ({ row, index })) : [{ row: rows[selectedIndex], index: selectedIndex }];
+  displayedRows.forEach(({ row, index }) => {
     const tr = document.createElement("tr");
     row.forEach((value, index) => {
       const td = document.createElement("td");
@@ -579,6 +704,11 @@ function renderSourceMatrix(results) {
       if (index === 3) td.className = value === "Connected" ? "value-fresh" : value.startsWith("Partial") || value === "Unavailable" ? "value-alert" : "";
       tr.append(td);
     });
+    makeSelectable(tr, row[0], () => {
+      renderSourceMatrix(results, index);
+      setElementFilter("source", row[0], String(index));
+    });
+    if (state.selection?.type === "source" && state.selection.key === String(index)) tr.classList.add("analysis-selected");
     elements.sourceMatrix.append(tr);
   });
 }
@@ -684,4 +814,11 @@ function showFatalError(error) {
   elements.loading.classList.add("error");
   elements.loading.replaceChildren(document.createTextNode("The analysis page could not initialize."));
   elements.status.textContent = "Analysis unavailable";
+}
+ysis unavailable";
+}
+e."));
+  elements.status.textContent = "Analysis unavailable";
+}
+ysis unavailable";
 }

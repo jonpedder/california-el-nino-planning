@@ -22,6 +22,15 @@
 .analysis-tab { min-width: 0; padding: 0.75rem 0.5rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; cursor: pointer; }
 .analysis-tab:hover { color: var(--text); background: var(--panel2); }
 .analysis-tab.active { border-bottom-color: var(--gold); color: var(--gold); background: #0c2b3d; }
+.analysis-selection { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: -0.2rem 0 0.85rem; padding: 0.55rem 0.7rem; border: 1px solid var(--gold); background: rgb(242 169 0 / 10%); color: var(--text); font-size: 0.72rem; }
+.analysis-selection strong { color: var(--gold); }
+.analysis-selection button { flex: 0 0 auto; padding: 0.4rem 0.6rem; border: 1px solid var(--gold); background: transparent; color: var(--gold); font: inherit; font-weight: 700; cursor: pointer; }
+.analysis-selection button:hover { background: var(--gold); color: #071722; }
+.analysis-selectable { cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease, filter 120ms ease; }
+.analysis-selectable:hover { border-color: var(--gold); filter: brightness(1.12); }
+.analysis-table-wrap tr.analysis-selectable:hover td { background: #15384b; }
+.analysis-selected { outline: 2px solid var(--gold); outline-offset: -2px; background-color: rgb(242 169 0 / 14%) !important; }
+.chart-bar.analysis-selectable:hover, .chart-bar.analysis-selected { stroke: #fff4c2; stroke-width: 4; filter: brightness(1.1); }
 .analysis-tab-panel { min-height: 280px; }
 .analysis-tab-intro { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; padding: 0.75rem; border-left: 3px solid var(--gold); background: var(--panel); }
 .analysis-tab-intro strong { color: var(--text); font-size: 0.8rem; }
@@ -101,6 +110,7 @@
 @media (max-width: 760px) {
   .analysis-freshness { justify-items: start; }
   .analysis-tabs { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analysis-selection { align-items: flex-start; flex-direction: column; }
   .analysis-tab-intro { align-items: flex-start; flex-direction: column; }
   .analysis-tab-intro span { text-align: left; }
   .analysis-controls, .analysis-grid { display: block; }
