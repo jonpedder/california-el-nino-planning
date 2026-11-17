@@ -6,7 +6,9 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 
 ## What is included
 
-- Responsive command-center layout with Planning Map and Analysis pages, shared navigation, and source-status reporting.
+- Responsive command-center layout with Planning Map, Analysis, and Settings & Help pages, shared navigation, and source-status reporting.
+- Browser-local branding, theme, initial county/view, layer-default, portal, OAuth, Web Map, and Web Scene overrides with validation and reset.
+- Accessible Settings, Configuration, and Help & How-to tabs plus a printable operator guide.
 - Region-filtered analysis for past fire impacts, current NWS advisories and USGS gauge conditions, 72-hour precipitation forecasts, and FEMA risk baselines.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
 - County-specific threats, capabilities, source-backed screening KPIs, viewpoints, and disclaimers.
@@ -147,6 +149,10 @@ County planning content is in `data/county-capabilities.json`. Keep it data-only
 ├── styles.css
 ├── app.js
 ├── config.js
+├── preferences.js
+├── settings.html
+├── settings.css
+├── settings.js
 ├── data/
 │   └── county-capabilities.json
 ├── docs/

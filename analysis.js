@@ -1,3 +1,6 @@
+import { loadPreferences, applyPreferences } from "./preferences.js?v=settings1";
+applyPreferences(loadPreferences());
+
 const FeatureLayer = await $arcgis.import("@arcgis/core/layers/FeatureLayer.js");
 
 const ANALYSIS_CONFIG = Object.freeze({

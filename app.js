@@ -1,4 +1,9 @@
-import { APP_CONFIG } from "./config.js?v=postfire9";
+import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=settings1";
+import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=settings1";
+
+const APP_PREFERENCES = loadPreferences();
+const APP_CONFIG = runtimeConfig(DEPLOYMENT_CONFIG, APP_PREFERENCES);
+applyPreferences(APP_PREFERENCES);
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -105,6 +110,11 @@ async function initialize() {
   elements.readinessRetrieved.textContent = new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   await Promise.allSettled([initializeAuthentication(), initializeMap()]);
   await loadCountyData();
+  if (APP_CONFIG.preferences?.initialView === "3d") await switchView("3d");
+  if (APP_CONFIG.preferences?.openLegend) {
+    const index = APP_CONFIG.preferences?.initialView === "3d" ? 1 : 0;
+    if (elements.legendExpands[index]) elements.legendExpands[index].expanded = true;
+  }
 }
 
 async function initializeAuthentication() {
@@ -160,6 +170,8 @@ async function initializeMap() {
       customElements.whenDefined("arcgis-map"),
       customElements.whenDefined("arcgis-scene")
     ]);
+    elements.map.itemId = APP_CONFIG.webMapId;
+    elements.scene.itemId = APP_CONFIG.webSceneId;
     await elements.map.viewOnReady();
     state.mapReady = true;
 
@@ -713,7 +725,8 @@ async function loadCountyData() {
     renderCountyQueue();
     elements.countyState.hidden = true;
     elements.countyList.hidden = false;
-    selectCounty(state.counties[0].id, { moveFocus: false });
+    const initialCounty = state.counties.find((county) => county.id === APP_CONFIG.preferences?.initialCounty) || state.counties[0];
+    selectCounty(initialCounty.id, { moveFocus: false });
   } catch (error) {
     console.error("County data load failed.", error);
     showCountyError("County configuration is unavailable. Check the JSON file and hosting path.");
@@ -1397,6 +1410,9 @@ function collapseMapOverlays() {
 
 function applyCountyLayerVisibility(countyId) {
   const visibleKeys = new Set(APP_CONFIG.countyLayerVisibility[countyId] || []);
+  if (APP_CONFIG.preferences?.showActiveShelters === false) visibleKeys.delete("activeShelters");
+  if (APP_CONFIG.preferences?.showFireHistory === false) visibleKeys.delete("fireHistory");
+  if (APP_CONFIG.preferences?.showFloodStageGauges === true) visibleKeys.add("floodStageGauges");
   for (const registry of [state.operationalLayers, state.sceneOperationalLayers]) {
     for (const [key, layer] of registry) layer.visible = visibleKeys.has(key);
   }

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" class="calcite-mode-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Settings, deployment diagnostics, and operator help for the California El Niño Planning Console.">
+  <meta name="color-scheme" content="dark">
+  <title>Settings & Help | California El Niño Planning</title>
+  <link rel="stylesheet" href="./styles.css?v=settings1">
+  <link rel="stylesheet" href="./settings.css?v=settings1">
+  <script type="module" src="./settings.js?v=settings1"></script>
+</head>
+<body class="settings-body">
+  <a class="skip-link" href="#settings-main">Skip to settings</a>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">California Security Operations</p>
+      <h1 data-app-title>El Niño Planning Console</h1>
+      <p class="subtitle" data-app-subtitle>County threat posture and capability planning</p>
+    </div>
+    <nav class="app-nav" aria-label="Primary navigation">
+      <a class="app-nav-link" href="./index.html">Planning Map</a>
+      <a class="app-nav-link" href="./analysis.html">Analysis</a>
+      <a class="app-nav-link active" href="./settings.html" aria-current="page">Settings &amp; Help</a>
+    </nav>
+    <div class="settings-header-status">Browser-local preferences</div>
+  </header>
+
+  <main id="settings-main" class="settings-page">
+    <div class="settings-titlebar">
+      <div><p class="eyebrow">Application administration</p><h2>Settings &amp; Help</h2><p>Configure browser-local presentation and operating defaults, inspect deployment connections, and review the planning workflow.</p></div>
+    </div>
+
+    <nav class="settings-tabs" role="tablist" aria-label="Settings sections">
+      <button id="preferencesTab" class="settings-tab active" role="tab" aria-selected="true" aria-controls="preferencesPanel">Settings</button>
+      <button id="configurationTab" class="settings-tab" role="tab" aria-selected="false" aria-controls="configurationPanel">Configuration</button>
+      <button id="helpTab" class="settings-tab" role="tab" aria-selected="false" aria-controls="helpPanel">Help &amp; How-to</button>
+    </nav>
+
+    <section class="settings-surface">
+      <section id="preferencesPanel" class="settings-panel" role="tabpanel" aria-labelledby="preferencesTab">
+        <details class="settings-card" open>
+          <summary>Application branding</summary>
+          <div class="settings-grid">
+            <label>Application name<input id="appTitle" type="text" maxlength="100"></label>
+            <label>Subtitle<input id="appSubtitle" type="text" maxlength="160"></label>
+          </div>
+          <p class="settings-note">Branding changes apply to the Planning Map and Settings pages in this browser.</p>
+        </details>
+        <details class="settings-card" open>
+          <summary>Theme colors</summary>
+          <div class="settings-grid color-grid">
+            <label>Header / navy<input id="navy" type="color"></label>
+            <label>Background<input id="background" type="color"></label>
+            <label>Panel<input id="panel" type="color"></label>
+            <label>Alternate panel<input id="panelAlt" type="color"></label>
+            <label>Accent / gold<input id="accent" type="color"></label>
+            <label>Primary text<input id="textColor" type="color"></label>
+            <label>Muted text<input id="muted" type="color"></label>
+            <label>Borders<input id="border" type="color"></label>
+          </div>
+        </details>
+        <details class="settings-card" open>
+          <summary>Operator defaults</summary>
+          <div class="settings-grid">
+            <label>Initial county<select id="initialCounty"><option value="marin">Marin</option><option value="santa-cruz">Santa Cruz</option><option value="los-angeles">Los Angeles</option><option value="san-diego">San Diego</option></select></label>
+            <label>Initial view<select id="initialView"><option value="2d">2D Web Map</option><option value="3d">3D Web Scene</option></select></label>
+          </div>
+          <label class="preference-row"><span><strong>Show active shelters</strong><small>Display the Cal OES active-shelter layer in county profiles.</small></span><input id="showActiveShelters" type="checkbox"></label>
+          <label class="preference-row"><span><strong>Show fire history</strong><small>Display WFIGS historical fire perimeters by default.</small></span><input id="showFireHistory" type="checkbox"></label>
+          <label class="preference-row"><span><strong>Show flood-stage gauges</strong><small>Enable the dedicated <code>statusClass &gt;= 3</code> gauge layer by default.</small></span><input id="showFloodStageGauges" type="checkbox"></label>
+          <label class="preference-row"><span><strong>Open legend on startup</strong><small>Open the legend for the configured initial view.</small></span><input id="openLegend" type="checkbox"></label>
+        </details>
+      </section>
+
+      <section id="configurationPanel" class="settings-panel" role="tabpanel" aria-labelledby="configurationTab" hidden>
+        <div class="settings-callout"><strong>Browser-local override:</strong> These values affect only this browser. No token, secret, or portal credential is stored.</div>
+        <details class="settings-card" open>
+          <summary>ArcGIS connections</summary>
+          <label>Portal URL<input id="portalUrl" type="url"></label>
+          <label>OAuth application / client ID<input id="oauthClientId" type="text" maxlength="64"></label>
+          <label>Canonical OAuth redirect URI<input id="oauthRedirectUri" type="url"></label>
+          <label>2D Web Map item ID<input id="webMapId" type="text" maxlength="32"></label>
+          <label>3D Web Scene item ID<input id="webSceneId" type="text" maxlength="32"></label>
+          <p class="settings-note">The redirect URI must also be registered on the OAuth credential. Changing an ID does not change item sharing or permissions.</p>
+        </details>
+        <details class="settings-card" open>
+          <summary>Deployment diagnostics</summary>
+          <dl id="configList" class="settings-diagnostics"><dt>Status</dt><dd>Loading configuration…</dd></dl>
+        </details>
+      </section>
+
+      <section id="helpPanel" class="settings-panel" role="tabpanel" aria-labelledby="helpTab" hidden>
+        <div class="help-layout">
+          <nav class="help-index" aria-label="Help topics">
+            <strong>In this guide</strong>
+            <a href="#help-about">About the console</a>
+            <a href="#help-map">Use the Planning Map</a>
+            <a href="#help-readiness">Post-fire rainfall readiness</a>
+            <a href="#help-analysis">Use regional Analysis</a>
+            <a href="#help-settings">Configure Settings</a>
+            <a href="#help-signin">Sign-in troubleshooting</a>
+            <a href="#help-limits">Methods and limitations</a>
+          </nav>
+          <div class="help-content">
+            <div class="help-toolbar"><button id="printHelp" class="settings-button primary" type="button">Print operator guide</button><span>Use the browser print dialog to save a PDF.</span></div>
+            <details id="help-about" class="help-card" open><summary>About the console</summary><p>The California El Niño Planning Console combines a public 2D Web Map, public 3D Web Scene, regional analysis, NOAA precipitation outlooks, USGS post-fire debris-flow assessments, hydrology, facilities, shelters, transportation, demographics, and FEMA risk context.</p><p class="settings-callout"><strong>Planning use:</strong> The console supports screening and coordination. It does not replace official warnings, local forecasts, evacuation orders, field reports, or agency systems of record.</p></details>
+            <details id="help-map" class="help-card"><summary>Use the Planning Map</summary><ol><li>Select Marin, Santa Cruz, Los Angeles, or San Diego from the threat queue.</li><li>Review threats and source-backed planning indicators in the capability panel.</li><li>Use Search, Map Layers, Basemaps, Legend, Home, and scale controls to inspect context.</li><li>Choose 2D for the saved Web Map or 3D for the saved Web Scene and world elevation.</li><li>Select mapped features to inspect publisher fields, FEMA risk values, or derived demographic context.</li></ol></details>
+            <details id="help-readiness" class="help-card"><summary>Post-fire rainfall readiness</summary><ol><li>Select a NOAA forecast horizon from Day 1 through Days 8–14.</li><li>Review county assessment, weather-polygon, and priority-intersection counts.</li><li>Filter USGS assessments by year, fire name, or Fire ID.</li><li>Select an assessment to navigate the active 2D or 3D view and open its popup.</li><li>Use the flame legend to interpret fire age and weather-intersection highlighting.</li></ol><p class="settings-callout"><strong>Interpretation:</strong> An intersection identifies monitoring-priority context, not a debris-flow prediction.</p></details>
+            <details id="help-analysis" class="help-card"><summary>Use regional Analysis</summary><p>Choose one county or all planning regions, select a historical fire window, and refresh the analysis. Review precipitation forecasts, active advisories, gauge freshness and status, fire history, FEMA risk baselines, timelines, and source-status tables. The page refreshes every 15 minutes while open.</p></details>
+            <details id="help-settings" class="help-card"><summary>Configure Settings</summary><ul><li>Settings control browser-local branding, theme colors, initial county, initial 2D/3D view, default layers, and legend behavior.</li><li>Configuration can override the portal, OAuth client, callback, Web Map, and Web Scene for this browser.</li><li><strong>Save &amp; reload</strong> validates and stores changes. <strong>Reset to defaults</strong> removes local overrides.</li><li>Repository defaults and ArcGIS items are not modified by browser-local settings.</li></ul></details>
+            <details id="help-signin" class="help-card"><summary>Sign-in troubleshooting</summary><h4>Invalid redirect_uri</h4><p>Register the exact canonical callback <code>https://jonpedder.github.io/california-el-nino-planning/</code> on the OAuth credential identified by the configured client ID.</p><h4>Sign-in loops or returns signed out</h4><p>Confirm the portal URL has no trailing slash, third-party cookies or redirects are not blocked, the account belongs to the expected organization, and the OAuth credential allows the canonical callback.</p><h4>Public layers load but demographics do not</h4><p>Public map content remains available when signed out. Credit-based GeoEnrichment requires an authenticated account with the required privileges.</p></details>
+            <details id="help-limits" class="help-card"><summary>Methods and limitations</summary><ul><li>Forecasts, observations, advisories, inventories, regulatory hazards, and historical incidents have different meanings and update schedules.</li><li>ACS population estimates are area weighted and assume uniform population distribution inside each tract.</li><li>Shelter capacity is a planning inventory and must be verified operationally.</li><li>Road-network availability does not assert a closure, passability, or damage condition.</li><li>Empty NOAA polygons or missing gauge classifications do not prove that no rain or flood risk exists.</li></ul></details>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="settings-actions"><button id="reset" class="settings-button" type="button">Reset to defaults</button><button id="save" class="settings-button primary" type="button">Save &amp; reload</button></footer>
+  </main>
+  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+</body>
+</html>
