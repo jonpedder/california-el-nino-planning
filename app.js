@@ -1301,13 +1301,154 @@ function selectedPopupPolygon() {
   return feature?.geometry?.type === "polygon" ? feature : null;
 }
 
-function createPolygonReportPdf() {
-  const originalTitle = document.title;
-  const safeLabel = state.reportGeometryLabel.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-  document.title = `Polygon-Summary-${safeLabel || "Area"}-${new Date().toISOString().slice(0, 10)}`;
-  window.addEventListener("afterprint", () => { document.title = originalTitle; }, { once: true });
-  elements.reportStatus.textContent = "PDF layout ready. Choose Save as PDF in the browser print dialog.";
-  window.print();
+async function createPolygonReportPdf() {
+  const originalLabel = elements.printPolygonReport.textContent;
+  elements.printPolygonReport.disabled = true;
+  elements.printPolygonReport.textContent = "Creating PDF…";
+  elements.reportStatus.textContent = "Creating a downloadable PDF…";
+  try {
+    const { jsPDF } = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm");
+    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 30;
+    const brand = [166, 92, 0];
+    const navy = [8, 31, 43];
+    const text = [28, 45, 55];
+    const safeLabel = state.reportGeometryLabel.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+    const filename = `Polygon-Summary-${safeLabel || "Area"}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const header = (title, subtitle = "") => {
+      pdf.setFillColor(...navy);
+      pdf.rect(0, 0, pageWidth, 54, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(title, margin, 25);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      if (subtitle) pdf.text(subtitle, margin, 42);
+      pdf.setTextColor(...text);
+    };
+    const sectionTitle = (title, y) => {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.setTextColor(...brand);
+      pdf.text(title.toUpperCase(), margin, y);
+      pdf.setTextColor(...text);
+    };
+    const drawCards = (container, startY, columns = 3) => {
+      const cards = [...container.children];
+      const gap = 8;
+      const cardWidth = (pageWidth - margin * 2 - gap * (columns - 1)) / columns;
+      const cardHeight = 58;
+      cards.forEach((card, index) => {
+        const x = margin + (index % columns) * (cardWidth + gap);
+        const y = startY + Math.floor(index / columns) * (cardHeight + gap);
+        const lines = [...card.children].map((child) => child.textContent.trim());
+        pdf.setFillColor(239, 245, 248);
+        pdf.rect(x, y, cardWidth, cardHeight, "F");
+        pdf.setDrawColor(...brand);
+        pdf.line(x, y, x, y + cardHeight);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        pdf.text(lines[0] || "Metric", x + 8, y + 14);
+        pdf.setFontSize(14);
+        pdf.setTextColor(...brand);
+        pdf.text(lines[1] || "—", x + 8, y + 32);
+        pdf.setTextColor(...text);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(7);
+        pdf.text(pdf.splitTextToSize(lines[2] || "", cardWidth - 16).slice(0, 2), x + 8, y + 44);
+      });
+      return startY + Math.ceil(cards.length / columns) * (cardHeight + gap);
+    };
+
+    header("Polygon Summary", `${state.reportGeometryLabel} • Generated ${elements.reportGenerated.textContent}`);
+    try {
+      const screenshot = await elements.reportMap.view.takeScreenshot({ format: "png", quality: 90, width: 1100, height: 550 });
+      pdf.addImage(screenshot.dataUrl, "PNG", margin, 70, 470, 235);
+    } catch (error) {
+      pdf.setFillColor(235, 240, 243);
+      pdf.rect(margin, 70, 470, 235, "F");
+      pdf.setFontSize(10);
+      pdf.text("Map image unavailable", margin + 18, 92);
+    }
+    const summary = [
+      ["Area", elements.reportArea.textContent],
+      ["Estimated population", elements.reportPopulation.textContent],
+      ["Intersecting layers", elements.reportLayerCount.textContent],
+      ["Generated", elements.reportGenerated.textContent]
+    ];
+    summary.forEach(([label, value], index) => {
+      const x = 520;
+      const y = 70 + index * 58;
+      pdf.setFillColor(239, 245, 248);
+      pdf.rect(x, y, pageWidth - margin - x, 50, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.text(label.toUpperCase(), x + 10, y + 15);
+      pdf.setFontSize(14);
+      pdf.setTextColor(...brand);
+      pdf.text(value || "—", x + 10, y + 35);
+      pdf.setTextColor(...text);
+    });
+    sectionTitle("Demographics, housing, and people potentially at risk", 334);
+    drawCards(elements.reportDemographics, 346, 3);
+
+    pdf.addPage();
+    header("Operational Highlights", `${state.reportGeometryLabel} • Current and historical source screening`);
+    sectionTitle("Current conditions, fire context, facilities, and exposure", 78);
+    drawCards(elements.reportHighlights, 90, 4);
+    sectionTitle("Method and limitations", 246);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.text(pdf.splitTextToSize(elements.reportMethod.textContent, pageWidth - margin * 2), margin, 264);
+
+    const headings = [...document.querySelectorAll("#report-layer-table")][0]?.closest("table")?.querySelectorAll("thead th") || [];
+    const headerLabels = [...headings].map((cell) => cell.textContent.trim());
+    const rows = [...elements.reportLayerTable.querySelectorAll("tr")].map((row) => [...row.children].map((cell) => cell.textContent.trim()));
+    const widths = [180, 150, 72, 72, 72, 76];
+    const tableHeader = () => {
+      pdf.addPage();
+      header("Operational Layer Spatial Metrics", `${state.reportGeometryLabel} • ${rows.length} available sources`);
+      let x = margin;
+      pdf.setFillColor(217, 229, 235);
+      pdf.rect(margin, 68, widths.reduce((sum, width) => sum + width, 0), 24, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      headerLabels.forEach((label, index) => {
+        pdf.text(label, x + 4, 84);
+        x += widths[index];
+      });
+      return 92;
+    };
+    let y = tableHeader();
+    rows.forEach((row, rowIndex) => {
+      const wrapped = row.map((value, index) => pdf.splitTextToSize(value, widths[index] - 8));
+      const rowHeight = Math.max(22, Math.max(...wrapped.map((lines) => lines.length)) * 9 + 8);
+      if (y + rowHeight > pageHeight - margin) y = tableHeader();
+      if (rowIndex % 2 === 0) {
+        pdf.setFillColor(246, 249, 250);
+        pdf.rect(margin, y, widths.reduce((sum, width) => sum + width, 0), rowHeight, "F");
+      }
+      let x = margin;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7.5);
+      wrapped.forEach((lines, index) => {
+        pdf.text(lines, x + 4, y + 11);
+        x += widths[index];
+      });
+      y += rowHeight;
+    });
+    pdf.save(filename);
+    elements.reportStatus.textContent = `PDF downloaded — ${filename}`;
+  } catch (error) {
+    console.error("PDF generation failed", error);
+    elements.reportStatus.textContent = "PDF generation failed. Check the browser connection and try again.";
+  } finally {
+    elements.printPolygonReport.disabled = false;
+    elements.printPolygonReport.textContent = originalLabel;
+  }
 }
 
 function openPolygonReport() {
