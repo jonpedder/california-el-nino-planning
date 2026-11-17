@@ -164,6 +164,11 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .popup-analysis-panel dd { margin: 0; padding-left: 0.6rem; color: var(--text); font-weight: 700; text-align: right; }
 .popup-analysis-panel small { display: block; color: var(--muted); font-size: 0.65rem; line-height: 1.4; }
 .popup-analysis-panel .popup-analysis-caution { margin-top: 0.35rem; color: #fdd79a; }
+.weather-impact-popup { border-left-color: #31cdcf; background: #172a3a; }
+.weather-impact-popup > strong { color: #8ffcff; }
+.weather-impact-popup dd { font-size: 1.12rem; }
+.weather-impact-popup dd.popup-impact-population { color: #8ffcff; }
+.weather-impact-popup dd.popup-impact-fire { color: #ff8de8; }
 .popup-demographics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; margin: 0.65rem 0; }
 .popup-demographics-grid div { padding: 0.45rem; border: 1px solid var(--border); background: var(--panel2); }
 .popup-demographics-grid dt { color: var(--muted); font-size: 0.65rem; }

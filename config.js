@@ -10,6 +10,7 @@ export const APP_CONFIG = Object.freeze({
   geoenrichmentHierarchy: "esri2025",
   geoenrichmentVariables: "KeyUSFacts.TOTPOP_CY,KeyUSFacts.TOTHH_CY,KeyUSFacts.MEDHINC_CY,gender.MEDAGE_CY,KeyUSFacts.POPGRWCYFY",
   postFireServiceUrl: "https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/USGS_Post_Fire_Hazard_Assessment_Data/FeatureServer",
+  demographicTractUrl: "https://P3ePLMYs2RVChkJx.svcs.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/ACS_Population_View_Boundaries/FeatureServer/2",
   postFirePointLayerId: 0,
   postFirePerimeterLayerId: 9,
   forecastProducts: Object.freeze({

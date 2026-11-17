@@ -1,4 +1,4 @@
-import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=settings1";
+import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=popup1";
 import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=settings1";
 
 const APP_PREFERENCES = loadPreferences();
@@ -82,7 +82,8 @@ const state = {
   readinessOutlookSceneLayer: null,
   readinessHighlightSceneLayer: null,
   populationCache: new Map(),
-  weatherImpactCache: new Map()
+  weatherImpactCache: new Map(),
+  popupDemographicLayer: null
 };
 
 const enrichmentCache = new Map();
@@ -182,16 +183,25 @@ async function initializeMap() {
     await elements.map.viewOnReady();
     state.mapReady = true;
 
-    await elements.scene.viewOnReady();
-    await elements.scene.view.when();
-    elements.scene.view.map.ground = "world-elevation";
-    state.sceneReady = true;
-    elements.scene.view.qualityProfile = "medium";
-    elements.scene.view.environment = {
-      lighting: { type: "virtual", directShadowsEnabled: true },
-      atmosphereEnabled: true,
-      starsEnabled: false
-    };
+    try {
+      await elements.scene.viewOnReady();
+      await elements.scene.view.when();
+      elements.scene.view.map.ground = "world-elevation";
+      state.sceneReady = true;
+      elements.scene.view.qualityProfile = "medium";
+      elements.scene.view.environment = {
+        lighting: { type: "virtual", directShadowsEnabled: true },
+        atmosphereEnabled: true,
+        starsEnabled: false
+      };
+    } catch (sceneError) {
+      state.sceneReady = false;
+      console.warn("3D scene initialization unavailable; continuing with the 2D planning map.", sceneError);
+      elements.view3dButtons.forEach((button) => {
+        button.disabled = true;
+        button.title = "3D scene unavailable";
+      });
+    }
 
     configureMapOverlays();
     await loadOperationalLayers();
@@ -221,7 +231,7 @@ function configureMapOverlays() {
   });
 
   elements.map.view.on("click", collapseMapOverlays);
-  elements.scene.view.on("click", collapseMapOverlays);
+  if (state.sceneReady && elements.scene.view) elements.scene.view.on("click", collapseMapOverlays);
 }
 
 async function switchView(mode) {
@@ -312,26 +322,34 @@ async function loadOperationalLayers() {
   elements.mapState.textContent = "Loading verified 2D map and 3D scene layers…";
   setDataStatus("Connecting…", "loading");
 
-  const [mapLayers, sceneLayers] = await Promise.all([
-    loadLayerSet(elements.map.map, state.operationalLayers, state.layerFailures, "Web Map"),
-    loadLayerSet(elements.scene.view.map, state.sceneOperationalLayers, state.sceneLayerFailures, "Web Scene")
-  ]);
+  const mapLayers = await loadLayerSet(elements.map.map, state.operationalLayers, state.layerFailures, "Web Map");
+  let sceneLayers = [];
+  if (state.sceneReady && elements.scene.view?.map) {
+    try {
+      sceneLayers = await loadLayerSet(elements.scene.view.map, state.sceneOperationalLayers, state.sceneLayerFailures, "Web Scene");
+    } catch (sceneLayerError) {
+      state.sceneReady = false;
+      console.warn("3D operational layers unavailable; continuing with 2D.", sceneLayerError);
+    }
+  }
 
   await ensureDerivedReadinessLayers();
   window.__esriView = elements.map.view;
   window.__esriMap = elements.map.map;
   window.__esriLayers = Object.fromEntries(mapLayers.map((layer) => [layer.title, layer]));
   if (state.readinessAllFiresLayer) window.__esriLayers[state.readinessAllFiresLayer.title] = state.readinessAllFiresLayer;
-  window.__esriSceneView = elements.scene.view;
-  window.__esriScene = elements.scene.view.map;
-  window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
-  if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
+  if (state.sceneReady) {
+    window.__esriSceneView = elements.scene.view;
+    window.__esriScene = elements.scene.view.map;
+    window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
+    if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
+  }
   window.__app = { APP_CONFIG, state, elements };
 
-  if (mapLayers.length === APP_CONFIG.operationalLayers.length && sceneLayers.length === APP_CONFIG.operationalLayers.length) {
-    setDataStatus(`${mapLayers.length} layers • 2D/3D`, "connected");
+  if (mapLayers.length === APP_CONFIG.operationalLayers.length) {
+    setDataStatus(`${mapLayers.length} layers • ${state.sceneReady ? "2D/3D" : "2D"}`, "connected");
   } else {
-    updateSourceStatus(Math.min(mapLayers.length, sceneLayers.length), APP_CONFIG.operationalLayers.length);
+    updateSourceStatus(mapLayers.length, APP_CONFIG.operationalLayers.length);
   }
 }
 
@@ -940,12 +958,15 @@ async function ensureDerivedReadinessLayers() {
     mapLayer = createAllFires();
     elements.map.map.add(mapLayer);
   }
-  let sceneLayer = elements.scene.view.map.layers.find((layer) => layer.title === "All fires");
-  if (!sceneLayer) {
-    sceneLayer = createAllFires();
-    elements.scene.view.map.add(sceneLayer);
+  let sceneLayer = null;
+  if (state.sceneReady && elements.scene.view?.map) {
+    sceneLayer = elements.scene.view.map.layers.find((layer) => layer.title === "All fires");
+    if (!sceneLayer) {
+      sceneLayer = createAllFires();
+      elements.scene.view.map.add(sceneLayer);
+    }
   }
-  await Promise.all([mapLayer.load(), sceneLayer.load()]);
+  await Promise.all([mapLayer.load(), sceneLayer?.load()].filter(Boolean));
   state.readinessAllFiresLayer = mapLayer;
   state.readinessAllFiresSceneLayer = sceneLayer;
 }
@@ -989,8 +1010,22 @@ function popupAnalysisPanel(title, rows, note, caution) {
   return panel;
 }
 
+async function getPopulationAnalysisLayer() {
+  const operationalLayer = state.operationalLayers.get("acsPopulationTracts");
+  if (operationalLayer?.type === "feature") return operationalLayer;
+  if (!state.popupDemographicLayer) {
+    state.popupDemographicLayer = new FeatureLayer({
+      url: APP_CONFIG.demographicTractUrl,
+      title: "Popup analysis source — ACS population tracts",
+      outFields: ["B01001_001E"]
+    });
+  }
+  await state.popupDemographicLayer.load();
+  return state.popupDemographicLayer;
+}
+
 async function estimatePopulationForGeometry(geometry) {
-  const layer = state.operationalLayers.get("acsPopulationTracts");
+  const layer = await getPopulationAnalysisLayer();
   if (!layer || !geometry?.rings) throw new Error("ACS tract analysis is unavailable.");
   const populationField = "B01001_001E";
   const summary = await layer.queryFeatures({
@@ -1062,25 +1097,58 @@ async function createFirePopulationPopupContent(event) {
   }
 }
 
+async function resolvePopupGeometry(graphic) {
+  if (graphic?.geometry) return graphic.geometry;
+  const layer = graphic?.layer || graphic?.sourceLayer;
+  const objectId = graphic?.getObjectId?.() ?? graphic?.attributes?.[layer?.objectIdField];
+  if (!layer?.queryFeatures || objectId == null) return null;
+  const result = await layer.queryFeatures({ objectIds: [objectId], outFields: [layer.objectIdField], returnGeometry: true });
+  return result.features[0]?.geometry || null;
+}
+
+function weatherImpactPopupPanel(impact) {
+  const panel = document.createElement("section");
+  panel.className = "popup-analysis-panel weather-impact-popup";
+  const heading = document.createElement("strong");
+  heading.textContent = "Derived planning context for this weather polygon";
+  const table = document.createElement("dl");
+  const rows = [
+    ["Estimated residents", formatCount(impact.population), "popup-impact-population"],
+    ["Previous USGS fire assessments", formatCount(impact.fireCount), "popup-impact-fire"]
+  ];
+  for (const [label, value, className] of rows) {
+    const term = document.createElement("dt");
+    const detail = document.createElement("dd");
+    term.textContent = label;
+    detail.textContent = value;
+    detail.className = className;
+    table.append(term, detail);
+  }
+  const method = document.createElement("small");
+  method.textContent = `Population is area-weighted from 2020–2024 ACS 5-year estimates across ${formatCount(impact.tractCount)} intersecting census tract${impact.tractCount === 1 ? "" : "s"}. Fire count is distinct Fire_ID values whose USGS assessment perimeters intersect this polygon.`;
+  const warning = document.createElement("small");
+  warning.className = "popup-analysis-caution";
+  warning.textContent = "Derived estimates assume population is uniformly distributed within each tract. They are not current occupancy, evacuation counts, or predicted debris-flow impacts.";
+  panel.append(heading, table, method, warning);
+  return panel;
+}
+
 async function createWeatherImpactPopupContent(event) {
   const graphic = event?.graphic;
-  const geometry = graphic?.geometry;
-  if (!geometry) return popupAnalysisPanel("Weather impact context unavailable", [["Status", "No polygon geometry"]], "The weather feature did not return a polygon.", "No impact is asserted.");
-  const oidField = graphic.layer?.objectIdField || graphic.sourceLayer?.objectIdField;
-  const cacheKey = `${graphic.layer?.url || graphic.sourceLayer?.url || "weather"}|${graphic.attributes?.[oidField] || geometry.extent?.center?.x || "feature"}`;
   try {
+    const geometry = await resolvePopupGeometry(graphic);
+    if (!geometry) throw new Error("The weather feature did not return polygon geometry.");
+    const layer = graphic?.layer || graphic?.sourceLayer;
+    const oidField = layer?.objectIdField;
+    const objectId = graphic?.getObjectId?.() ?? graphic?.attributes?.[oidField];
+    const cacheKey = `${layer?.url || "weather"}|${objectId ?? geometry.extent?.center?.x ?? "feature"}`;
     let impact = state.weatherImpactCache.get(cacheKey);
     if (!impact) {
       const [population, fireCount] = await Promise.all([estimatePopulationForGeometry(geometry), countDistinctFiresForGeometry(geometry)]);
       impact = { ...population, fireCount };
       state.weatherImpactCache.set(cacheKey, impact);
     }
-    return popupAnalysisPanel(
-      "Derived planning context",
-      [["Estimated residents", formatCount(impact.population)], ["Previous USGS fire assessments", formatCount(impact.fireCount)]],
-      `Area-weighted from 2020–2024 ACS 5-year estimates across ${formatCount(impact.tractCount)} intersecting tracts.`,
-      "This is not current occupancy, an evacuation count, or a predicted debris-flow impact."
-    );
+    return weatherImpactPopupPanel(impact);
   } catch (error) {
     return popupAnalysisPanel("Weather impact context unavailable", [["Status", "Analysis could not complete"]], "The ACS, fire, or geometry analysis did not return a usable result.", "No impact is asserted.");
   }
@@ -1090,12 +1158,12 @@ function clearReadinessRuntimeLayers() {
   const pairs = [
     ["readinessOutlookLayer", elements.map.map],
     ["readinessHighlightLayer", elements.map.map],
-    ["readinessOutlookSceneLayer", elements.scene.view.map],
-    ["readinessHighlightSceneLayer", elements.scene.view.map]
+    ["readinessOutlookSceneLayer", state.sceneReady ? elements.scene.view?.map : null],
+    ["readinessHighlightSceneLayer", state.sceneReady ? elements.scene.view?.map : null]
   ];
   for (const [key, map] of pairs) {
     const layer = state[key];
-    if (layer && map.layers.includes(layer)) map.remove(layer);
+    if (layer && map?.layers.includes(layer)) map.remove(layer);
     state[key] = null;
   }
 }
@@ -1154,23 +1222,34 @@ async function refreshPostFireReadiness(county) {
       popupTemplate: product.type === "ero" ? {
         title: "{product}: {outlook}",
         content: [
-          { type: "fields", fieldInfos: [{ fieldName: "outlook", label: "Outlook category" }, { fieldName: "issue_time", label: "Issue time" }, { fieldName: "start_time", label: "Start time" }, { fieldName: "end_time", label: "End time" }] },
-          { type: "custom", creator: createWeatherImpactPopupContent }
+          { type: "fields", fieldInfos: [
+            { fieldName: "outlook", label: "Outlook category" },
+            { fieldName: "issue_time", label: "Issue time", format: { dateFormat: "short-date-short-time" } },
+            { fieldName: "start_time", label: "Start time", format: { dateFormat: "short-date-short-time" } },
+            { fieldName: "end_time", label: "End time", format: { dateFormat: "short-date-short-time" } }
+          ] },
+          { type: "custom", outFields: ["*"], creator: createWeatherImpactPopupContent }
         ]
       } : {
         title: "{label}",
         content: [
-          { type: "fields", fieldInfos: [{ fieldName: "label", label: "Hazard" }, { fieldName: "start_date", label: "Start date" }, { fieldName: "end_date", label: "End date" }] },
-          { type: "custom", creator: createWeatherImpactPopupContent }
+          { type: "fields", fieldInfos: [
+            { fieldName: "label", label: "Hazard" },
+            { fieldName: "start_date", label: "Start date", format: { dateFormat: "short-date-short-time" } },
+            { fieldName: "end_date", label: "End date", format: { dateFormat: "short-date-short-time" } },
+            { fieldName: "idp_filedate", label: "GIS file date", format: { dateFormat: "short-date-short-time" } },
+            { fieldName: "idp_subset", label: "GIS subset" }
+          ] },
+          { type: "custom", outFields: ["*"], creator: createWeatherImpactPopupContent }
         ]
       }
     });
-    const outlookSceneLayer = outlookLayer.clone();
+    const outlookSceneLayer = state.sceneReady ? outlookLayer.clone() : null;
     state.readinessOutlookLayer = outlookLayer;
     state.readinessOutlookSceneLayer = outlookSceneLayer;
     elements.map.map.add(outlookLayer);
-    elements.scene.view.map.add(outlookSceneLayer);
-    await Promise.all([outlookLayer.load(), outlookSceneLayer.load()]);
+    if (outlookSceneLayer) elements.scene.view.map.add(outlookSceneLayer);
+    await Promise.all([outlookLayer.load(), outlookSceneLayer?.load()].filter(Boolean));
     const outlooks = await outlookLayer.queryFeatures({ geometry, spatialRelationship: "intersects", where: product.where, outFields: ["*"], returnGeometry: true });
     if (run !== state.readinessRun) return;
     elements.readinessPolygons.textContent = formatCount(outlooks.features.length);
@@ -1206,12 +1285,12 @@ async function refreshPostFireReadiness(county) {
         renderer: flameRenderer(true),
         popupTemplate: createFirePopupTemplate()
       });
-      const highlightScene = highlight.clone();
+      const highlightScene = state.sceneReady ? highlight.clone() : null;
       state.readinessHighlightLayer = highlight;
       state.readinessHighlightSceneLayer = highlightScene;
       elements.map.map.add(highlight);
-      elements.scene.view.map.add(highlightScene);
-      await Promise.all([highlight.load(), highlightScene.load()]);
+      if (highlightScene) elements.scene.view.map.add(highlightScene);
+      await Promise.all([highlight.load(), highlightScene?.load()].filter(Boolean));
     }
     elements.readinessStatus.textContent = state.readinessIntersectingIds.length
       ? `${state.readinessIntersectingIds.length} assessment${state.readinessIntersectingIds.length === 1 ? "" : "s"} intersect the ${product.shortLabel}. Review official warnings and local forecasts.`
