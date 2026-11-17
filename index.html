@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="./styles.css?v=polygon-report2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=polygon-report1"></script>
-  <script type="module" src="./app.js?v=scene-recovery3"></script>
+  <script type="module" src="./app.js?v=report-metrics1"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -230,7 +230,7 @@
         <button id="draw-report-polygon" class="report-control report-control-primary" type="button">Draw polygon</button>
         <button id="use-popup-polygon" class="report-control" type="button">Use selected map polygon</button>
         <button id="use-county-polygon" class="report-control" type="button">Use selected county</button>
-        <button id="print-polygon-report" class="report-control" type="button" disabled>Print report</button>
+        <button id="print-polygon-report" class="report-control" type="button" disabled>Create PDF</button>
       </div>
       <p id="polygon-report-status" class="polygon-report-status" role="status" aria-live="polite">Choose a polygon source above.</p>
       <section id="polygon-report-content" class="polygon-report-content" hidden>
@@ -242,11 +242,14 @@
             <article><span>Intersecting layers</span><strong id="report-layer-count">—</strong></article>
             <article><span>Generated</span><strong id="report-generated">—</strong></article>
           </div>
+          <h3>Demographics, housing, and people potentially at risk</h3>
+          <div id="report-demographics" class="report-highlights"></div>
+          <h3>Operational highlights</h3>
           <div id="report-highlights" class="report-highlights"></div>
         </section>
         <section class="polygon-report-table-section" aria-labelledby="report-layers-heading">
           <h3 id="report-layers-heading">Intersecting layers and records</h3>
-          <div class="polygon-report-table-wrap"><table><thead><tr><th>Layer</th><th>Category</th><th>Intersecting records</th><th>Status</th></tr></thead><tbody id="report-layer-table"></tbody></table></div>
+          <div class="polygon-report-table-wrap"><table><thead><tr><th>Layer</th><th>Category</th><th>Contains</th><th>Intersects</th><th>Within</th><th>Status</th></tr></thead><tbody id="report-layer-table"></tbody></table></div>
         </section>
         <aside id="polygon-report-method" class="analysis-disclaimer polygon-report-method"></aside>
       </section>

@@ -69,6 +69,7 @@ const elements = {
   reportPopulation: document.querySelector("#report-population"),
   reportLayerCount: document.querySelector("#report-layer-count"),
   reportGenerated: document.querySelector("#report-generated"),
+  reportDemographics: document.querySelector("#report-demographics"),
   reportHighlights: document.querySelector("#report-highlights"),
   reportLayerTable: document.querySelector("#report-layer-table"),
   reportMethod: document.querySelector("#polygon-report-method"),
@@ -135,7 +136,7 @@ elements.readinessYear.addEventListener("change", renderReadinessFireOptions);
 elements.readinessSearch.addEventListener("input", renderReadinessFireOptions);
 elements.readinessFire.addEventListener("change", () => openReadinessFire(elements.readinessFire.value));
 elements.closePolygonReport.addEventListener("click", () => elements.reportDialog.close());
-elements.printPolygonReport.addEventListener("click", () => window.print());
+elements.printPolygonReport.addEventListener("click", createPolygonReportPdf);
 elements.drawReportPolygon.addEventListener("click", startPolygonReportDrawing);
 elements.usePopupPolygon.addEventListener("click", useSelectedPopupPolygon);
 elements.useCountyPolygon.addEventListener("click", useSelectedCountyPolygon);
@@ -1300,6 +1301,15 @@ function selectedPopupPolygon() {
   return feature?.geometry?.type === "polygon" ? feature : null;
 }
 
+function createPolygonReportPdf() {
+  const originalTitle = document.title;
+  const safeLabel = state.reportGeometryLabel.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+  document.title = `Polygon-Summary-${safeLabel || "Area"}-${new Date().toISOString().slice(0, 10)}`;
+  window.addEventListener("afterprint", () => { document.title = originalTitle; }, { once: true });
+  elements.reportStatus.textContent = "PDF layout ready. Choose Save as PDF in the browser print dialog.";
+  window.print();
+}
+
 function openPolygonReport() {
   if (!elements.reportDialog.open) elements.reportDialog.showModal();
   elements.usePopupPolygon.disabled = !selectedPopupPolygon();
@@ -1405,24 +1415,28 @@ async function drawReportMap(geometry) {
   await elements.reportMap.view.goTo(graphic, { padding: 35, duration: 0 });
 }
 
-async function countIntersectingRecords(layer, geometry) {
+async function countSpatialRelationships(layer, geometry) {
   await layer.load();
   const candidates = layer.type === "feature"
     ? [layer]
     : (layer.allLayers?.toArray?.() || []).filter((candidate) => candidate.type === "feature");
-  if (!candidates.length) return { count: 0, status: "No queryable feature layer" };
-  const results = await Promise.allSettled(candidates.map(async (candidate) => {
+  if (!candidates.length) return { contains: 0, intersects: 0, within: 0, count: 0, status: "No queryable feature layer" };
+  const relationships = ["contains", "intersects", "within"];
+  const results = await Promise.allSettled(candidates.flatMap((candidate) => relationships.map(async (relationship) => {
     await candidate.load();
     const query = candidate.createQuery();
     query.geometry = geometry;
-    query.spatialRelationship = "intersects";
+    query.spatialRelationship = relationship;
     query.where = candidate.definitionExpression || "1=1";
-    return candidate.queryFeatureCount(query);
-  }));
+    return { relationship, count: await candidate.queryFeatureCount(query) };
+  })));
   const fulfilled = results.filter((result) => result.status === "fulfilled");
-  if (!fulfilled.length) throw results[0]?.reason || new Error("Intersection count unavailable.");
+  if (!fulfilled.length) throw results[0]?.reason || new Error("Spatial relationship counts unavailable.");
+  const totals = { contains: 0, intersects: 0, within: 0 };
+  fulfilled.forEach((result) => { totals[result.value.relationship] += Number(result.value.count || 0); });
   return {
-    count: fulfilled.reduce((sum, result) => sum + Number(result.value || 0), 0),
+    ...totals,
+    count: totals.intersects,
     status: fulfilled.length === results.length ? "Connected" : "Partial"
   };
 }
@@ -1439,6 +1453,39 @@ function reportHighlight(label, value, note) {
   return article;
 }
 
+async function summarizeDemographicsAndHousing(geometry) {
+  const group = state.operationalLayers.get("censusDemographics");
+  const tractLayer = group?.allLayers?.toArray?.().find((layer) => layer.layerId === 3 || layer.title === "Census Tract");
+  if (!tractLayer) throw new Error("Census tract demographics are unavailable.");
+  await tractLayer.load();
+  const statistics = [
+    ["P0010001", "population"],
+    ["H0010001", "housing_units"],
+    ["H0030002", "households"],
+    ["P012_calc_numLT18", "under_18"],
+    ["P012_calc_numGE65", "age_65_plus"],
+    ["P012_calc_numDepend", "dependent_age"]
+  ].map(([field, output]) => ({ onStatisticField: field, outStatisticFieldName: output, statisticType: "sum" }));
+  statistics.push({ onStatisticField: tractLayer.objectIdField, outStatisticFieldName: "tract_count", statisticType: "count" });
+  const result = await tractLayer.queryFeatures({
+    geometry,
+    spatialRelationship: "intersects",
+    where: "1=1",
+    outStatistics: statistics,
+    returnGeometry: false
+  });
+  const attributes = result.features[0]?.attributes || {};
+  return {
+    population: Number(attributes.population) || 0,
+    housingUnits: Number(attributes.housing_units) || 0,
+    households: Number(attributes.households) || 0,
+    under18: Number(attributes.under_18) || 0,
+    age65Plus: Number(attributes.age_65_plus) || 0,
+    dependentAge: Number(attributes.dependent_age) || 0,
+    tractCount: Number(attributes.tract_count) || 0
+  };
+}
+
 async function buildPolygonReport(geometry, label) {
   if (!geometry?.rings) {
     elements.reportStatus.textContent = "The selected feature is not a polygon.";
@@ -1451,6 +1498,7 @@ async function buildPolygonReport(geometry, label) {
   elements.reportContent.hidden = false;
   elements.printPolygonReport.disabled = true;
   elements.reportLayerTable.replaceChildren();
+  elements.reportDemographics.replaceChildren();
   elements.reportHighlights.replaceChildren();
   elements.reportArea.textContent = "…";
   elements.reportPopulation.textContent = "…";
@@ -1469,15 +1517,16 @@ async function buildPolygonReport(geometry, label) {
   const layerJobs = [...state.operationalLayers.entries()].map(async ([key, layer]) => {
     const definition = definitions.get(key) || {};
     try {
-      const result = await countIntersectingRecords(layer, geometry);
+      const result = await countSpatialRelationships(layer, geometry);
       return { key, title: layer.title, category: definition.category || "Operational context", ...result };
     } catch (error) {
-      return { key, title: layer.title, category: definition.category || "Operational context", count: null, status: "Unavailable" };
+      return { key, title: layer.title, category: definition.category || "Operational context", contains: null, intersects: null, within: null, count: null, status: "Unavailable" };
     }
   });
 
-  const [populationResult, layerResults] = await Promise.all([
+  const [populationResult, demographics, layerResults] = await Promise.all([
     estimatePopulationForGeometry(geometry, { maxBoundaryTracts: 0 }).catch(() => null),
+    summarizeDemographicsAndHousing(geometry).catch(() => null),
     Promise.all(layerJobs)
   ]);
   if (run !== state.reportRun) return;
@@ -1492,21 +1541,42 @@ async function buildPolygonReport(geometry, label) {
 
   const byKey = new Map(sortedLayers.map((item) => [item.key, item]));
   const metric = (key) => byKey.get(key)?.count == null ? "Unavailable" : formatCount(byKey.get(key).count);
+  if (demographics) {
+    elements.reportDemographics.append(
+      reportHighlight("2020 Census population", formatCount(demographics.population), `${formatCount(demographics.tractCount)} intersecting census tracts`),
+      reportHighlight("Housing units potentially at risk", formatCount(demographics.housingUnits), "Whole-tract screening total"),
+      reportHighlight("Occupied housing units", formatCount(demographics.households), "Census households in intersecting tracts"),
+      reportHighlight("Population under 18", formatCount(demographics.under18), "Potentially vulnerable age group"),
+      reportHighlight("Population age 65+", formatCount(demographics.age65Plus), "Potentially vulnerable age group"),
+      reportHighlight("Dependent-age population", formatCount(demographics.dependentAge), "Under 18 and age 65+ combined")
+    );
+  } else {
+    elements.reportDemographics.append(reportHighlight("Demographics and housing", "Unavailable", "The Census tract source could not be summarized."));
+  }
   elements.reportHighlights.append(
     reportHighlight("Current advisories", metric("weatherWarnings"), "NWS polygons intersecting the selected area"),
-    reportHighlight("Live gauges", metric("liveStreamGauges"), "Gauge locations intersecting the selected area"),
+    reportHighlight("Live stream gauges", metric("liveStreamGauges"), "Gauge locations intersecting the selected area"),
+    reportHighlight("Current fire perimeters", metric("currentFirePerimeters"), "Current WFIGS perimeter records"),
+    reportHighlight("Past fire perimeters", metric("fireHistory"), "Historical WFIGS perimeter records"),
+    reportHighlight("USGS post-fire records", metric("usgsPostFire"), "Assessment points, perimeters, basins, and segments"),
     reportHighlight("Hospitals", metric("hospitals"), "Mapped medical facilities in the selected area"),
     reportHighlight("Active shelters", metric("activeShelters"), "Currently published shelter records"),
-    reportHighlight("Recent fire perimeters", metric("currentFirePerimeters"), "Current WFIGS perimeter records"),
     reportHighlight("Structures", metric("structures"), "Mapped structure records; verify source completeness")
   );
 
   sortedLayers.forEach((item) => {
     const row = document.createElement("tr");
-    [item.title, item.category, item.count == null ? "—" : formatCount(item.count), item.status].forEach((value, index) => {
+    [
+      item.title,
+      item.category,
+      item.contains == null ? "—" : formatCount(item.contains),
+      item.intersects == null ? "—" : formatCount(item.intersects),
+      item.within == null ? "—" : formatCount(item.within),
+      item.status
+    ].forEach((value, index) => {
       const cell = document.createElement("td");
       cell.textContent = value;
-      if (index === 3) cell.className = item.status === "Connected" ? "report-status-ok" : item.status === "Unavailable" ? "report-status-error" : "";
+      if (index === 5) cell.className = item.status === "Connected" ? "report-status-ok" : item.status === "Unavailable" ? "report-status-error" : "";
       row.append(cell);
     });
     elements.reportLayerTable.append(row);
@@ -1517,7 +1587,7 @@ async function buildPolygonReport(geometry, label) {
     : populationResult
       ? `Population is an intersecting-tract screening total from 2020–2024 ACS 5-year estimates across ${formatCount(populationResult.tractCount)} tracts and may overstate population along the polygon boundary.`
       : "Population could not be calculated from the ACS tract source.";
-  elements.reportMethod.textContent = `${methodText} Layer values are record counts returned by spatial intersection, not validated exposure, occupancy, capacity, or impact totals. Confirm operational decisions with source agencies.`;
+  elements.reportMethod.textContent = `${methodText} Contains counts source features contained by the selected polygon; Intersects counts features sharing any space with it; Within counts source polygons that contain the selected area. Demographic and housing values are whole-tract screening totals. These are source-record counts, not validated exposure, occupancy, capacity, damage, or impact totals. Confirm operational decisions with source agencies.`;
   elements.reportStatus.textContent = `Report complete — ${intersecting.length} intersecting operational layers summarized.`;
   elements.printPolygonReport.disabled = false;
 }
