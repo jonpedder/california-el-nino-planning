@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=postfire4";
+import { APP_CONFIG } from "./config.js?v=postfire5";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",

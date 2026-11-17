@@ -56,7 +56,7 @@ export const APP_CONFIG = Object.freeze({
     Object.freeze({
       key: "floodStageGauges",
       itemId: "81c5a9f2a2704d54a49042a44eefa5d3",
-      title: "Live Stream Gauges — Flood Stage Only",
+      title: "Live Stream Gauges - Flood Stage Only",
       category: "Flood-stage monitoring",
       source: "USGS / NWS / Living Atlas contributors",
       cadence: "Approximately hourly; filtered to statusClass >= 3",
@@ -82,7 +82,7 @@ export const APP_CONFIG = Object.freeze({
       key: "acsPopulationTracts",
       itemId: "60c98f20a162416ea1725b94d7297f83",
       sublayerId: 2,
-      title: "Analysis Source — ACS Population Census Tracts",
+      title: "Analysis Source - ACS Population Census Tracts",
       category: "Population analysis",
       source: "U.S. Census Bureau ACS / Esri",
       cadence: "2020–2024 ACS 5-year estimates",
