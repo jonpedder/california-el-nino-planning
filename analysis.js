@@ -815,10 +815,3 @@ function showFatalError(error) {
   elements.loading.replaceChildren(document.createTextNode("The analysis page could not initialize."));
   elements.status.textContent = "Analysis unavailable";
 }
-ysis unavailable";
-}
-e."));
-  elements.status.textContent = "Analysis unavailable";
-}
-ysis unavailable";
-}
