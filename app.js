@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=postfire7";
+import { APP_CONFIG } from "./config.js?v=postfire8";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -83,6 +83,7 @@ esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
   appId: APP_CONFIG.oauthClientId,
   portalUrl: APP_CONFIG.portalUrl,
+  redirectUri: APP_CONFIG.oauthRedirectUri,
   popup: false
 });
 esriId.registerOAuthInfos([oauthInfo]);

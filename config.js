@@ -1,6 +1,7 @@
 export const APP_CONFIG = Object.freeze({
   portalUrl: "https://publicsafety.maps.arcgis.com",
   oauthClientId: "2eURPxapfMdaZiS7",
+  oauthRedirectUri: "https://jonpedder.github.io/california-el-nino-planning/",
   webMapId: "bc6d9edf97a0425eb53a1f7776c80133",
   webSceneId: "1f7d06bbc0254ac3be1bfab108ed597e",
   basemap: "dark-gray-vector",
