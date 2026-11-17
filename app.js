@@ -1043,6 +1043,9 @@ async function estimatePopulationForGeometry(geometry) {
   const tractCount = Math.round(Number(attrs.tract_count) || 0);
   const boundary = { type: "polyline", paths: geometry.rings, spatialReference: geometry.spatialReference };
   const boundaryIds = await layer.queryObjectIds({ geometry: boundary, spatialRelationship: "intersects", where: `${populationField} >= 0` });
+  if ((boundaryIds || []).length > 300) {
+    return { population: Math.max(0, Math.round(weightedPopulation)), tractCount, weighted: false, boundaryTractCount: boundaryIds.length };
+  }
   for (let index = 0; index < (boundaryIds || []).length; index += 500) {
     const result = await layer.queryFeatures({ objectIds: boundaryIds.slice(index, index + 500), outFields: [populationField], returnGeometry: true });
     for (const tract of result.features) {
@@ -1058,7 +1061,7 @@ async function estimatePopulationForGeometry(geometry) {
       if (Number.isFinite(tractArea) && tractArea > 0 && Number.isFinite(overlapArea)) weightedPopulation -= population * (1 - Math.min(1, Math.max(0, overlapArea / tractArea)));
     }
   }
-  return { population: Math.max(0, Math.round(weightedPopulation)), tractCount };
+  return { population: Math.max(0, Math.round(weightedPopulation)), tractCount, weighted: true, boundaryTractCount: (boundaryIds || []).length };
 }
 
 async function estimatePopulationForFire(fireId) {
@@ -1089,7 +1092,7 @@ async function createFirePopulationPopupContent(event) {
     return popupAnalysisPanel(
       "Derived population context",
       [["Estimated residents", formatCount(estimate.population)], ["Intersecting tracts", formatCount(estimate.tractCount)]],
-      "Area-weighted from 2020–2024 ACS 5-year tract estimates within the USGS fire perimeter.",
+      estimate.weighted ? "Area-weighted from 2020–2024 ACS 5-year tract estimates within the USGS fire perimeter." : "Intersecting-tract screening total from 2020–2024 ACS 5-year estimates; the boundary exceeded the client weighting limit.",
       "Assumes population is uniformly distributed within each tract. This is not an evacuation or current-occupancy count."
     );
   } catch (error) {
@@ -1125,10 +1128,12 @@ function weatherImpactPopupPanel(impact) {
     table.append(term, detail);
   }
   const method = document.createElement("small");
-  method.textContent = `Population is area-weighted from 2020–2024 ACS 5-year estimates across ${formatCount(impact.tractCount)} intersecting census tract${impact.tractCount === 1 ? "" : "s"}. Fire count is distinct Fire_ID values whose USGS assessment perimeters intersect this polygon.`;
+  method.textContent = `${impact.weighted ? "Population is area-weighted" : "Population is an intersecting-tract screening total"} from 2020–2024 ACS 5-year estimates across ${formatCount(impact.tractCount)} intersecting census tract${impact.tractCount === 1 ? "" : "s"}. Fire count is distinct Fire_ID values whose USGS assessment perimeters intersect this polygon.`;
   const warning = document.createElement("small");
   warning.className = "popup-analysis-caution";
-  warning.textContent = "Derived estimates assume population is uniformly distributed within each tract. They are not current occupancy, evacuation counts, or predicted debris-flow impacts.";
+  warning.textContent = impact.weighted
+    ? "Derived estimates assume population is uniformly distributed within each tract. They are not current occupancy, evacuation counts, or predicted debris-flow impacts."
+    : "For very large weather polygons, population includes whole intersecting tracts to keep the popup responsive and may overstate boundary-area population. This is not current occupancy, an evacuation count, or a predicted debris-flow impact.";
   panel.append(heading, table, method, warning);
   return panel;
 }
