@@ -7,10 +7,10 @@
   <meta name="color-scheme" content="dark">
   <title>El Niño Regional Analysis</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=analysis-tabs1">
-  <link rel="stylesheet" href="./analysis.css?v=analysis-tabs1">
+  <link rel="stylesheet" href="./styles.css?v=analysis-tabs2">
+  <link rel="stylesheet" href="./analysis.css?v=analysis-tabs2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./analysis.js?v=analysis-tabs1"></script>
+  <script type="module" src="./analysis.js?v=analysis-tabs2"></script>
 </head>
 <body class="analysis-body">
   <a class="skip-link" href="#analysis-main">Skip to analysis</a>
@@ -81,7 +81,7 @@
           <article class="analysis-card analysis-card-wide">
             <header><div><p class="eyebrow">Current conditions</p><h2>Stream-gauge snapshot</h2></div><span class="analysis-badge">USGS</span></header>
             <p class="analysis-helper">Current observations are sourced from Living Atlas Live Stream Gauges. Historical gauge charts require the planned Velocity history output.</p>
-            <div id="gauge-table-wrap" class="analysis-table-wrap"></div>
+            <details class="analysis-collapse"><summary>Gauge observations table</summary><div id="gauge-table-wrap" class="analysis-table-wrap"></div></details>
           </article>
         </section>
       </section>
@@ -95,7 +95,7 @@
           <article class="analysis-card analysis-card-wide">
             <header><div><p class="eyebrow">Past and future</p><h2>Operational timeline</h2></div><span id="timeline-count" class="analysis-badge">0 events</span></header>
             <p class="analysis-helper">The timeline combines recent fire discoveries, current NWS advisory windows, gauge observation times, and precipitation forecast periods. The vertical marker separates past and forecast information.</p>
-            <details class="analysis-collapse" open><summary>Operational events</summary><ol id="timeline-list" class="timeline-list"></ol></details>
+            <details class="analysis-collapse"><summary>Operational events</summary><ol id="timeline-list" class="timeline-list"></ol></details>
           </article>
         </section>
       </section>
