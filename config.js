@@ -2,6 +2,7 @@ export const APP_CONFIG = Object.freeze({
   portalUrl: "https://publicsafety.maps.arcgis.com",
   oauthClientId: "2eURPxapfMdaZiS7",
   webMapId: "bc6d9edf97a0425eb53a1f7776c80133",
+  webSceneId: "1f7d06bbc0254ac3be1bfab108ed597e",
   basemap: "dark-gray-vector",
   countyDataUrl: "./data/county-capabilities.json",
   geoenrichmentUrl: "https://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/GeoEnrichment/enrich",

@@ -62,9 +62,9 @@ Forecasts, observations/advisories, planning hazards, exposure layers, and incid
 
 **GitHub Pages hosts the static files** in this repository: HTML, CSS, JavaScript, documentation, and county planning JSON.
 
-**ArcGIS Online hosts identity and GIS content.** The app is registered against the Public Safety organization and uses ArcGIS Online for OAuth. The Planning Map loads the public ArcGIS Web Map `bc6d9edf97a0425eb53a1f7776c80133`, while the Analysis page performs bounded source queries for its regional summaries. Public and future secured layers remain portal content; they are not copied into GitHub Pages.
+**ArcGIS Online hosts identity and GIS content.** The app is registered against the Public Safety organization and uses ArcGIS Online for OAuth. The Planning Map loads public ArcGIS Web Map `bc6d9edf97a0425eb53a1f7776c80133` for 2D and public ArcGIS Web Scene `1f7d06bbc0254ac3be1bfab108ed597e` for 3D, while the Analysis page performs bounded source queries for its regional summaries. Public and future secured layers remain portal content; they are not copied into GitHub Pages.
 
-The Web Map is the persisted map definition for basemap, extent, layer order, visibility, publisher symbology, and saved popup configuration. Application code adds runtime-only behaviors such as county visibility profiles, dynamic GeoEnrichment content, synchronized 3D display, and refresh intervals.
+The Web Map and Web Scene are the persisted 2D and 3D definitions for basemap, viewpoint, layer order, visibility, publisher symbology, popup configuration, and world elevation. Application code keeps county selection and runtime readiness layers synchronized across both items while preserving independent MapView and SceneView lifecycles.
 
 No access token belongs in this repository. OAuth credentials are issued at runtime and managed by the ArcGIS Maps SDK `IdentityManager`.
 
@@ -128,6 +128,8 @@ Before adding a source:
 | --- | --- |
 | `portalUrl` | OAuth and portal context |
 | `oauthClientId` | Public OAuth application registration |
+| `webMapId` | Persisted 2D ArcGIS Web Map |
+| `webSceneId` | Persisted 3D ArcGIS Web Scene |
 | `basemap` | Initial dark-gray basemap |
 | `countyDataUrl` | County planning profiles |
 | `operationalLayers` | Verified public items, roles, attribution notes, opacity, and scale controls |

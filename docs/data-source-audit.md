@@ -34,7 +34,7 @@ Verification date: **2026-11-17**
 
 ## Portal and loading approach
 
-- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133`, which persists the 21 operational layers from 20 verified portal items, basemap, extent, order, visibility, symbology, popups, sublayer organization, and attribution.
+- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133` for 2D and public Web Scene `1f7d06bbc0254ac3be1bfab108ed597e` for 3D. Both persist the 21 operational layers from 20 verified portal items; the Web Scene additionally persists world elevation and its California camera viewpoint.
 - The app uses the Public Safety ArcGIS Online organization for OAuth while loading public ArcGIS Online content across publisher organizations.
 - Each source loads independently. A failed item produces a partial/unavailable status instead of blocking county planning content.
 - County selection controls initial visibility. The map Layer List allows an analyst to adjust visibility afterward.

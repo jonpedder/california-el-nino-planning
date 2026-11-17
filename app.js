@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=postfire6";
+import { APP_CONFIG } from "./config.js?v=postfire7";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -60,7 +60,9 @@ const state = {
   sceneReady: false,
   activeView: "2d",
   operationalLayers: new Map(),
+  sceneOperationalLayers: new Map(),
   layerFailures: [],
+  sceneLayerFailures: [],
   countyGeometryCache: new Map(),
   readinessRun: 0,
   readinessRecords: [],
@@ -68,6 +70,9 @@ const state = {
   readinessOutlookLayer: null,
   readinessHighlightLayer: null,
   readinessAllFiresLayer: null,
+  readinessAllFiresSceneLayer: null,
+  readinessOutlookSceneLayer: null,
+  readinessHighlightSceneLayer: null,
   populationCache: new Map(),
   weatherImpactCache: new Map()
 };
@@ -153,10 +158,9 @@ async function initializeMap() {
     await elements.map.viewOnReady();
     state.mapReady = true;
 
-    elements.map.map.ground = "world-elevation";
     await elements.scene.viewOnReady();
-    elements.scene.view.map = elements.map.map;
     await elements.scene.view.when();
+    elements.scene.view.map.ground = "world-elevation";
     state.sceneReady = true;
     elements.scene.view.qualityProfile = "medium";
     elements.scene.view.environment = {
@@ -256,18 +260,44 @@ function normalizeLayerTitle(value) {
 
 async function loadOperationalLayers() {
   elements.mapState.hidden = false;
-  elements.mapState.textContent = "Loading verified public layers…";
+  elements.mapState.textContent = "Loading verified 2D map and 3D scene layers…";
   setDataStatus("Connecting…", "loading");
 
-  await elements.map.map.loadAll();
-  const savedLayers = elements.map.map.layers.toArray();
+  const [mapLayers, sceneLayers] = await Promise.all([
+    loadLayerSet(elements.map.map, state.operationalLayers, state.layerFailures, "Web Map"),
+    loadLayerSet(elements.scene.view.map, state.sceneOperationalLayers, state.sceneLayerFailures, "Web Scene")
+  ]);
+
+  await ensureDerivedReadinessLayers();
+  window.__esriView = elements.map.view;
+  window.__esriMap = elements.map.map;
+  window.__esriLayers = Object.fromEntries(mapLayers.map((layer) => [layer.title, layer]));
+  if (state.readinessAllFiresLayer) window.__esriLayers[state.readinessAllFiresLayer.title] = state.readinessAllFiresLayer;
+  window.__esriSceneView = elements.scene.view;
+  window.__esriScene = elements.scene.view.map;
+  window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
+  if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
+  window.__app = { APP_CONFIG, state, elements };
+
+  if (mapLayers.length === APP_CONFIG.operationalLayers.length && sceneLayers.length === APP_CONFIG.operationalLayers.length) {
+    setDataStatus(`${mapLayers.length} layers • 2D/3D`, "connected");
+  } else {
+    updateSourceStatus(Math.min(mapLayers.length, sceneLayers.length), APP_CONFIG.operationalLayers.length);
+  }
+}
+
+async function loadLayerSet(map, registry, failures, label) {
+  await map.loadAll();
+  const savedLayers = map.layers.toArray();
+  registry.clear();
+  failures.length = 0;
   const results = await Promise.allSettled(APP_CONFIG.operationalLayers.map(async (definition) => {
     const titleMatch = savedLayers.find((candidate) => normalizeLayerTitle(candidate.title) === normalizeLayerTitle(definition.title));
     const itemMatch = definition.matchTitleOnly ? null : savedLayers.find((candidate) => candidate.portalItem?.id === definition.itemId);
     let layer = titleMatch || itemMatch;
     if (!layer) {
       layer = createFallbackOperationalLayer(definition);
-      elements.map.map.add(layer);
+      map.add(layer);
     }
     layer.title = definition.title;
     if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
@@ -276,29 +306,20 @@ async function loadOperationalLayers() {
     if (definition.definitionExpression && layer.type === "feature") layer.definitionExpression = definition.definitionExpression;
     await layer.load();
     await configureOperationalLayer(layer, definition);
-    state.operationalLayers.set(definition.key, layer);
+    registry.set(definition.key, layer);
     return layer;
   }));
 
-  const loadedLayers = [];
-  state.layerFailures = [];
+  const loaded = [];
   results.forEach((result, index) => {
     const definition = APP_CONFIG.operationalLayers[index];
-    if (result.status === "fulfilled") {
-      loadedLayers.push(result.value);
-    } else {
-      state.layerFailures.push(definition.key);
-      console.error(`Saved Web Map layer failed to load: ${definition.title}`, result.reason);
+    if (result.status === "fulfilled") loaded.push(result.value);
+    else {
+      failures.push(definition.key);
+      console.error(`${label} layer failed to load: ${definition.title}`, result.reason);
     }
   });
-
-  await ensureDerivedReadinessLayers();
-  window.__esriView = elements.map.view;
-  window.__esriMap = elements.map.map;
-  window.__esriLayers = Object.fromEntries(loadedLayers.map((layer) => [layer.title, layer]));
-  if (state.readinessAllFiresLayer) window.__esriLayers[state.readinessAllFiresLayer.title] = state.readinessAllFiresLayer;
-  window.__app = { APP_CONFIG, state, elements };
-  updateSourceStatus(loadedLayers.length, APP_CONFIG.operationalLayers.length);
+  return loaded;
 }
 
 function createFallbackOperationalLayer(definition) {
@@ -853,12 +874,7 @@ function flameRenderer(highlighted = false) {
 }
 
 async function ensureDerivedReadinessLayers() {
-  const existing = elements.map.map.layers.find((layer) => layer.title === "All fires");
-  if (existing) {
-    state.readinessAllFiresLayer = existing;
-    return;
-  }
-  const allFires = new FeatureLayer({
+  const createAllFires = () => new FeatureLayer({
     url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePointLayerId}`,
     title: "All fires",
     visible: false,
@@ -867,9 +883,20 @@ async function ensureDerivedReadinessLayers() {
     renderer: flameRenderer(false),
     popupTemplate: createFirePopupTemplate()
   });
-  await allFires.load();
-  state.readinessAllFiresLayer = allFires;
-  elements.map.map.add(allFires);
+
+  let mapLayer = elements.map.map.layers.find((layer) => layer.title === "All fires");
+  if (!mapLayer) {
+    mapLayer = createAllFires();
+    elements.map.map.add(mapLayer);
+  }
+  let sceneLayer = elements.scene.view.map.layers.find((layer) => layer.title === "All fires");
+  if (!sceneLayer) {
+    sceneLayer = createAllFires();
+    elements.scene.view.map.add(sceneLayer);
+  }
+  await Promise.all([mapLayer.load(), sceneLayer.load()]);
+  state.readinessAllFiresLayer = mapLayer;
+  state.readinessAllFiresSceneLayer = sceneLayer;
 }
 
 function createFirePopupTemplate() {
@@ -1009,9 +1036,15 @@ async function createWeatherImpactPopupContent(event) {
 }
 
 function clearReadinessRuntimeLayers() {
-  for (const key of ["readinessOutlookLayer", "readinessHighlightLayer"]) {
+  const pairs = [
+    ["readinessOutlookLayer", elements.map.map],
+    ["readinessHighlightLayer", elements.map.map],
+    ["readinessOutlookSceneLayer", elements.scene.view.map],
+    ["readinessHighlightSceneLayer", elements.scene.view.map]
+  ];
+  for (const [key, map] of pairs) {
     const layer = state[key];
-    if (layer && elements.map.map.layers.includes(layer)) elements.map.map.remove(layer);
+    if (layer && map.layers.includes(layer)) map.remove(layer);
     state[key] = null;
   }
 }
@@ -1081,9 +1114,12 @@ async function refreshPostFireReadiness(county) {
         ]
       }
     });
+    const outlookSceneLayer = outlookLayer.clone();
     state.readinessOutlookLayer = outlookLayer;
+    state.readinessOutlookSceneLayer = outlookSceneLayer;
     elements.map.map.add(outlookLayer);
-    await outlookLayer.load();
+    elements.scene.view.map.add(outlookSceneLayer);
+    await Promise.all([outlookLayer.load(), outlookSceneLayer.load()]);
     const outlooks = await outlookLayer.queryFeatures({ geometry, spatialRelationship: "intersects", where: product.where, outFields: ["*"], returnGeometry: true });
     if (run !== state.readinessRun) return;
     elements.readinessPolygons.textContent = formatCount(outlooks.features.length);
@@ -1119,9 +1155,12 @@ async function refreshPostFireReadiness(county) {
         renderer: flameRenderer(true),
         popupTemplate: createFirePopupTemplate()
       });
+      const highlightScene = highlight.clone();
       state.readinessHighlightLayer = highlight;
+      state.readinessHighlightSceneLayer = highlightScene;
       elements.map.map.add(highlight);
-      await highlight.load();
+      elements.scene.view.map.add(highlightScene);
+      await Promise.all([highlight.load(), highlightScene.load()]);
     }
     elements.readinessStatus.textContent = state.readinessIntersectingIds.length
       ? `${state.readinessIntersectingIds.length} assessment${state.readinessIntersectingIds.length === 1 ? "" : "s"} intersect the ${product.shortLabel}. Review official warnings and local forecasts.`
@@ -1353,8 +1392,8 @@ function collapseMapOverlays() {
 
 function applyCountyLayerVisibility(countyId) {
   const visibleKeys = new Set(APP_CONFIG.countyLayerVisibility[countyId] || []);
-  for (const [key, layer] of state.operationalLayers) {
-    layer.visible = visibleKeys.has(key);
+  for (const registry of [state.operationalLayers, state.sceneOperationalLayers]) {
+    for (const [key, layer] of registry) layer.visible = visibleKeys.has(key);
   }
 }
 
