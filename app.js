@@ -1,12 +1,13 @@
-import { APP_CONFIG } from "./config.js?v=postfire1";
+import { APP_CONFIG } from "./config.js?v=postfire2";
 
-const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
   "@arcgis/core/config.js",
   "@arcgis/core/request.js",
-  "@arcgis/core/layers/FeatureLayer.js"
+  "@arcgis/core/layers/FeatureLayer.js",
+  "@arcgis/core/layers/GroupLayer.js"
 ]);
 
 const elements = {
@@ -249,10 +250,13 @@ async function loadOperationalLayers() {
   await elements.map.map.loadAll();
   const savedLayers = elements.map.map.layers.toArray();
   const results = await Promise.allSettled(APP_CONFIG.operationalLayers.map(async (definition) => {
-    const layer = savedLayers.find((candidate) =>
+    let layer = savedLayers.find((candidate) =>
       candidate.portalItem?.id === definition.itemId || candidate.title === definition.title
     );
-    if (!layer) throw new Error(`The saved Web Map does not contain ${definition.title}.`);
+    if (!layer) {
+      layer = createFallbackOperationalLayer(definition);
+      elements.map.map.add(layer);
+    }
     layer.title = definition.title;
     if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
     if (typeof definition.minScale === "number") layer.minScale = definition.minScale;
@@ -280,6 +284,35 @@ async function loadOperationalLayers() {
   window.__esriLayers = Object.fromEntries(loadedLayers.map((layer) => [layer.title, layer]));
   window.__app = { APP_CONFIG, state, elements };
   updateSourceStatus(loadedLayers.length, APP_CONFIG.operationalLayers.length);
+}
+
+function createFallbackOperationalLayer(definition) {
+  if (definition.key === "usgsPostFire") {
+    const sublayers = [
+      [0, "Fire Locations"],
+      [1, "Segment Likelihoods"],
+      [2, "Basin Likelihoods"],
+      [3, "Basin Outlets"],
+      [4, "Basin Combined Hazards"],
+      [5, "Segment Combined Hazards"],
+      [6, "Basin Volumes"],
+      [7, "Segment Volumes"],
+      [9, "Fire Perimeters"]
+    ].map(([id, title]) => new FeatureLayer({
+      url: `${APP_CONFIG.postFireServiceUrl}/${id}`,
+      title,
+      outFields: ["*"],
+      visible: id === APP_CONFIG.postFirePointLayerId || id === APP_CONFIG.postFirePerimeterLayerId
+    }));
+    return new GroupLayer({ title: definition.title, visible: false, visibilityMode: "independent", layers: sublayers.reverse() });
+  }
+  return new FeatureLayer({
+    portalItem: { id: definition.itemId },
+    layerId: definition.sublayerId,
+    title: definition.title,
+    outFields: ["*"],
+    visible: definition.defaultVisible === true
+  });
 }
 
 async function configureOperationalLayer(layer, definition) {
