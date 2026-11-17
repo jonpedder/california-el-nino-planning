@@ -11,6 +11,10 @@ const ANALYSIS_CONFIG = Object.freeze({
     Object.freeze({ id: "los-angeles", county: "Los Angeles", label: "Los Angeles County" }),
     Object.freeze({ id: "san-diego", county: "San Diego", label: "San Diego County" })
   ]),
+  areas: Object.freeze([
+    Object.freeze({ id: "aoi-north-coast", label: "North/Central Coast AOI", regionIds: ["marin", "santa-cruz"] }),
+    Object.freeze({ id: "aoi-southern-california", label: "Southern California AOI", regionIds: ["los-angeles", "san-diego"] })
+  ]),
   urls: Object.freeze({
     qpfAmount: "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDFD_Precipitation_v1/FeatureServer/0",
     qpfCumulative: "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDFD_Precipitation_v1/FeatureServer/2",
@@ -41,6 +45,9 @@ const elements = {
   forecastEmpty: document.querySelector("#forecast-empty"),
   forecastTableWrap: document.querySelector("#forecast-table-wrap"),
   gaugeTableWrap: document.querySelector("#gauge-table-wrap"),
+  conditionsScopeStatus: document.querySelector("#conditions-scope-status"),
+  conditionsRegionButtons: [...document.querySelectorAll("[data-conditions-region]")],
+  conditionsAoi: document.querySelector("#conditions-aoi"),
   riskProfile: document.querySelector("#risk-profile"),
   riskRegionStatus: document.querySelector("#risk-region-status"),
   riskRegionButtons: [...document.querySelectorAll("[data-risk-region]")],
@@ -69,7 +76,11 @@ elements.refreshButton.addEventListener("click", runAnalysis);
 elements.regionFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.historyFilter.addEventListener("calciteSelectChange", runAnalysis);
 elements.tabs.forEach((tab) => tab.addEventListener("click", () => setAnalysisTab(tab.id)));
-elements.riskRegionButtons.forEach((button) => button.addEventListener("click", () => selectAnalysisRegion(button.dataset.riskRegion)));
+elements.riskRegionButtons.forEach((button) => button.addEventListener("click", () => selectAnalysisScope(button.dataset.riskRegion, "riskTab")));
+elements.conditionsRegionButtons.forEach((button) => button.addEventListener("click", () => selectAnalysisScope(button.dataset.conditionsRegion, "conditionsTab")));
+elements.conditionsAoi.addEventListener("change", () => {
+  if (elements.conditionsAoi.value) selectAnalysisScope(elements.conditionsAoi.value, "conditionsTab");
+});
 document.querySelector(".analysis-tabs")?.addEventListener("keydown", handleAnalysisTabKeydown);
 elements.clearSelection.addEventListener("click", clearElementFilter);
 [...document.querySelectorAll(".analysis-kpi")].forEach((card, index) => {
@@ -109,30 +120,44 @@ function handleAnalysisTabKeydown(event) {
   setAnalysisTab(elements.tabs[next].id, { focus: true });
 }
 
-function updateRiskRegionSwitcher() {
+function scopeLabel(scopeId) {
+  if (scopeId === "all") return "All planning regions";
+  return ANALYSIS_CONFIG.regions.find((item) => item.id === scopeId)?.label
+    || ANALYSIS_CONFIG.areas.find((item) => item.id === scopeId)?.label
+    || "Selected area";
+}
+
+function updateAnalysisScopeSwitchers() {
   const selected = elements.regionFilter.value || "all";
-  const region = ANALYSIS_CONFIG.regions.find((item) => item.id === selected);
-  elements.riskRegionStatus.textContent = region?.label || "All planning regions";
+  const label = scopeLabel(selected);
+  elements.riskRegionStatus.textContent = label;
+  elements.conditionsScopeStatus.textContent = label;
   elements.riskRegionButtons.forEach((button) => {
     const active = button.dataset.riskRegion === selected;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
   });
+  elements.conditionsRegionButtons.forEach((button) => {
+    const active = button.dataset.conditionsRegion === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  elements.conditionsAoi.value = ANALYSIS_CONFIG.areas.some((item) => item.id === selected) ? selected : "";
 }
 
-async function selectAnalysisRegion(regionId) {
+async function selectAnalysisScope(scopeId, targetTab) {
   if (state.running) return;
-  if ((elements.regionFilter.value || "all") === regionId) {
+  if ((elements.regionFilter.value || "all") === scopeId) {
     clearElementFilter();
-    updateRiskRegionSwitcher();
-    setAnalysisTab("riskTab");
+    updateAnalysisScopeSwitchers();
+    setAnalysisTab(targetTab);
     return;
   }
   clearElementFilter({ rerender: false });
-  elements.regionFilter.value = regionId;
-  updateRiskRegionSwitcher();
+  elements.regionFilter.value = scopeId;
+  updateAnalysisScopeSwitchers();
   await runAnalysis();
-  setAnalysisTab("riskTab");
+  setAnalysisTab(targetTab);
 }
 
 function setElementFilter(type, label, key = null) {
@@ -300,7 +325,7 @@ async function runAnalysis() {
       ? `Partial analysis — ${failed.length} unavailable, ${partial.length} truncated`
       : "Analysis current";
     elements.updated.textContent = `Updated ${new Date().toLocaleString()}`;
-    updateRiskRegionSwitcher();
+    updateAnalysisScopeSwitchers();
   } catch (error) {
     console.error("Analysis refresh failed.", error);
     elements.loading.hidden = false;
@@ -316,9 +341,12 @@ async function runAnalysis() {
 
 async function querySelectedRegions() {
   const selected = elements.regionFilter.value || "all";
+  const area = ANALYSIS_CONFIG.areas.find((item) => item.id === selected);
   const regionDefs = selected === "all"
     ? ANALYSIS_CONFIG.regions
-    : ANALYSIS_CONFIG.regions.filter((region) => region.id === selected);
+    : area
+      ? ANALYSIS_CONFIG.regions.filter((region) => area.regionIds.includes(region.id))
+      : ANALYSIS_CONFIG.regions.filter((region) => region.id === selected);
   const countyNames = regionDefs.map((region) => `'${region.county.replaceAll("'", "''")}'`).join(",");
   const query = layers.riskCounties.createQuery();
   query.where = `STATEABBRV = 'CA' AND COUNTY IN (${countyNames})`;
@@ -611,7 +639,7 @@ function renderRisk(risk) {
       list.append(container);
     });
     article.append(header, list);
-    makeSelectable(article, `${item.label} risk profile`, () => selectAnalysisRegion(item.id));
+    makeSelectable(article, `${item.label} risk profile`, () => selectAnalysisScope(item.id, "riskTab"));
     elements.riskProfile.append(article);
   });
 }

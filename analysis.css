@@ -44,6 +44,9 @@
 .risk-region-buttons button { min-height: 34px; padding: 0.4rem 0.6rem; border: 1px solid var(--border); background: #0a2332; color: var(--muted); font-size: 0.68rem; font-weight: 700; cursor: pointer; }
 .risk-region-buttons button:hover { border-color: var(--gold); color: var(--text); }
 .risk-region-buttons button.active { border-color: var(--gold); background: rgb(242 169 0 / 18%); color: var(--gold); }
+.conditions-scope-controls { display: grid; gap: 0.45rem; justify-items: end; }
+.conditions-scope-controls > label { color: var(--muted); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.conditions-scope-controls > select { min-width: 280px; min-height: 34px; padding: 0.4rem 0.55rem; border: 1px solid var(--gold); background: #0a2332; color: var(--text); font-size: 0.7rem; }
 .analysis-collapse { margin-top: 0.75rem; border: 1px solid var(--border); background: #081c29; }
 .analysis-collapse > summary { padding: 0.65rem 0.75rem; color: var(--gold); font-size: 0.7rem; font-weight: 700; cursor: pointer; }
 .analysis-collapse[open] > summary { border-bottom: 1px solid var(--border); }
@@ -122,6 +125,8 @@
   .analysis-selection { align-items: flex-start; flex-direction: column; }
   .risk-region-switcher { align-items: flex-start; flex-direction: column; }
   .risk-region-buttons { justify-content: flex-start; }
+  .conditions-scope-controls { width: 100%; justify-items: start; }
+  .conditions-scope-controls > select { width: 100%; min-width: 0; }
   .analysis-tab-intro { align-items: flex-start; flex-direction: column; }
   .analysis-tab-intro span { text-align: left; }
   .analysis-controls, .analysis-grid { display: block; }

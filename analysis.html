@@ -8,10 +8,10 @@
   <title>El Niño Regional Analysis</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
   <link rel="stylesheet" href="./styles.css?v=header2">
-  <link rel="stylesheet" href="./analysis.css?v=header1">
+  <link rel="stylesheet" href="./analysis.css?v=conditions-scope1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=header1"></script>
-  <script type="module" src="./analysis.js?v=risk-switch1"></script>
+  <script type="module" src="./analysis.js?v=conditions-scope1"></script>
 </head>
 <body class="analysis-body">
   <a class="skip-link" href="#analysis-main">Skip to analysis</a>
@@ -44,7 +44,7 @@
   </section>
 
   <section class="analysis-controls" aria-label="Analysis filters">
-    <label><span>Region</span><calcite-select id="region-filter" label="Region"><calcite-option value="all">All planning regions</calcite-option><calcite-option value="marin">Marin County</calcite-option><calcite-option value="santa-cruz">Santa Cruz County</calcite-option><calcite-option value="los-angeles">Los Angeles County</calcite-option><calcite-option value="san-diego">San Diego County</calcite-option></calcite-select></label>
+    <label><span>Region</span><calcite-select id="region-filter" label="Region"><calcite-option value="all">All planning regions</calcite-option><calcite-option value="marin">Marin County</calcite-option><calcite-option value="santa-cruz">Santa Cruz County</calcite-option><calcite-option value="los-angeles">Los Angeles County</calcite-option><calcite-option value="san-diego">San Diego County</calcite-option><calcite-option value="aoi-north-coast">North/Central Coast AOI</calcite-option><calcite-option value="aoi-southern-california">Southern California AOI</calcite-option></calcite-select></label>
     <label><span>Historical window</span><calcite-select id="history-filter" label="Historical window"><calcite-option value="30">Past 30 days</calcite-option><calcite-option value="90">Past 90 days</calcite-option><calcite-option value="365" selected>Past 12 months</calcite-option><calcite-option value="1825">Past 5 years</calcite-option></calcite-select></label>
     <calcite-button id="refresh-analysis" icon-start="refresh" appearance="solid" kind="brand">Refresh analysis</calcite-button>
     <p class="analysis-filter-note">Changing a filter reruns bounded spatial queries against the selected public source layers.</p>
@@ -78,6 +78,24 @@
       </section>
 
       <section id="conditionsPanel" class="analysis-tab-panel" role="tabpanel" aria-labelledby="conditionsTab" hidden>
+        <section class="risk-region-switcher conditions-scope-switcher" aria-label="Change Forecast and Gauges area">
+          <div><strong>Forecast and gauge area</strong><span id="conditions-scope-status">All planning regions</span></div>
+          <div class="conditions-scope-controls">
+            <div class="risk-region-buttons">
+              <button type="button" data-conditions-region="all" aria-pressed="true">All regions</button>
+              <button type="button" data-conditions-region="marin" aria-pressed="false">Marin</button>
+              <button type="button" data-conditions-region="santa-cruz" aria-pressed="false">Santa Cruz</button>
+              <button type="button" data-conditions-region="los-angeles" aria-pressed="false">Los Angeles</button>
+              <button type="button" data-conditions-region="san-diego" aria-pressed="false">San Diego</button>
+            </div>
+            <label for="conditions-aoi">Area of interest</label>
+            <select id="conditions-aoi">
+              <option value="">Choose an AOI</option>
+              <option value="aoi-north-coast">North/Central Coast — Marin + Santa Cruz</option>
+              <option value="aoi-southern-california">Southern California — Los Angeles + San Diego</option>
+            </select>
+          </div>
+        </section>
         <section class="analysis-grid">
           <article class="analysis-card analysis-card-wide">
             <header><div><p class="eyebrow">Future trend</p><h2>Precipitation forecast timeline</h2></div><span id="forecast-period" class="analysis-badge">Next 72 hours</span></header>
