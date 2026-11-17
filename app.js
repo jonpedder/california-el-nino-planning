@@ -446,7 +446,12 @@ async function loadOperationalLayers() {
 }
 
 async function loadLayerSet(map, registry, failures, label) {
-  await map.loadAll();
+  try {
+    await map.loadAll();
+  } catch (loadAllError) {
+    console.warn(`${label} reported a non-fatal resource load error; loading operational layers individually.`, loadAllError);
+    await map.load();
+  }
   const savedLayers = map.layers.toArray();
   registry.clear();
   failures.length = 0;
