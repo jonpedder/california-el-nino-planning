@@ -2,7 +2,7 @@
 
 A no-build static ArcGIS application for county-level El Niño planning. It uses the ArcGIS Maps SDK for JavaScript 5.1 CDN/ESM loader, Calcite components supplied by that loader, and a CA Security Ops dark navy/gold visual system.
 
-> **Planning status:** The saved Web Map connects to 18 verified public ArcGIS Online/Living Atlas items for forecast, advisory, post-fire hazard, roads, hospitals, shelters, cameras, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators now report bounded screening counts from connected support layers, but they are not risk scores or operational decisions.
+> **Planning status:** The saved Web Map connects to 21 operational map/analysis layers from 20 verified public ArcGIS Online/Living Atlas items for forecast, advisory, post-fire hazard, roads, hospitals, shelters, cameras, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators now report bounded screening counts from connected support layers, but they are not risk scores or operational decisions.
 
 ## What is included
 
@@ -10,8 +10,10 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - Region-filtered analysis for past fire impacts, current NWS advisories and USGS gauge conditions, 72-hour precipitation forecasts, and FEMA risk baselines.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
 - County-specific threats, capabilities, source-backed screening KPIs, viewpoints, and disclaimers.
-- Fire/El Niño readiness workflow with NOAA Day 1–3 excessive-rainfall outlooks, Days 3–7 and 8–14 precipitation hazards, USGS post-fire assessment intersection counts, fire/year filters, map highlighting, and fire selection.
-- ALERTCalifornia live cameras, flood-stage gauges, Caltrans roads, FEMA hospitals, FEMA planning shelters, and Cal OES active shelters.
+- Fire/El Niño readiness workflow with NOAA Day 1–3 excessive-rainfall outlooks, Days 3–7 and 8–14 precipitation hazards, USGS post-fire assessment intersection counts, fire/year filters, age-scaled flame symbols, map highlighting, and fire selection.
+- Area-weighted ACS population estimates in fire and weather-polygon popups, with explicit method and limitation text.
+- ALERTCalifornia live cameras, a dedicated flood-stage-only gauge layer, generalized state boundaries, Caltrans roads, FEMA hospitals, FEMA planning shelters, and Cal OES active shelters.
+- Search, basemap gallery, layer list, scale bar, standard legend, and custom fire-age/flame legend.
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.
 - Verified public NWS, NIFC, FEMA, NOAA, and Los Angeles County portal items.
 - County-specific initial layer visibility and publisher-managed symbology/popups.
@@ -31,6 +33,9 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 - National Weather Service Precipitation Forecast — 72-hour forecast.
 - USA Weather Watches and Warnings — current NWS advisories.
 - USGS Post-Fire Debris-Flow Assessments — fire locations, perimeters, basin/segment likelihood, volume, and combined-hazard layers.
+- Live Stream Gauges — Flood Stage Only — a second view of the Living Atlas gauge item filtered to `statusClass >= 3`.
+- USA States Generalized Boundaries — optional reference context.
+- ACS Population (Latest), census tracts — hidden analysis source for area-weighted popup estimates.
 - NOAA/WPC Day 1–3 Excessive Rainfall Outlooks and NOAA/WPC/CPC Days 3–7 and 8–14 precipitation-hazard outlooks — runtime readiness screening.
 - ALERTCalifornia Live Cameras — optional live-camera context, off by default.
 - Caltrans All Public Roads Network — transportation screening, off by default and scale limited.

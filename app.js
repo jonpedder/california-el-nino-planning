@@ -1,13 +1,14 @@
-import { APP_CONFIG } from "./config.js?v=postfire3";
+import { APP_CONFIG } from "./config.js?v=postfire4";
 
-const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
   "@arcgis/core/config.js",
   "@arcgis/core/request.js",
   "@arcgis/core/layers/FeatureLayer.js",
-  "@arcgis/core/layers/GroupLayer.js"
+  "@arcgis/core/layers/GroupLayer.js",
+  "@arcgis/core/geometry/geometryEngine.js"
 ]);
 
 const elements = {
@@ -30,6 +31,9 @@ const elements = {
   readinessFire: document.querySelector("#readiness-fire"),
   readinessStatus: document.querySelector("#readiness-status"),
   readinessList: document.querySelector("#readiness-list"),
+  readinessIssued: document.querySelector("#readiness-issued"),
+  readinessValid: document.querySelector("#readiness-valid"),
+  readinessRetrieved: document.querySelector("#readiness-retrieved"),
   demographicGrid: document.querySelector("#demographic-grid"),
   demographicVintage: document.querySelector("#demographic-vintage"),
   infographicLink: document.querySelector("#infographic-link"),
@@ -62,7 +66,10 @@ const state = {
   readinessRecords: [],
   readinessIntersectingIds: [],
   readinessOutlookLayer: null,
-  readinessHighlightLayer: null
+  readinessHighlightLayer: null,
+  readinessAllFiresLayer: null,
+  populationCache: new Map(),
+  weatherImpactCache: new Map()
 };
 
 const enrichmentCache = new Map();
@@ -90,6 +97,7 @@ initialize().catch((error) => {
 });
 
 async function initialize() {
+  elements.readinessRetrieved.textContent = new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   await Promise.allSettled([initializeAuthentication(), initializeMap()]);
   await loadCountyData();
 }
@@ -250,9 +258,9 @@ async function loadOperationalLayers() {
   await elements.map.map.loadAll();
   const savedLayers = elements.map.map.layers.toArray();
   const results = await Promise.allSettled(APP_CONFIG.operationalLayers.map(async (definition) => {
-    let layer = savedLayers.find((candidate) =>
-      candidate.portalItem?.id === definition.itemId || candidate.title === definition.title
-    );
+    const titleMatch = savedLayers.find((candidate) => candidate.title === definition.title);
+    const itemMatch = definition.matchTitleOnly ? null : savedLayers.find((candidate) => candidate.portalItem?.id === definition.itemId);
+    let layer = titleMatch || itemMatch;
     if (!layer) {
       layer = createFallbackOperationalLayer(definition);
       elements.map.map.add(layer);
@@ -261,6 +269,7 @@ async function loadOperationalLayers() {
     if (typeof definition.opacity === "number") layer.opacity = definition.opacity;
     if (typeof definition.minScale === "number") layer.minScale = definition.minScale;
     if (typeof definition.maxScale === "number") layer.maxScale = definition.maxScale;
+    if (definition.definitionExpression && layer.type === "feature") layer.definitionExpression = definition.definitionExpression;
     await layer.load();
     await configureOperationalLayer(layer, definition);
     state.operationalLayers.set(definition.key, layer);
@@ -279,9 +288,11 @@ async function loadOperationalLayers() {
     }
   });
 
+  await ensureDerivedReadinessLayers();
   window.__esriView = elements.map.view;
   window.__esriMap = elements.map.map;
   window.__esriLayers = Object.fromEntries(loadedLayers.map((layer) => [layer.title, layer]));
+  if (state.readinessAllFiresLayer) window.__esriLayers[state.readinessAllFiresLayer.title] = state.readinessAllFiresLayer;
   window.__app = { APP_CONFIG, state, elements };
   updateSourceStatus(loadedLayers.length, APP_CONFIG.operationalLayers.length);
 }
@@ -311,6 +322,7 @@ function createFallbackOperationalLayer(definition) {
     layerId: definition.sublayerId,
     title: definition.title,
     outFields: ["*"],
+    definitionExpression: definition.definitionExpression,
     visible: definition.defaultVisible === true
   });
 }
@@ -636,7 +648,7 @@ async function enrichPolygon(graphic) {
 
 function updateSourceStatus(loaded, total) {
   if (loaded === total) {
-    setDataStatus(`${loaded} public sources`, "connected");
+    setDataStatus(`${loaded} operational layers`, "connected");
     return;
   }
   if (loaded > 0) {
@@ -774,7 +786,7 @@ async function refreshPlanningIndicators(county) {
       return sum + Math.max(Number.isFinite(evac) ? evac : 0, Number.isFinite(post) ? post : 0);
     }, 0);
     const shelterCount = shelterResult.features.length;
-    const supportKeys = ["usgsPostFire", "caltransRoads", "hospitals", "shelterFacilities", "activeShelters", "alertCameras"];
+    const supportKeys = ["usgsPostFire", "floodStageGauges", "stateBoundaries", "acsPopulationTracts", "caltransRoads", "hospitals", "shelterFacilities", "activeShelters", "alertCameras"];
     const connected = supportKeys.filter((key) => state.operationalLayers.has(key)).length;
     const enhanced = county.kpis.map((kpi) => {
       const label = kpi.label.toLowerCase();
@@ -814,9 +826,182 @@ function forecastRenderer(type) {
   };
 }
 
-function flameRenderer() {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 80'><path d='M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z' fill='%23ef3b0a' stroke='%23ffffff' stroke-width='5'/><path d='M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z' fill='%23ffd166'/></svg>`;
-  return { type: "simple", symbol: { type: "picture-marker", url: `data:image/svg+xml,${svg}`, width: 20, height: 25 } };
+function flameRenderer(highlighted = false) {
+  const svg = highlighted
+    ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 80'><path d='M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z' fill='%23ef3b0a' stroke='%23ffffff' stroke-width='5'/><path d='M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z' fill='%23ffd166'/></svg>`
+    : `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 80'><path d='M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z' fill='%23f28c28' stroke='%235b2b12' stroke-width='4'/><path d='M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z' fill='%23ffd166'/></svg>`;
+  return {
+    type: "simple",
+    symbol: { type: "picture-marker", url: `data:image/svg+xml,${svg}`, width: highlighted ? 15 : 12, height: highlighted ? 19 : 15 },
+    visualVariables: [{
+      type: "size",
+      valueExpression: "Max(0, Year(Now()) - Year($feature.start_date))",
+      valueExpressionTitle: "Fire age in whole calendar years",
+      stops: [
+        { value: 0, size: highlighted ? 27 : 20, label: "Current year" },
+        { value: 1, size: highlighted ? 22 : 16, label: "1 year old" },
+        { value: 3, size: highlighted ? 18 : 13, label: "3 years old" },
+        { value: 5, size: highlighted ? 15 : 11, label: "5 years old" },
+        { value: 10, size: highlighted ? 13 : 9, label: "10+ years old" }
+      ]
+    }]
+  };
+}
+
+async function ensureDerivedReadinessLayers() {
+  const existing = elements.map.map.layers.find((layer) => layer.title === "All fires");
+  if (existing) {
+    state.readinessAllFiresLayer = existing;
+    return;
+  }
+  const allFires = new FeatureLayer({
+    url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePointLayerId}`,
+    title: "All fires",
+    visible: false,
+    opacity: 0.78,
+    outFields: ["*"],
+    renderer: flameRenderer(false),
+    popupTemplate: createFirePopupTemplate()
+  });
+  await allFires.load();
+  state.readinessAllFiresLayer = allFires;
+  elements.map.map.add(allFires);
+}
+
+function createFirePopupTemplate() {
+  return {
+    title: "{fire} — USGS post-fire assessment",
+    content: [
+      { type: "fields", fieldInfos: [
+        { fieldName: "Fire_ID", label: "Fire ID" },
+        { fieldName: "location", label: "Location" },
+        { fieldName: "start_date", label: "Fire start date", format: { dateFormat: "long-month-day-year" } },
+        { fieldName: "assessment_date", label: "Assessment date", format: { dateFormat: "long-month-day-year" } },
+        { fieldName: "status", label: "Status" },
+        { fieldName: "Rainfall", label: "Rainfall basis" }
+      ] },
+      { type: "custom", creator: createFirePopulationPopupContent }
+    ]
+  };
+}
+
+function popupAnalysisPanel(title, rows, note, caution) {
+  const panel = document.createElement("section");
+  panel.className = "popup-analysis-panel";
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const table = document.createElement("dl");
+  for (const [label, value] of rows) {
+    const term = document.createElement("dt");
+    const detail = document.createElement("dd");
+    term.textContent = label;
+    detail.textContent = value;
+    table.append(term, detail);
+  }
+  const method = document.createElement("small");
+  method.textContent = note;
+  const warning = document.createElement("small");
+  warning.className = "popup-analysis-caution";
+  warning.textContent = caution;
+  panel.append(heading, table, method, warning);
+  return panel;
+}
+
+async function estimatePopulationForGeometry(geometry) {
+  const layer = state.operationalLayers.get("acsPopulationTracts");
+  if (!layer || !geometry?.rings) throw new Error("ACS tract analysis is unavailable.");
+  const populationField = "B01001_001E";
+  const summary = await layer.queryFeatures({
+    geometry,
+    spatialRelationship: "intersects",
+    where: `${populationField} >= 0`,
+    outStatistics: [
+      { onStatisticField: populationField, outStatisticFieldName: "population_sum", statisticType: "sum" },
+      { onStatisticField: populationField, outStatisticFieldName: "tract_count", statisticType: "count" }
+    ],
+    returnGeometry: false
+  });
+  const attrs = summary.features[0]?.attributes || {};
+  let weightedPopulation = Number(attrs.population_sum) || 0;
+  const tractCount = Math.round(Number(attrs.tract_count) || 0);
+  const boundary = { type: "polyline", paths: geometry.rings, spatialReference: geometry.spatialReference };
+  const boundaryIds = await layer.queryObjectIds({ geometry: boundary, spatialRelationship: "intersects", where: `${populationField} >= 0` });
+  for (let index = 0; index < (boundaryIds || []).length; index += 500) {
+    const result = await layer.queryFeatures({ objectIds: boundaryIds.slice(index, index + 500), outFields: [populationField], returnGeometry: true });
+    for (const tract of result.features) {
+      const population = Number(tract.attributes?.[populationField]);
+      if (!Number.isFinite(population) || population < 0 || !tract.geometry) continue;
+      const overlap = geometryEngine.intersect(tract.geometry, geometry);
+      if (!overlap) {
+        weightedPopulation -= population;
+        continue;
+      }
+      const tractArea = Math.abs(geometryEngine.geodesicArea(tract.geometry, "square-meters"));
+      const overlapArea = Math.abs(geometryEngine.geodesicArea(overlap, "square-meters"));
+      if (Number.isFinite(tractArea) && tractArea > 0 && Number.isFinite(overlapArea)) weightedPopulation -= population * (1 - Math.min(1, Math.max(0, overlapArea / tractArea)));
+    }
+  }
+  return { population: Math.max(0, Math.round(weightedPopulation)), tractCount };
+}
+
+async function estimatePopulationForFire(fireId) {
+  const key = String(fireId || "");
+  if (state.populationCache.has(key)) return state.populationCache.get(key);
+  const perimeterLayer = findPostFireLayer(APP_CONFIG.postFirePerimeterLayerId) || new FeatureLayer({ url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePerimeterLayerId}` });
+  await perimeterLayer.load();
+  const result = await perimeterLayer.queryFeatures({ where: `Fire_ID = ${sqlString(key)}`, outFields: ["Fire_ID"], returnGeometry: true });
+  const geometries = result.features.map((feature) => feature.geometry).filter(Boolean);
+  if (!geometries.length) throw new Error("No matching USGS fire perimeter was returned.");
+  const geometry = geometries.length === 1 ? geometries[0] : geometryEngine.union(geometries);
+  const estimate = await estimatePopulationForGeometry(geometry);
+  state.populationCache.set(key, estimate);
+  return estimate;
+}
+
+async function countDistinctFiresForGeometry(geometry) {
+  const perimeterLayer = findPostFireLayer(APP_CONFIG.postFirePerimeterLayerId) || new FeatureLayer({ url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePerimeterLayerId}` });
+  await perimeterLayer.load();
+  const result = await perimeterLayer.queryFeatures({ geometry, spatialRelationship: "intersects", where: "1=1", outFields: ["Fire_ID"], returnGeometry: false });
+  return new Set(result.features.map((feature) => feature.attributes?.Fire_ID).filter(Boolean).map(String)).size;
+}
+
+async function createFirePopulationPopupContent(event) {
+  const fireId = event?.graphic?.attributes?.Fire_ID;
+  try {
+    const estimate = await estimatePopulationForFire(fireId);
+    return popupAnalysisPanel(
+      "Derived population context",
+      [["Estimated residents", formatCount(estimate.population)], ["Intersecting tracts", formatCount(estimate.tractCount)]],
+      "Area-weighted from 2020–2024 ACS 5-year tract estimates within the USGS fire perimeter.",
+      "Assumes population is uniformly distributed within each tract. This is not an evacuation or current-occupancy count."
+    );
+  } catch (error) {
+    return popupAnalysisPanel("Population context unavailable", [["Status", "Analysis could not complete"]], "The ACS, perimeter, or geometry service did not return a usable result.", "No population impact is asserted.");
+  }
+}
+
+async function createWeatherImpactPopupContent(event) {
+  const graphic = event?.graphic;
+  const geometry = graphic?.geometry;
+  if (!geometry) return popupAnalysisPanel("Weather impact context unavailable", [["Status", "No polygon geometry"]], "The weather feature did not return a polygon.", "No impact is asserted.");
+  const oidField = graphic.layer?.objectIdField || graphic.sourceLayer?.objectIdField;
+  const cacheKey = `${graphic.layer?.url || graphic.sourceLayer?.url || "weather"}|${graphic.attributes?.[oidField] || geometry.extent?.center?.x || "feature"}`;
+  try {
+    let impact = state.weatherImpactCache.get(cacheKey);
+    if (!impact) {
+      const [population, fireCount] = await Promise.all([estimatePopulationForGeometry(geometry), countDistinctFiresForGeometry(geometry)]);
+      impact = { ...population, fireCount };
+      state.weatherImpactCache.set(cacheKey, impact);
+    }
+    return popupAnalysisPanel(
+      "Derived planning context",
+      [["Estimated residents", formatCount(impact.population)], ["Previous USGS fire assessments", formatCount(impact.fireCount)]],
+      `Area-weighted from 2020–2024 ACS 5-year estimates across ${formatCount(impact.tractCount)} intersecting tracts.`,
+      "This is not current occupancy, an evacuation count, or a predicted debris-flow impact."
+    );
+  } catch (error) {
+    return popupAnalysisPanel("Weather impact context unavailable", [["Status", "Analysis could not complete"]], "The ACS, fire, or geometry analysis did not return a usable result.", "No impact is asserted.");
+  }
 }
 
 function clearReadinessRuntimeLayers() {
@@ -825,6 +1010,12 @@ function clearReadinessRuntimeLayers() {
     if (layer && elements.map.map.layers.includes(layer)) elements.map.map.remove(layer);
     state[key] = null;
   }
+}
+
+function formatSourceDate(value) {
+  if (value == null || value === "") return "Not provided";
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? String(value) : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 }
 
 async function refreshReadinessForSelectedCounty() {
@@ -839,6 +1030,8 @@ async function refreshPostFireReadiness(county) {
   elements.readinessAssessments.textContent = "…";
   elements.readinessPolygons.textContent = "…";
   elements.readinessIntersections.textContent = "…";
+  elements.readinessIssued.textContent = "Loading…";
+  elements.readinessValid.textContent = "Loading…";
   elements.readinessYear.disabled = true;
   elements.readinessSearch.disabled = true;
   elements.readinessFire.disabled = true;
@@ -852,18 +1045,7 @@ async function refreshPostFireReadiness(county) {
     const countyFires = await firePoints.queryFeatures({ geometry, spatialRelationship: "intersects", where: "1=1", outFields: ["fire", "Fire_ID", "start_date", "assessment_date", "location"], returnGeometry: true });
     if (run !== state.readinessRun) return;
     state.readinessRecords = countyFires.features.map((feature) => {
-      feature.popupTemplate = {
-        title: "{fire} — USGS post-fire assessment",
-        content: [{
-          type: "fields",
-          fieldInfos: [
-            { fieldName: "Fire_ID", label: "Fire ID" },
-            { fieldName: "location", label: "Location" },
-            { fieldName: "start_date", label: "Fire start date", format: { dateFormat: "long-month-day-year" } },
-            { fieldName: "assessment_date", label: "Assessment date", format: { dateFormat: "long-month-day-year" } }
-          ]
-        }]
-      };
+      feature.popupTemplate = createFirePopupTemplate();
       return {
         feature,
         id: String(feature.attributes?.Fire_ID || ""),
@@ -883,10 +1065,16 @@ async function refreshPostFireReadiness(county) {
       renderer: forecastRenderer(product.type),
       popupTemplate: product.type === "ero" ? {
         title: "{product}: {outlook}",
-        content: [{ type: "fields", fieldInfos: [{ fieldName: "outlook", label: "Outlook category" }, { fieldName: "issue_time", label: "Issue time" }, { fieldName: "start_time", label: "Start time" }, { fieldName: "end_time", label: "End time" }] }]
+        content: [
+          { type: "fields", fieldInfos: [{ fieldName: "outlook", label: "Outlook category" }, { fieldName: "issue_time", label: "Issue time" }, { fieldName: "start_time", label: "Start time" }, { fieldName: "end_time", label: "End time" }] },
+          { type: "custom", creator: createWeatherImpactPopupContent }
+        ]
       } : {
         title: "{label}",
-        content: [{ type: "fields", fieldInfos: [{ fieldName: "label", label: "Hazard" }, { fieldName: "start_date", label: "Start date" }, { fieldName: "end_date", label: "End date" }] }]
+        content: [
+          { type: "fields", fieldInfos: [{ fieldName: "label", label: "Hazard" }, { fieldName: "start_date", label: "Start date" }, { fieldName: "end_date", label: "End date" }] },
+          { type: "custom", creator: createWeatherImpactPopupContent }
+        ]
       }
     });
     state.readinessOutlookLayer = outlookLayer;
@@ -895,6 +1083,17 @@ async function refreshPostFireReadiness(county) {
     const outlooks = await outlookLayer.queryFeatures({ geometry, spatialRelationship: "intersects", where: product.where, outFields: ["*"], returnGeometry: true });
     if (run !== state.readinessRun) return;
     elements.readinessPolygons.textContent = formatCount(outlooks.features.length);
+    if (outlooks.features.length) {
+      const meta = outlooks.features[0].attributes || {};
+      const issued = product.type === "ero" ? meta.issue_time : (meta.issue_time_dt || meta.idp_filedate || meta.idp_ingestdate);
+      const start = product.type === "ero" ? (meta.start_time || meta.valid_time) : meta.start_date;
+      const end = product.type === "ero" ? (meta.end_time || meta.valid_time) : meta.end_date;
+      elements.readinessIssued.textContent = formatSourceDate(issued);
+      elements.readinessValid.textContent = start === end ? formatSourceDate(start) : `${formatSourceDate(start)} – ${formatSourceDate(end)}`;
+    } else {
+      elements.readinessIssued.textContent = "No current polygon returned";
+      elements.readinessValid.textContent = "No current polygon returned";
+    }
 
     const ids = new Set();
     for (const outlook of outlooks.features) {
@@ -913,7 +1112,8 @@ async function refreshPostFireReadiness(county) {
         title: "Fires intersecting selected weather outlook",
         definitionExpression: `Fire_ID IN (${state.readinessIntersectingIds.map(sqlString).join(",")})`,
         outFields: ["*"],
-        renderer: flameRenderer()
+        renderer: flameRenderer(true),
+        popupTemplate: createFirePopupTemplate()
       });
       state.readinessHighlightLayer = highlight;
       elements.map.map.add(highlight);
@@ -928,6 +1128,8 @@ async function refreshPostFireReadiness(county) {
     elements.readinessAssessments.textContent = "—";
     elements.readinessPolygons.textContent = "—";
     elements.readinessIntersections.textContent = "—";
+    elements.readinessIssued.textContent = "Unavailable";
+    elements.readinessValid.textContent = "Unavailable";
     elements.readinessStatus.textContent = "Readiness analysis is unavailable because a USGS, NOAA, or county geometry query failed.";
   }
 }
@@ -1090,7 +1292,7 @@ function renderCapabilities(capabilities = []) {
 function renderSourceLayers(countyId) {
   elements.layerList.replaceChildren();
   const visibleKeys = new Set(APP_CONFIG.countyLayerVisibility[countyId] || []);
-  const keys = [...new Set([...visibleKeys, "usgsPostFire", "alertCameras", "caltransRoads", "hospitals", "shelterFacilities", "censusDemographics"])];
+  const keys = [...new Set([...visibleKeys, "floodStageGauges", "stateBoundaries", "acsPopulationTracts", "usgsPostFire", "alertCameras", "caltransRoads", "hospitals", "shelterFacilities", "censusDemographics"])];
   const definitions = keys
     .map((key) => APP_CONFIG.operationalLayers.find((layer) => layer.key === key))
     .filter(Boolean);

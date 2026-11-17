@@ -54,6 +54,42 @@ export const APP_CONFIG = Object.freeze({
       opacity: 0.92
     }),
     Object.freeze({
+      key: "floodStageGauges",
+      itemId: "81c5a9f2a2704d54a49042a44eefa5d3",
+      title: "Live Stream Gauges — Flood Stage Only",
+      category: "Flood-stage monitoring",
+      source: "USGS / NWS / Living Atlas contributors",
+      cadence: "Approximately hourly; filtered to statusClass >= 3",
+      refreshInterval: 5,
+      minScale: 1500000,
+      opacity: 1,
+      definitionExpression: "statusClass >= 3",
+      matchTitleOnly: true,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "stateBoundaries",
+      itemId: "8c2d6d7df8fa4142b0a1211c8dd66903",
+      sublayerId: 0,
+      title: "USA States Generalized Boundaries",
+      category: "Reference boundaries",
+      source: "Esri / U.S. Census Bureau",
+      cadence: "Publisher-managed generalized boundaries",
+      opacity: 0.35,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "acsPopulationTracts",
+      itemId: "60c98f20a162416ea1725b94d7297f83",
+      sublayerId: 2,
+      title: "Analysis Source — ACS Population Census Tracts",
+      category: "Population analysis",
+      source: "U.S. Census Bureau ACS / Esri",
+      cadence: "2020–2024 ACS 5-year estimates",
+      opacity: 0.2,
+      defaultVisible: false
+    }),
+    Object.freeze({
       key: "usgsPostFire",
       itemId: "cf3f58f60f774ad3b791ce5d90a0b92c",
       title: "USGS Post-Fire Debris-Flow Assessments",

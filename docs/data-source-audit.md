@@ -2,7 +2,7 @@
 
 ## Status
 
-Eighteen public portal items were verified and are connected as map and analysis context. Bounded county counts and post-fire/weather intersections drive screening indicators, but the application does not calculate a composite risk score. It distinguishes forecasts, advisories, observations, planning hazards, facilities, exposure context, and incident/history layers in `config.js`.
+Twenty public portal items were verified and are connected as 21 operational map and analysis layers (the gauge item is represented by both a general layer and a flood-stage-filtered layer). Bounded county counts and post-fire/weather intersections drive screening indicators, but the application does not calculate a composite risk score. It distinguishes forecasts, advisories, observations, planning hazards, facilities, exposure context, and incident/history layers in `config.js`.
 
 Verification date: **2026-11-17**
 
@@ -13,6 +13,9 @@ Verification date: **2026-11-17**
 | `precipitationForecast` | `f9e9283b9c9741d09aad633f68758bf6` | NWS via Esri Living Atlas | 72-hour quantitative precipitation **forecast** | NWS source hourly; service advertises 15-minute refresh | Approved for visualization. Multilayer item; do not present as observed rainfall. Informational and not monitored 24/7. |
 | `weatherWarnings` | `a6134ae01aad44c499d12feec782b386` | NWS via Esri Living Atlas | Current watches, warnings, and advisories | Approximately 5 minutes | Approved for visualization. Advisory issuance does not prove local impact. |
 | `liveStreamGauges` | `81c5a9f2a2704d54a49042a44eefa5d3` | USGS, NWS, and other contributors via Esri Living Atlas | Current stream stage, flow, status, forecast status, and observation freshness | Approximately hourly | Approved for visualization and freshness-aware analysis. California USGS records are filtered spatially on the Analysis page. Many USGS records do not supply a flood `statusClass`; gauge-specific reviewed thresholds are required before operational alerting. Stale records must not be treated as current. |
+| `floodStageGauges` | `81c5a9f2a2704d54a49042a44eefa5d3` | USGS, NWS, and contributors via Esri Living Atlas | Flood-stage-only view of live stream gauges | Approximately hourly; app refresh 5 minutes | Filtered to `statusClass >= 3`. A missing gauge or status classification does not prove normal conditions. |
+| `stateBoundaries` | `8c2d6d7df8fa4142b0a1211c8dd66903` | Esri / U.S. Census Bureau | Generalized state reference boundaries | Publisher-managed | Optional reference layer, off by default. Not an operational jurisdiction boundary. |
+| `acsPopulationTracts` | `60c98f20a162416ea1725b94d7297f83`, layer 2 | U.S. Census Bureau ACS / Esri | Hidden population-analysis source | 2020–2024 ACS 5-year estimates | Used for area-weighted population estimates in fire and weather-polygon popups. Assumes uniform population distribution inside each tract; not current occupancy. |
 | `usgsPostFire` | `cf3f58f60f774ad3b791ce5d90a0b92c` | USGS Landslide Hazards Program | Post-fire debris-flow fire locations, perimeters, basin/segment likelihood, volume, and combined hazards | Publisher-managed | Used for county assessment counts and spatial intersection with the selected NOAA outlook. A published assessment is not a prediction that debris flow will occur. |
 | `alertCameras` | `0c1c1166688f4f2db938194799337be4` | ALERTCalifornia / UC San Diego | Live camera situational context | Layer refreshes every 15 seconds | Optional and off by default. Images require interpretation and do not assert a hazard or closure. |
 | `caltransRoads` | `2d56e65de89c418780056651640291e8` | Caltrans | Statewide public-roads network | Publisher-managed | Used only to indicate that transportation screening data is connected. Not a live closure, passability, or damage feed. |
@@ -31,7 +34,7 @@ Verification date: **2026-11-17**
 
 ## Portal and loading approach
 
-- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133`, which persists the 18 verified portal layers, basemap, extent, order, visibility, symbology, popups, sublayer organization, and attribution.
+- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133`, which persists the 21 operational layers from 20 verified portal items, basemap, extent, order, visibility, symbology, popups, sublayer organization, and attribution.
 - The app uses the Public Safety ArcGIS Online organization for OAuth while loading public ArcGIS Online content across publisher organizations.
 - Each source loads independently. A failed item produces a partial/unavailable status instead of blocking county planning content.
 - County selection controls initial visibility. The map Layer List allows an analyst to adjust visibility afterward.

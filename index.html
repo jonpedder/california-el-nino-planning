@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
   <link rel="stylesheet" href="./styles.css?v=webmap2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./app.js?v=postfire3"></script>
+  <script type="module" src="./app.js?v=postfire4"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -65,29 +65,52 @@
         <arcgis-map id="planning-map" class="planning-view" item-id="bc6d9edf97a0425eb53a1f7776c80133" popup-component-enabled aria-label="California county planning map in 2D">
           <arcgis-zoom slot="top-left"></arcgis-zoom>
           <arcgis-home slot="top-left"></arcgis-home>
+          <arcgis-search slot="top-right"></arcgis-search>
+          <arcgis-expand class="basemap-expand" group="map-tools" slot="top-right" expand-icon="basemap" expand-tooltip="Basemaps">
+            <arcgis-basemap-gallery></arcgis-basemap-gallery>
+          </arcgis-expand>
+          <arcgis-scale-bar slot="bottom-left" unit="dual"></arcgis-scale-bar>
           <div class="view-mode-toggle" slot="bottom-left" role="group" aria-label="Map view mode">
             <button type="button" class="view-mode-button view-2d selected" aria-pressed="true">2D</button>
             <button type="button" class="view-mode-button view-3d" aria-pressed="false">3D</button>
           </div>
-          <arcgis-expand class="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Map layers">
+          <arcgis-expand class="layers-expand" group="map-tools" slot="top-right" expand-icon="layers" expand-tooltip="Map layers">
             <arcgis-layer-list class="map-layer-list"></arcgis-layer-list>
           </arcgis-expand>
-          <arcgis-expand class="legend-expand" slot="bottom-right" expand-icon="legend" expand-tooltip="Map legend">
-            <arcgis-legend class="map-legend"></arcgis-legend>
+          <arcgis-expand class="legend-expand" group="map-tools" slot="bottom-right" expand-icon="legend" expand-tooltip="Map legend">
+            <div class="legend-stack">
+              <details class="flame-size-legend">
+                <summary>Fire age — flame size</summary>
+                <p>Whole calendar years since ignition. Newer fires use larger flame symbols.</p>
+                <ul>
+                  <li><svg class="flame flame-xl" viewBox="0 0 64 80" aria-hidden="true"><path d="M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z"/><path class="flame-core" d="M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z"/></svg><span>Current year</span></li>
+                  <li><svg class="flame flame-lg" viewBox="0 0 64 80" aria-hidden="true"><path d="M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z"/><path class="flame-core" d="M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z"/></svg><span>1 year old</span></li>
+                  <li><svg class="flame flame-md" viewBox="0 0 64 80" aria-hidden="true"><path d="M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z"/><path class="flame-core" d="M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z"/></svg><span>3 years old</span></li>
+                  <li><svg class="flame flame-sm" viewBox="0 0 64 80" aria-hidden="true"><path d="M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z"/><path class="flame-core" d="M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z"/></svg><span>5+ years old</span></li>
+                </ul>
+                <div class="flame-key"><span>Orange: all fires</span><span>Red: intersects weather</span></div>
+              </details>
+              <arcgis-legend class="map-legend"></arcgis-legend>
+            </div>
           </arcgis-expand>
           <arcgis-popup class="map-popup" slot="popup" dock-enabled></arcgis-popup>
         </arcgis-map>
         <arcgis-scene id="planning-scene" class="planning-view inactive" basemap="dark-gray-vector" center="-119.6,36.6" zoom="5" popup-component-enabled aria-label="California county planning scene in 3D" aria-hidden="true">
           <arcgis-zoom slot="top-left"></arcgis-zoom>
           <arcgis-home slot="top-left"></arcgis-home>
+          <arcgis-search slot="top-right"></arcgis-search>
+          <arcgis-expand class="basemap-expand" group="map-tools" slot="top-right" expand-icon="basemap" expand-tooltip="Basemaps">
+            <arcgis-basemap-gallery></arcgis-basemap-gallery>
+          </arcgis-expand>
+          <arcgis-scale-bar slot="bottom-left" unit="dual"></arcgis-scale-bar>
           <div class="view-mode-toggle" slot="bottom-left" role="group" aria-label="Map view mode">
             <button type="button" class="view-mode-button view-2d selected" aria-pressed="true">2D</button>
             <button type="button" class="view-mode-button view-3d" aria-pressed="false">3D</button>
           </div>
-          <arcgis-expand class="layers-expand" slot="top-right" expand-icon="layers" expand-tooltip="Scene layers">
+          <arcgis-expand class="layers-expand" group="map-tools" slot="top-right" expand-icon="layers" expand-tooltip="Scene layers">
             <arcgis-layer-list class="map-layer-list"></arcgis-layer-list>
           </arcgis-expand>
-          <arcgis-expand class="legend-expand" slot="bottom-right" expand-icon="legend" expand-tooltip="Scene legend">
+          <arcgis-expand class="legend-expand" group="map-tools" slot="bottom-right" expand-icon="legend" expand-tooltip="Scene legend">
             <arcgis-legend class="map-legend"></arcgis-legend>
           </arcgis-expand>
           <arcgis-popup class="map-popup" slot="popup" dock-enabled></arcgis-popup>
@@ -138,6 +161,21 @@
           </div>
           <p id="readiness-status" class="helper" role="status" aria-live="polite">Waiting for the map and county geometry…</p>
           <ul id="readiness-list" class="readiness-list"></ul>
+          <dl class="readiness-metadata">
+            <dt>Forecast issued</dt><dd id="readiness-issued">—</dd>
+            <dt>Forecast valid</dt><dd id="readiness-valid">—</dd>
+            <dt>App retrieved</dt><dd id="readiness-retrieved">—</dd>
+          </dl>
+          <details class="readiness-sources">
+            <summary>Sources, method, and limitations</summary>
+            <p>Intersection counts are distinct USGS Fire_ID assessment perimeters that spatially intersect the selected NOAA precipitation product. Population is an area-weighted ACS tract estimate and assumes uniform population distribution inside each tract.</p>
+            <nav aria-label="Post-fire readiness sources">
+              <a href="https://www.usgs.gov/programs/landslide-hazards/science/postfire-debris-flow-hazards" target="_blank" rel="noopener noreferrer">USGS post-fire hazards</a>
+              <a href="https://www.wpc.ncep.noaa.gov/qpf/excessive_rainfall_outlook_ero.php" target="_blank" rel="noopener noreferrer">NOAA/WPC excessive rainfall</a>
+              <a href="https://www.arcgis.com/home/item.html?id=81c5a9f2a2704d54a49042a44eefa5d3" target="_blank" rel="noopener noreferrer">Live stream gauges</a>
+              <a href="https://www.arcgis.com/home/item.html?id=0c1c1166688f4f2db938194799337be4" target="_blank" rel="noopener noreferrer">ALERTCalifornia cameras</a>
+            </nav>
+          </details>
         </section>
         <section aria-labelledby="demographics-heading">
           <h3 id="demographics-heading">Demographic context</h3>
@@ -168,6 +206,4 @@
   <div id="app-alert" class="sr-only" role="alert" aria-live="assertive"></div>
   <noscript>This application requires JavaScript to display the map and county planning profiles.</noscript>
 </body>
-</html>
-dy>
 </html>
