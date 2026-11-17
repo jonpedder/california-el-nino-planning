@@ -1024,7 +1024,7 @@ async function getPopulationAnalysisLayer() {
   return state.popupDemographicLayer;
 }
 
-async function estimatePopulationForGeometry(geometry) {
+async function estimatePopulationForGeometry(geometry, { maxBoundaryTracts = 300 } = {}) {
   const layer = await getPopulationAnalysisLayer();
   if (!layer || !geometry?.rings) throw new Error("ACS tract analysis is unavailable.");
   const populationField = "B01001_001E";
@@ -1043,7 +1043,7 @@ async function estimatePopulationForGeometry(geometry) {
   const tractCount = Math.round(Number(attrs.tract_count) || 0);
   const boundary = { type: "polyline", paths: geometry.rings, spatialReference: geometry.spatialReference };
   const boundaryIds = await layer.queryObjectIds({ geometry: boundary, spatialRelationship: "intersects", where: `${populationField} >= 0` });
-  if ((boundaryIds || []).length > 300) {
+  if ((boundaryIds || []).length > maxBoundaryTracts) {
     return { population: Math.max(0, Math.round(weightedPopulation)), tractCount, weighted: false, boundaryTractCount: boundaryIds.length };
   }
   for (let index = 0; index < (boundaryIds || []).length; index += 500) {
@@ -1149,7 +1149,10 @@ async function createWeatherImpactPopupContent(event) {
     const cacheKey = `${layer?.url || "weather"}|${objectId ?? geometry.extent?.center?.x ?? "feature"}`;
     let impact = state.weatherImpactCache.get(cacheKey);
     if (!impact) {
-      const [population, fireCount] = await Promise.all([estimatePopulationForGeometry(geometry), countDistinctFiresForGeometry(geometry)]);
+      const [population, fireCount] = await Promise.all([
+        estimatePopulationForGeometry(geometry, { maxBoundaryTracts: 25 }),
+        countDistinctFiresForGeometry(geometry)
+      ]);
       impact = { ...population, fireCount };
       state.weatherImpactCache.set(cacheKey, impact);
     }
