@@ -172,47 +172,79 @@ async function handleAuthentication() {
   }
 }
 
-async function initializeMap() {
-  try {
-    await Promise.all([
-      customElements.whenDefined("arcgis-map"),
-      customElements.whenDefined("arcgis-scene")
-    ]);
-    elements.map.itemId = APP_CONFIG.webMapId;
-    elements.scene.itemId = APP_CONFIG.webSceneId;
-    await elements.map.viewOnReady();
-    state.mapReady = true;
-
+async function waitForComponentView(component, attempts = 2) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      await elements.scene.viewOnReady();
-      await elements.scene.view.when();
-      elements.scene.view.map.ground = "world-elevation";
-      state.sceneReady = true;
-      elements.scene.view.qualityProfile = "medium";
-      elements.scene.view.environment = {
-        lighting: { type: "virtual", directShadowsEnabled: true },
-        atmosphereEnabled: true,
-        starsEnabled: false
-      };
-    } catch (sceneError) {
-      state.sceneReady = false;
-      console.warn("3D scene initialization unavailable; continuing with the 2D planning map.", sceneError);
-      elements.view3dButtons.forEach((button) => {
-        button.disabled = true;
-        button.title = "3D scene unavailable";
-      });
+      await component.viewOnReady();
+      await component.view.when();
+      return component.view;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts - 1) await new Promise((resolve) => window.setTimeout(resolve, 1200));
     }
+  }
+  throw lastError || new Error("The ArcGIS view did not become ready.");
+}
 
-    configureMapOverlays();
-    await loadOperationalLayers();
-    elements.mapState.hidden = true;
-  } catch (error) {
-    console.error("Map initialization failed.", error);
+async function initializeMap() {
+  await Promise.all([
+    customElements.whenDefined("arcgis-map"),
+    customElements.whenDefined("arcgis-scene")
+  ]);
+  elements.map.itemId = APP_CONFIG.webMapId;
+  elements.scene.itemId = APP_CONFIG.webSceneId;
+
+  try {
+    await waitForComponentView(elements.map);
+    state.mapReady = true;
+    window.__esriView = elements.map.view;
+    window.__esriMap = elements.map.map;
+  } catch (mapError) {
+    console.error("2D map initialization failed.", mapError);
     elements.mapState.hidden = false;
     elements.mapState.textContent = "Map unavailable. County planning details remain accessible.";
     elements.mapState.classList.add("error");
     setDataStatus("Map unavailable", "error");
+    return;
   }
+
+  try {
+    await waitForComponentView(elements.scene);
+    elements.scene.view.map.ground = "world-elevation";
+    state.sceneReady = true;
+    elements.scene.view.qualityProfile = "medium";
+    elements.scene.view.environment = {
+      lighting: { type: "virtual", directShadowsEnabled: true },
+      atmosphereEnabled: true,
+      starsEnabled: false
+    };
+  } catch (sceneError) {
+    state.sceneReady = false;
+    console.warn("3D scene initialization unavailable; continuing with the 2D planning map.", sceneError);
+    elements.view3dButtons.forEach((button) => {
+      button.disabled = true;
+      button.title = "3D scene unavailable";
+    });
+  }
+
+  try {
+    configureMapOverlays();
+  } catch (overlayError) {
+    console.warn("One or more map overlay controls could not be initialized.", overlayError);
+  }
+
+  try {
+    await loadOperationalLayers();
+  } catch (layerError) {
+    console.error("Operational context layers could not be fully initialized.", layerError);
+    window.__app = { APP_CONFIG, state, elements };
+    window.__esriLayers ||= {};
+    setDataStatus("Map loaded • context layers partial", "partial");
+  }
+
+  elements.mapState.hidden = true;
+  elements.mapState.classList.remove("error");
 }
 
 function configureMapOverlays() {
