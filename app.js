@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=postfire8";
+import { APP_CONFIG } from "./config.js?v=postfire9";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -83,7 +83,6 @@ esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
   appId: APP_CONFIG.oauthClientId,
   portalUrl: APP_CONFIG.portalUrl,
-  redirectUri: APP_CONFIG.oauthRedirectUri,
   popup: false
 });
 esriId.registerOAuthInfos([oauthInfo]);
@@ -137,6 +136,11 @@ async function handleAuthentication() {
       elements.authButton.textContent = "Sign in";
       announce("Signed out.");
     } else {
+      const canonicalRedirect = new URL(APP_CONFIG.oauthRedirectUri);
+      const current = new URL(window.location.href);
+      if (current.origin !== canonicalRedirect.origin || current.pathname !== canonicalRedirect.pathname || current.search || current.hash) {
+        window.history.replaceState({}, document.title, canonicalRedirect.href);
+      }
       await esriId.getCredential(`${APP_CONFIG.portalUrl}/sharing`);
       window.location.reload();
     }

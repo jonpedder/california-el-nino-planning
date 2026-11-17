@@ -104,7 +104,7 @@ OAuth client ID:
 2eURPxapfMdaZiS7
 ```
 
-The client ID is a public application identifier, not a secret. The registered redirect URI must include the exact canonical callback `https://jonpedder.github.io/california-el-nino-planning/`. The app pins that value instead of deriving it from the current address, preventing cache-busting query strings from causing `Invalid redirect_uri`. The app uses redirect OAuth (`popup: false`).
+The client ID is a public application identifier, not a secret. The registered redirect URI must include the exact canonical callback `https://jonpedder.github.io/california-el-nino-planning/`. Immediately before starting OAuth, the app replaces cache-busting query strings or alternate document paths with that canonical URL, preventing them from becoming an unregistered `redirect_uri`. The app uses redirect OAuth (`popup: false`).
 
 ## ArcGIS Online content and sharing
 
@@ -128,7 +128,7 @@ Before adding a source:
 | --- | --- |
 | `portalUrl` | OAuth and portal context |
 | `oauthClientId` | Public OAuth application registration |
-| `oauthRedirectUri` | Canonical GitHub Pages callback, pinned so cache-busting query strings are never sent as OAuth redirects |
+| `oauthRedirectUri` | Canonical GitHub Pages callback used to remove cache-busting query strings before OAuth starts |
 | `webMapId` | Persisted 2D ArcGIS Web Map |
 | `webSceneId` | Persisted 3D ArcGIS Web Scene |
 | `basemap` | Initial dark-gray basemap |
