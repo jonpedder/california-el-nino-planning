@@ -1,6 +1,7 @@
 .analysis-body { min-height: 100%; height: auto; }
-.analysis-freshness { display: grid; justify-items: end; gap: 0.2rem; color: var(--muted); font-size: 0.76rem; }
-.analysis-freshness #analysis-updated { font-size: 0.68rem; }
+.analysis-freshness { display: flex; align-items: center; gap: 0.65rem; color: var(--muted); font-size: 0.76rem; }
+.analysis-freshness .user-chip > span:last-child { display: grid; gap: 0.15rem; }
+.analysis-freshness #analysis-updated { font-size: 0.62rem; }
 
 .analysis-controls {
   display: grid;

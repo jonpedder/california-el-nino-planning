@@ -7,29 +7,32 @@
   <meta name="color-scheme" content="dark">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=details1">
+  <link rel="stylesheet" href="./styles.css?v=header1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./app.js?v=settings1"></script>
+  <script type="module" src="./header.js?v=header1"></script>
+  <script type="module" src="./app.js?v=header1"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
 
   <header class="app-header">
-    <div>
-      <p class="eyebrow">California Security Operations</p>
-      <h1 data-app-title>El Niño Planning Console</h1>
-      <p class="subtitle" data-app-subtitle>County threat posture and capability planning</p>
-    </div>
-    <nav class="app-nav" aria-label="Primary navigation">
+    <a class="brand" href="./index.html" aria-label="El Niño Planning Console home">
+      <span class="brand-mark" aria-hidden="true">CA</span>
+      <span class="brand-copy"><strong data-app-title>El Niño Planning Console</strong><span data-app-subtitle>County threat posture and capability planning</span></span>
+    </a>
+    <nav class="app-nav header-actions" aria-label="Primary navigation">
+      <div class="header-report-group" aria-label="Reports">
+        <label for="report-menu">Reports</label>
+        <select id="report-menu"><option value="" selected>Select a report</option><option value="./analysis.html#summaryPanel">Analysis summary</option><option value="./analysis.html#conditionsPanel">Forecast &amp; gauges</option><option value="./analysis.html#riskPanel">Risk &amp; timeline</option><option value="./analysis.html#sourcesAnalysisPanel">Source accountability</option></select>
+        <button id="open-report" class="header-action header-action-small" type="button" disabled>Open</button>
+      </div>
       <a class="app-nav-link active" href="./index.html" aria-current="page">Planning Map</a>
       <a class="app-nav-link" href="./analysis.html">Analysis</a>
-      <a class="app-nav-link" href="./settings.html">Settings &amp; Help</a>
     </nav>
-    <div class="identity" aria-live="polite">
-      <span id="auth-status">Checking sign-in status…</span>
-      <calcite-button id="auth-button" appearance="outline-fill" kind="brand" scale="s" disabled>
-        Sign in
-      </calcite-button>
+    <div class="session-area identity" aria-live="polite">
+      <div class="user-chip"><span id="session-dot" class="user-dot"></span><span id="auth-status">Checking sign-in status…</span></div>
+      <button id="auth-button" class="header-action" type="button" disabled>Sign in</button>
+      <a class="header-action header-icon" href="./settings.html" title="Settings and Help" aria-label="Settings and Help"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58-1.92-3.32-2.39.96a7.1 7.1 0 0 0-1.62-.94L14.87 3h-3.84l-.36 3.18c-.58.24-1.12.55-1.62.94l-2.39-.96-1.92 3.32 2.03 1.58c-.05.31-.07.64-.07.94s.02.63.07.94l-2.03 1.58 1.92 3.32 2.39-.96c.5.39 1.04.7 1.62.94l.36 3.18h3.84l.36-3.18c.58-.24 1.12-.55 1.62-.94l2.39.96 1.92-3.32-2.02-1.58ZM12.95 15.5A3.5 3.5 0 1 1 12.95 8a3.5 3.5 0 0 1 0 7.5Z"></path></svg></a>
     </div>
   </header>
 

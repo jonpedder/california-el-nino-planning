@@ -7,28 +7,32 @@
   <meta name="color-scheme" content="dark">
   <title>El Niño Regional Analysis</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=analysis-filter2">
-  <link rel="stylesheet" href="./analysis.css?v=analysis-filter2">
+  <link rel="stylesheet" href="./styles.css?v=header1">
+  <link rel="stylesheet" href="./analysis.css?v=header1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./analysis.js?v=analysis-filter2"></script>
+  <script type="module" src="./header.js?v=header1"></script>
+  <script type="module" src="./analysis.js?v=header1"></script>
 </head>
 <body class="analysis-body">
   <a class="skip-link" href="#analysis-main">Skip to analysis</a>
 
   <header class="app-header">
-    <div>
-      <p class="eyebrow">California Security Operations</p>
-      <h1>El Niño Analysis</h1>
-      <p class="subtitle">Regional history, current impacts, and 72-hour outlook</p>
-    </div>
-    <nav class="app-nav" aria-label="Primary navigation">
+    <a class="brand" href="./index.html" aria-label="El Niño Planning Console home">
+      <span class="brand-mark" aria-hidden="true">CA</span>
+      <span class="brand-copy"><strong>El Niño Analysis</strong><span>Regional history, current impacts, and 72-hour outlook</span></span>
+    </a>
+    <nav class="app-nav header-actions" aria-label="Primary navigation">
+      <div class="header-report-group" aria-label="Reports">
+        <label for="report-menu">Reports</label>
+        <select id="report-menu"><option value="" selected>Select a report</option><option value="./analysis.html#summaryPanel">Analysis summary</option><option value="./analysis.html#conditionsPanel">Forecast &amp; gauges</option><option value="./analysis.html#riskPanel">Risk &amp; timeline</option><option value="./analysis.html#sourcesAnalysisPanel">Source accountability</option></select>
+        <button id="open-report" class="header-action header-action-small" type="button" disabled>Open</button>
+      </div>
       <a class="app-nav-link" href="./index.html">Planning Map</a>
       <a class="app-nav-link active" href="./analysis.html" aria-current="page">Analysis</a>
-      <a class="app-nav-link" href="./settings.html">Settings &amp; Help</a>
     </nav>
-    <div class="analysis-freshness" aria-live="polite">
-      <span id="analysis-status">Connecting to public sources…</span>
-      <span id="analysis-updated"></span>
+    <div class="session-area analysis-freshness" aria-live="polite">
+      <div class="user-chip"><span class="user-dot connected"></span><span><span id="analysis-status">Connecting to public sources…</span><small id="analysis-updated"></small></span></div>
+      <a class="header-action header-icon" href="./settings.html" title="Settings and Help" aria-label="Settings and Help"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58-1.92-3.32-2.39.96a7.1 7.1 0 0 0-1.62-.94L14.87 3h-3.84l-.36 3.18c-.58.24-1.12.55-1.62.94l-2.39-.96-1.92 3.32 2.03 1.58c-.05.31-.07.64-.07.94s.02.63.07.94l-2.03 1.58 1.92 3.32 2.39-.96c.5.39 1.04.7 1.62.94l.36 3.18h3.84l.36-3.18c.58-.24 1.12-.55 1.62-.94l2.39.96 1.92-3.32-2.02-1.58ZM12.95 15.5A3.5 3.5 0 1 1 12.95 8a3.5 3.5 0 0 1 0 7.5Z"></path></svg></a>
     </div>
   </header>
 

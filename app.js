@@ -19,6 +19,7 @@ const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLa
 const elements = {
   authButton: document.querySelector("#auth-button"),
   authStatus: document.querySelector("#auth-status"),
+  sessionDot: document.querySelector("#session-dot"),
   dataStatus: document.querySelector("#data-status"),
   countyState: document.querySelector("#county-state"),
   countyList: document.querySelector("#county-list"),
@@ -129,10 +130,12 @@ async function initializeAuthentication() {
     await portal.load();
     state.signedIn = true;
     elements.authStatus.textContent = `Signed in as ${portal.user?.fullName || portal.user?.username || "portal user"}`;
+    elements.sessionDot?.classList.add("connected");
     elements.authButton.textContent = "Sign out";
   } catch {
     state.signedIn = false;
     elements.authStatus.textContent = "Signed out — public planning layers available";
+    elements.sessionDot?.classList.remove("connected");
     elements.authButton.textContent = "Sign in";
   } finally {
     elements.authButton.disabled = false;
