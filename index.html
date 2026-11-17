@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
   <link rel="stylesheet" href="./styles.css?v=webmap2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./app.js?v=webmap2"></script>
+  <script type="module" src="./app.js?v=postfire1"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -112,6 +112,33 @@
           <h3 id="kpi-heading">Planning indicators</h3>
           <div id="kpi-grid" class="kpi-grid"></div>
         </section>
+        <section class="readiness-panel" aria-labelledby="readiness-heading">
+          <h3 id="readiness-heading">Post-fire rainfall readiness</h3>
+          <p class="helper">Screens authoritative USGS assessment perimeters against the selected NOAA precipitation outlook. This is monitoring-priority context, not a debris-flow prediction.</p>
+          <label for="readiness-outlook">Forecast horizon</label>
+          <select id="readiness-outlook">
+            <option value="ero1">Day 1 WPC ERO</option>
+            <option value="ero2">Day 2 WPC ERO</option>
+            <option value="ero3">Day 3 WPC ERO</option>
+            <option value="haz3_7">Days 3–7 hazards</option>
+            <option value="haz8_14">Days 8–14 hazards</option>
+          </select>
+          <div class="readiness-metrics" aria-live="polite">
+            <div><strong id="readiness-assessments">—</strong><span>county assessments</span></div>
+            <div><strong id="readiness-polygons">—</strong><span>weather polygons</span></div>
+            <div><strong id="readiness-intersections">—</strong><span>priority intersections</span></div>
+          </div>
+          <div class="readiness-filters">
+            <label for="readiness-year">Assessment year</label>
+            <select id="readiness-year" disabled><option value="">All years</option></select>
+            <label for="readiness-search">Fire search</label>
+            <input id="readiness-search" type="search" placeholder="Name or Fire ID" disabled>
+            <label for="readiness-fire">Assessment</label>
+            <select id="readiness-fire" disabled><option value="">View all matching assessments</option></select>
+          </div>
+          <p id="readiness-status" class="helper" role="status" aria-live="polite">Waiting for the map and county geometry…</p>
+          <ul id="readiness-list" class="readiness-list"></ul>
+        </section>
         <section aria-labelledby="demographics-heading">
           <h3 id="demographics-heading">Demographic context</h3>
           <div id="demographic-grid" class="demographic-grid"></div>
@@ -135,7 +162,7 @@
   </main>
 
   <footer>
-    Planning application • Public authoritative context layers • Indicators remain placeholders until analytical methods are approved
+    Planning application • Public authoritative context layers • Derived indicators are screening estimates and require operational verification
   </footer>
 
   <div id="app-alert" class="sr-only" role="alert" aria-live="assertive"></div>

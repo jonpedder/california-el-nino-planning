@@ -7,6 +7,16 @@ export const APP_CONFIG = Object.freeze({
   geoenrichmentUrl: "https://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/GeoEnrichment/enrich",
   geoenrichmentHierarchy: "esri2025",
   geoenrichmentVariables: "KeyUSFacts.TOTPOP_CY,KeyUSFacts.TOTHH_CY,KeyUSFacts.MEDHINC_CY,gender.MEDAGE_CY,KeyUSFacts.POPGRWCYFY",
+  postFireServiceUrl: "https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/USGS_Post_Fire_Hazard_Assessment_Data/FeatureServer",
+  postFirePointLayerId: 0,
+  postFirePerimeterLayerId: 9,
+  forecastProducts: Object.freeze({
+    ero1: Object.freeze({ title: "NOAA/WPC Excessive Rainfall Outlook — Day 1", shortLabel: "Day 1 WPC ERO", url: "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/wpc_precip_hazards/MapServer/0", where: "1=1", type: "ero" }),
+    ero2: Object.freeze({ title: "NOAA/WPC Excessive Rainfall Outlook — Day 2", shortLabel: "Day 2 WPC ERO", url: "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/wpc_precip_hazards/MapServer/1", where: "1=1", type: "ero" }),
+    ero3: Object.freeze({ title: "NOAA/WPC Excessive Rainfall Outlook — Day 3", shortLabel: "Day 3 WPC ERO", url: "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/wpc_precip_hazards/MapServer/2", where: "1=1", type: "ero" }),
+    haz3_7: Object.freeze({ title: "NOAA/WPC Precipitation Hazards Outlook — Days 3–7", shortLabel: "Days 3–7 hazards", url: "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/cpc_weather_hazards/MapServer/4", where: "label IN ('Heavy Rain','Heavy Precipitation')", type: "hazards" }),
+    haz8_14: Object.freeze({ title: "NOAA/CPC Precipitation Hazards Outlook — Days 8–14", shortLabel: "Days 8–14 hazards", url: "https://mapservices.weather.noaa.gov/vector/rest/services/hazards/cpc_weather_hazards/MapServer/6", where: "label IN ('Heavy Rain','Heavy Precipitation')", type: "hazards" })
+  }),
 
   // Public, authoritative planning/context sources verified on 2026-11-16.
   // Portal item IDs preserve publisher-managed symbology, popups, and attribution.
@@ -42,6 +52,77 @@ export const APP_CONFIG = Object.freeze({
       refreshInterval: 60,
       minScale: 1500000,
       opacity: 0.92
+    }),
+    Object.freeze({
+      key: "usgsPostFire",
+      itemId: "cf3f58f60f774ad3b791ce5d90a0b92c",
+      title: "USGS Post-Fire Debris-Flow Assessments",
+      category: "Post-fire hazard assessment",
+      source: "U.S. Geological Survey Landslide Hazards Program",
+      cadence: "Publisher-managed assessments",
+      opacity: 0.9,
+      minScale: 2000000,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "alertCameras",
+      itemId: "0c1c1166688f4f2db938194799337be4",
+      sublayerId: 0,
+      title: "ALERTCalifornia Live Cameras",
+      category: "Live camera context",
+      source: "ALERTCalifornia / UC San Diego",
+      cadence: "Live camera feed; map layer refreshes every 15 seconds",
+      refreshInterval: 0.25,
+      minScale: 1000000,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "caltransRoads",
+      itemId: "2d56e65de89c418780056651640291e8",
+      sublayerId: 0,
+      title: "Caltrans All Public Roads Network",
+      category: "Transportation network",
+      source: "California Department of Transportation",
+      cadence: "Authoritative statewide network; not a live closure feed",
+      opacity: 0.7,
+      minScale: 250000,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "hospitals",
+      itemId: "85672c5a514b4e1ebc08191a4bebf0c0",
+      sublayerId: 0,
+      title: "FEMA Hospitals and Medical Centers",
+      category: "Critical facilities",
+      source: "FEMA Region 9 / USGS National Structures",
+      cadence: "Publisher-managed; checked weekly by publisher",
+      opacity: 0.95,
+      minScale: 500000,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "shelterFacilities",
+      itemId: "61a97e7745ce4c8691044ff46769fb19",
+      sublayerId: 0,
+      title: "FEMA National Shelter System Facilities",
+      category: "Shelter planning capacity",
+      source: "FEMA Region 9 / National Shelter System",
+      cadence: "Planning inventory; operational status must be verified",
+      opacity: 0.95,
+      minScale: 750000,
+      defaultVisible: false
+    }),
+    Object.freeze({
+      key: "activeShelters",
+      itemId: "bc4f03b7ec3e4c8d86c3e2ebcd92e047",
+      sublayerId: 0,
+      title: "Cal OES Active Shelters",
+      category: "Active shelter status",
+      source: "California Governor's Office of Emergency Services / American Red Cross",
+      cadence: "Approximately 60 seconds",
+      refreshInterval: 1,
+      minScale: 1500000,
+      opacity: 1
     }),
     Object.freeze({
       key: "fireHistory",
@@ -138,11 +219,13 @@ export const APP_CONFIG = Object.freeze({
   ]),
 
   countyLayerVisibility: Object.freeze({
-    marin: Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
-    "santa-cruz": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
-    "los-angeles": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "laDebrisFlow"]),
-    "san-diego": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts"])
+    marin: Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "activeShelters", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
+    "santa-cruz": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "activeShelters", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "coastalEmployment"]),
+    "los-angeles": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "activeShelters", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts", "laDebrisFlow"]),
+    "san-diego": Object.freeze(["precipitationForecast", "weatherWarnings", "liveStreamGauges", "activeShelters", "fireHistory", "floodHazards", "femaRiskCounties", "femaRiskTracts"])
   }),
+
+  countyFips: Object.freeze({ marin: "06041", "santa-cruz": "06087", "los-angeles": "06037", "san-diego": "06073" }),
 
   defaultViewpoint: Object.freeze({
     center: Object.freeze([-119.6, 36.6]),

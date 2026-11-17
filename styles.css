@@ -168,6 +168,20 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .kpi strong { color: var(--medium); font-size: 0.9rem; }
 .kpi span { margin-top: 0.35rem; font-size: 0.73rem; font-weight: 700; }
 .kpi small { margin-top: 0.25rem; color: var(--muted); font-size: 0.65rem; line-height: 1.3; }
+.readiness-panel { padding: 0.75rem; border: 1px solid #4f7189; background: #0c2637; }
+.readiness-panel > label, .readiness-filters label { display: block; margin: 0.45rem 0 0.2rem; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+.readiness-panel select, .readiness-panel input { width: 100%; min-height: 34px; padding: 0.4rem; border: 1px solid #4f7189; background: #071a27; color: var(--text); }
+.readiness-panel select:disabled, .readiness-panel input:disabled { opacity: 0.6; }
+.readiness-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; margin-top: 0.65rem; }
+.readiness-metrics div { padding: 0.45rem; border: 1px solid var(--border); background: var(--panel2); text-align: center; }
+.readiness-metrics strong, .readiness-metrics span { display: block; }
+.readiness-metrics strong { color: var(--gold); font-size: 1rem; }
+.readiness-metrics span { margin-top: 0.2rem; color: var(--muted); font-size: 0.58rem; line-height: 1.25; }
+.readiness-filters { margin-top: 0.6rem; }
+.readiness-list { max-height: 170px; margin: 0.5rem 0 0; padding: 0; overflow: auto; list-style: none; }
+.readiness-list button { width: 100%; margin-bottom: 0.3rem; padding: 0.45rem; border: 1px solid #4f7189; background: #172f40; color: var(--text); text-align: left; cursor: pointer; }
+.readiness-list button:hover { border-color: var(--gold); background: #214159; }
+
 .demographic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
 .demographic-stat { min-height: 70px; padding: 0.6rem; border: 1px solid var(--border); background: #102c3d; }
 .demographic-stat strong, .demographic-stat span { display: block; }

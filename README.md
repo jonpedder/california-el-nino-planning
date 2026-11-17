@@ -2,14 +2,16 @@
 
 A no-build static ArcGIS application for county-level El Niño planning. It uses the ArcGIS Maps SDK for JavaScript 5.1 CDN/ESM loader, Calcite components supplied by that loader, and a CA Security Ops dark navy/gold visual system.
 
-> **Planning status:** The map connects to eleven verified public ArcGIS Online/Living Atlas items for forecast, advisory, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators remain explicit placeholders; no connected layer yet drives a risk score or operational decision.
+> **Planning status:** The saved Web Map connects to 18 verified public ArcGIS Online/Living Atlas items for forecast, advisory, post-fire hazard, roads, hospitals, shelters, cameras, fire, flood-hazard, structure, coastal-exposure, and Los Angeles debris-flow context. County indicators now report bounded screening counts from connected support layers, but they are not risk scores or operational decisions.
 
 ## What is included
 
 - Responsive command-center layout with Planning Map and Analysis pages, shared navigation, and source-status reporting.
 - Region-filtered analysis for past fire impacts, current NWS advisories and USGS gauge conditions, 72-hour precipitation forecasts, and FEMA risk baselines.
 - Data-driven profiles for Marin, Santa Cruz, Los Angeles, and San Diego.
-- County-specific threats, capabilities, placeholder KPIs, viewpoints, and disclaimers.
+- County-specific threats, capabilities, source-backed screening KPIs, viewpoints, and disclaimers.
+- Fire/El Niño readiness workflow with NOAA Day 1–3 excessive-rainfall outlooks, Days 3–7 and 8–14 precipitation hazards, USGS post-fire assessment intersection counts, fire/year filters, map highlighting, and fire selection.
+- ALERTCalifornia live cameras, flood-stage gauges, Caltrans roads, FEMA hospitals, FEMA planning shelters, and Cal OES active shelters.
 - ArcGIS Online OAuth sign-in/sign-out UI for `https://publicsafety.maps.arcgis.com`.
 - Verified public NWS, NIFC, FEMA, NOAA, and Los Angeles County portal items.
 - County-specific initial layer visibility and publisher-managed symbology/popups.
@@ -28,6 +30,13 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 
 - National Weather Service Precipitation Forecast — 72-hour forecast.
 - USA Weather Watches and Warnings — current NWS advisories.
+- USGS Post-Fire Debris-Flow Assessments — fire locations, perimeters, basin/segment likelihood, volume, and combined-hazard layers.
+- NOAA/WPC Day 1–3 Excessive Rainfall Outlooks and NOAA/WPC/CPC Days 3–7 and 8–14 precipitation-hazard outlooks — runtime readiness screening.
+- ALERTCalifornia Live Cameras — optional live-camera context, off by default.
+- Caltrans All Public Roads Network — transportation screening, off by default and scale limited.
+- FEMA Hospitals and Medical Centers — critical-facility screening, off by default and scale limited.
+- FEMA National Shelter System Facilities — planning capacity inventory, off by default and scale limited.
+- Cal OES Active Shelters — current active-shelter context.
 - WFIGS Interagency Fire Perimeters — history/recent-burn context.
 - WFIGS Current Interagency Fire Perimeters — available but off by default.
 - USA Flood Hazard Areas — FEMA-derived planning/regulatory context, visible at 1:400,000 and larger.
@@ -42,7 +51,7 @@ County detail includes 2026 Esri Updated Demographics and a generated Business A
 
 The FEMA National Risk Index popups use Arcade expressions for a concise risk snapshot and El Niño-relevant hazard ratings, append on-demand polygon demographics for signed-in users, and expose every FEMA source attribute in nested collapsible categories. The National Risk Index is a December 2025 planning dataset for broad comparisons, not a real-time forecast or a substitute for localized risk analysis.
 
-Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions and does not calculate exposure counts in the browser.
+Forecasts, observations/advisories, planning hazards, exposure layers, and incident history are not interchangeable. The application preserves those distinctions. Browser-side calculations are bounded screening summaries: county facility/assessment counts, shelter-capacity rollups from published fields, and spatial intersections between USGS assessment perimeters and selected NOAA outlook polygons. They require local operational validation.
 
 ## Architecture and hosting boundary
 

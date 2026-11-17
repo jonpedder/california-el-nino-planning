@@ -1,11 +1,12 @@
-import { APP_CONFIG } from "./config.js?v=webmap2";
+import { APP_CONFIG } from "./config.js?v=postfire1";
 
-const [OAuthInfo, esriId, Portal, esriConfig, esriRequest] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
   "@arcgis/core/config.js",
-  "@arcgis/core/request.js"
+  "@arcgis/core/request.js",
+  "@arcgis/core/layers/FeatureLayer.js"
 ]);
 
 const elements = {
@@ -19,6 +20,15 @@ const elements = {
   detailContent: document.querySelector("#detail-content"),
   threatList: document.querySelector("#threat-list"),
   kpiGrid: document.querySelector("#kpi-grid"),
+  readinessOutlook: document.querySelector("#readiness-outlook"),
+  readinessAssessments: document.querySelector("#readiness-assessments"),
+  readinessPolygons: document.querySelector("#readiness-polygons"),
+  readinessIntersections: document.querySelector("#readiness-intersections"),
+  readinessYear: document.querySelector("#readiness-year"),
+  readinessSearch: document.querySelector("#readiness-search"),
+  readinessFire: document.querySelector("#readiness-fire"),
+  readinessStatus: document.querySelector("#readiness-status"),
+  readinessList: document.querySelector("#readiness-list"),
   demographicGrid: document.querySelector("#demographic-grid"),
   demographicVintage: document.querySelector("#demographic-vintage"),
   infographicLink: document.querySelector("#infographic-link"),
@@ -45,7 +55,13 @@ const state = {
   sceneReady: false,
   activeView: "2d",
   operationalLayers: new Map(),
-  layerFailures: []
+  layerFailures: [],
+  countyGeometryCache: new Map(),
+  readinessRun: 0,
+  readinessRecords: [],
+  readinessIntersectingIds: [],
+  readinessOutlookLayer: null,
+  readinessHighlightLayer: null
 };
 
 const enrichmentCache = new Map();
@@ -61,6 +77,10 @@ esriId.registerOAuthInfos([oauthInfo]);
 elements.authButton.addEventListener("click", handleAuthentication);
 elements.view2dButtons.forEach((button) => button.addEventListener("click", () => switchView("2d")));
 elements.view3dButtons.forEach((button) => button.addEventListener("click", () => switchView("3d")));
+elements.readinessOutlook.addEventListener("change", () => refreshReadinessForSelectedCounty());
+elements.readinessYear.addEventListener("change", renderReadinessFireOptions);
+elements.readinessSearch.addEventListener("input", renderReadinessFireOptions);
+elements.readinessFire.addEventListener("change", () => openReadinessFire(elements.readinessFire.value));
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -674,6 +694,241 @@ function selectCounty(countyId, { moveFocus = false } = {}) {
 
   renderCountyDetail(county);
   updateMap(county);
+  refreshPlanningIndicators(county);
+  refreshPostFireReadiness(county);
+}
+
+async function getCountyGeometry(county) {
+  if (state.countyGeometryCache.has(county.id)) return state.countyGeometryCache.get(county.id);
+  const layer = state.operationalLayers.get("femaRiskCounties");
+  const fips = APP_CONFIG.countyFips[county.id];
+  if (!layer || !fips) throw new Error("County analysis geometry is unavailable.");
+  const result = await layer.queryFeatures({
+    where: `STCOFIPS = '${fips}'`,
+    outFields: ["STCOFIPS", "COUNTY"],
+    returnGeometry: true
+  });
+  const geometry = result.features[0]?.geometry;
+  if (!geometry) throw new Error(`No county geometry returned for ${county.name}.`);
+  state.countyGeometryCache.set(county.id, geometry);
+  return geometry;
+}
+
+function findPostFireLayer(layerId) {
+  const root = state.operationalLayers.get("usgsPostFire");
+  return root?.allLayers?.toArray?.().find((layer) => Number(layer.layerId) === Number(layerId)) || null;
+}
+
+async function refreshPlanningIndicators(county) {
+  const selectedId = county.id;
+  try {
+    const geometry = await getCountyGeometry(county);
+    const hospitals = state.operationalLayers.get("hospitals");
+    const shelters = state.operationalLayers.get("shelterFacilities");
+    const activeShelters = state.operationalLayers.get("activeShelters");
+    const firePoints = findPostFireLayer(APP_CONFIG.postFirePointLayerId);
+    const [hospitalCount, shelterResult, activeCount, assessmentCount] = await Promise.all([
+      hospitals?.queryFeatureCount({ geometry, spatialRelationship: "intersects", where: "1=1" }) ?? 0,
+      shelters?.queryFeatures({ geometry, spatialRelationship: "intersects", where: "1=1", outFields: ["EVAC_CAP", "POSTIM_CAP"], returnGeometry: false }) ?? { features: [] },
+      activeShelters?.queryFeatureCount({ geometry, spatialRelationship: "intersects", where: "1=1" }) ?? 0,
+      firePoints?.queryFeatureCount({ geometry, spatialRelationship: "intersects", where: "1=1" }) ?? 0
+    ]);
+    if (state.selectedCountyId !== selectedId) return;
+
+    const shelterCapacity = shelterResult.features.reduce((sum, feature) => {
+      const evac = Number(String(feature.attributes?.EVAC_CAP ?? "").replace(/[^0-9.-]/g, ""));
+      const post = Number(String(feature.attributes?.POSTIM_CAP ?? "").replace(/[^0-9.-]/g, ""));
+      return sum + Math.max(Number.isFinite(evac) ? evac : 0, Number.isFinite(post) ? post : 0);
+    }, 0);
+    const shelterCount = shelterResult.features.length;
+    const supportKeys = ["usgsPostFire", "caltransRoads", "hospitals", "shelterFacilities", "activeShelters", "alertCameras"];
+    const connected = supportKeys.filter((key) => state.operationalLayers.has(key)).length;
+    const enhanced = county.kpis.map((kpi) => {
+      const label = kpi.label.toLowerCase();
+      if (label.includes("shelter capacity")) return { ...kpi, value: shelterCapacity ? formatCount(shelterCapacity) : `${shelterCount} facilities`, note: `Planning inventory from ${shelterCount} FEMA shelter facilities; ${activeCount} currently mapped active. Verify capacity and status operationally.` };
+      if (label.includes("critical facilities")) return { ...kpi, value: formatCount(hospitalCount), note: "Hospitals and medical centers intersecting the county boundary; verify operating status and dependencies." };
+      if (label.includes("facilities in focus")) return { ...kpi, value: formatCount(hospitalCount + shelterCount), note: `${hospitalCount} medical facilities and ${shelterCount} planning shelters; active status requires verification.` };
+      if (label.includes("debris-flow") || label.includes("slope hazard")) return { ...kpi, value: formatCount(assessmentCount), note: "USGS post-fire assessment locations in the county; use the readiness screen for current precipitation overlap." };
+      if (label.includes("routes at risk") || label.includes("road segments") || label.includes("crossings")) return { ...kpi, value: "Network connected", note: "Caltrans statewide public-roads network is available for screening; this is not a live closure or damage count." };
+      if (label.includes("coastal")) return { ...kpi, value: "Sources connected", note: "Flood-hazard, coastal-employment, structures, and transportation context are available; no impact count is asserted." };
+      if (label.includes("population exposed")) return { ...kpi, value: "Analysis ready", note: "County demographics and weather/post-fire geometry are connected; exposure depends on the selected outlook polygon." };
+      if (label.includes("planning confidence")) return { ...kpi, value: `${connected}/${supportKeys.length} support layers`, note: "Authoritative support layers loaded; derived screening results still require local operational validation." };
+      return kpi;
+    });
+    renderKpis(enhanced);
+  } catch (error) {
+    console.warn("Planning indicator enrichment unavailable.", error);
+  }
+}
+
+function forecastRenderer(type) {
+  const fill = (color, outline) => ({ type: "simple-fill", color, outline: { color: outline, width: 2.2 } });
+  if (type === "ero") return {
+    type: "unique-value", field: "outlook", defaultSymbol: fill([255, 255, 255, 0.16], [255, 255, 255, 1]),
+    uniqueValueInfos: [
+      { value: "Marginal (At Least 5%)", label: "Marginal", symbol: fill([0, 255, 157, 0.3], [0, 255, 157, 1]) },
+      { value: "Slight (At Least 15%)", label: "Slight", symbol: fill([255, 232, 0, 0.36], [255, 244, 92, 1]) },
+      { value: "Moderate (At Least 40%)", label: "Moderate", symbol: fill([255, 126, 0, 0.4], [255, 166, 61, 1]) },
+      { value: "High (At Least 70%)", label: "High", symbol: fill([255, 38, 38, 0.44], [255, 104, 104, 1]) }
+    ]
+  };
+  return {
+    type: "unique-value", field: "label", defaultSymbol: fill([255, 255, 255, 0.14], [255, 255, 255, 1]),
+    uniqueValueInfos: [
+      { value: "Heavy Rain", label: "Heavy Rain", symbol: fill([0, 229, 255, 0.32], [64, 239, 255, 1]) },
+      { value: "Heavy Precipitation", label: "Heavy Precipitation", symbol: fill([255, 194, 0, 0.34], [255, 224, 94, 1]) }
+    ]
+  };
+}
+
+function flameRenderer() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 80'><path d='M34 3c3 15-8 20-4 33 2-8 8-12 14-17 1 13 13 20 13 35 0 14-11 24-25 24S7 68 7 54c0-12 7-22 17-34 0 10 2 16 7 20-2-14 4-23 3-37z' fill='%23ef3b0a' stroke='%23ffffff' stroke-width='5'/><path d='M32 72c-8 0-14-6-14-14 0-7 5-12 10-18 0 8 3 11 6 14 0-7 3-11 7-15 1 8 6 12 6 19 0 8-7 14-15 14z' fill='%23ffd166'/></svg>`;
+  return { type: "simple", symbol: { type: "picture-marker", url: `data:image/svg+xml,${svg}`, width: 20, height: 25 } };
+}
+
+function clearReadinessRuntimeLayers() {
+  for (const key of ["readinessOutlookLayer", "readinessHighlightLayer"]) {
+    const layer = state[key];
+    if (layer && elements.map.map.layers.includes(layer)) elements.map.map.remove(layer);
+    state[key] = null;
+  }
+}
+
+async function refreshReadinessForSelectedCounty() {
+  const county = state.counties.find((candidate) => candidate.id === state.selectedCountyId);
+  if (county) await refreshPostFireReadiness(county);
+}
+
+async function refreshPostFireReadiness(county) {
+  const run = ++state.readinessRun;
+  const product = APP_CONFIG.forecastProducts[elements.readinessOutlook.value] || APP_CONFIG.forecastProducts.ero1;
+  elements.readinessStatus.textContent = `Evaluating ${product.shortLabel} against USGS post-fire assessments…`;
+  elements.readinessAssessments.textContent = "…";
+  elements.readinessPolygons.textContent = "…";
+  elements.readinessIntersections.textContent = "…";
+  elements.readinessYear.disabled = true;
+  elements.readinessSearch.disabled = true;
+  elements.readinessFire.disabled = true;
+  elements.readinessList.replaceChildren();
+
+  try {
+    const geometry = await getCountyGeometry(county);
+    const firePoints = findPostFireLayer(APP_CONFIG.postFirePointLayerId) || new FeatureLayer({ url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePointLayerId}` });
+    const firePerimeters = findPostFireLayer(APP_CONFIG.postFirePerimeterLayerId) || new FeatureLayer({ url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePerimeterLayerId}` });
+    await Promise.all([firePoints.load(), firePerimeters.load()]);
+    const countyFires = await firePoints.queryFeatures({ geometry, spatialRelationship: "intersects", where: "1=1", outFields: ["fire", "Fire_ID", "start_date", "assessment_date", "location"], returnGeometry: true });
+    if (run !== state.readinessRun) return;
+    state.readinessRecords = countyFires.features.map((feature) => ({
+      feature,
+      id: String(feature.attributes?.Fire_ID || ""),
+      name: String(feature.attributes?.fire || "Unnamed fire"),
+      year: feature.attributes?.start_date ? String(new Date(feature.attributes.start_date).getUTCFullYear()) : ""
+    })).filter((record) => record.id);
+    populateReadinessFilters();
+    elements.readinessAssessments.textContent = formatCount(state.readinessRecords.length);
+
+    clearReadinessRuntimeLayers();
+    const outlookLayer = new FeatureLayer({
+      url: product.url,
+      title: product.title,
+      definitionExpression: product.where,
+      opacity: 1,
+      renderer: forecastRenderer(product.type),
+      popupTemplate: product.type === "ero" ? {
+        title: "{product}: {outlook}",
+        content: [{ type: "fields", fieldInfos: [{ fieldName: "outlook", label: "Outlook category" }, { fieldName: "issue_time", label: "Issue time" }, { fieldName: "start_time", label: "Start time" }, { fieldName: "end_time", label: "End time" }] }]
+      } : {
+        title: "{label}",
+        content: [{ type: "fields", fieldInfos: [{ fieldName: "label", label: "Hazard" }, { fieldName: "start_date", label: "Start date" }, { fieldName: "end_date", label: "End date" }] }]
+      }
+    });
+    state.readinessOutlookLayer = outlookLayer;
+    elements.map.map.add(outlookLayer);
+    await outlookLayer.load();
+    const outlooks = await outlookLayer.queryFeatures({ geometry, spatialRelationship: "intersects", where: product.where, outFields: ["*"], returnGeometry: true });
+    if (run !== state.readinessRun) return;
+    elements.readinessPolygons.textContent = formatCount(outlooks.features.length);
+
+    const ids = new Set();
+    for (const outlook of outlooks.features) {
+      const result = await firePerimeters.queryFeatures({ geometry: outlook.geometry, spatialRelationship: "intersects", where: "1=1", outFields: ["Fire_ID"], returnGeometry: false });
+      for (const feature of result.features) if (feature.attributes?.Fire_ID) ids.add(String(feature.attributes.Fire_ID));
+    }
+    if (run !== state.readinessRun) return;
+    const countyIds = new Set(state.readinessRecords.map((record) => record.id));
+    state.readinessIntersectingIds = [...ids].filter((id) => countyIds.has(id)).sort();
+    elements.readinessIntersections.textContent = formatCount(state.readinessIntersectingIds.length);
+    renderReadinessList();
+
+    if (state.readinessIntersectingIds.length) {
+      const highlight = new FeatureLayer({
+        url: `${APP_CONFIG.postFireServiceUrl}/${APP_CONFIG.postFirePointLayerId}`,
+        title: "Fires intersecting selected weather outlook",
+        definitionExpression: `Fire_ID IN (${state.readinessIntersectingIds.map(sqlString).join(",")})`,
+        outFields: ["*"],
+        renderer: flameRenderer()
+      });
+      state.readinessHighlightLayer = highlight;
+      elements.map.map.add(highlight);
+      await highlight.load();
+    }
+    elements.readinessStatus.textContent = state.readinessIntersectingIds.length
+      ? `${state.readinessIntersectingIds.length} assessment${state.readinessIntersectingIds.length === 1 ? "" : "s"} intersect the ${product.shortLabel}. Review official warnings and local forecasts.`
+      : outlooks.features.length ? `No county assessment perimeter intersects the ${product.shortLabel}.` : `No selected precipitation-hazard polygon is currently published over ${county.name} County.`;
+  } catch (error) {
+    if (run !== state.readinessRun) return;
+    console.warn("Post-fire readiness analysis unavailable.", error);
+    elements.readinessAssessments.textContent = "—";
+    elements.readinessPolygons.textContent = "—";
+    elements.readinessIntersections.textContent = "—";
+    elements.readinessStatus.textContent = "Readiness analysis is unavailable because a USGS, NOAA, or county geometry query failed.";
+  }
+}
+
+function populateReadinessFilters() {
+  const years = [...new Set(state.readinessRecords.map((record) => record.year).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  elements.readinessYear.replaceChildren(new Option("All years", ""));
+  for (const year of years) elements.readinessYear.add(new Option(year, year));
+  elements.readinessYear.disabled = false;
+  elements.readinessSearch.disabled = false;
+  renderReadinessFireOptions();
+}
+
+function renderReadinessFireOptions() {
+  const year = elements.readinessYear.value;
+  const term = elements.readinessSearch.value.trim().toLowerCase();
+  const matches = state.readinessRecords.filter((record) => (!year || record.year === year) && (!term || record.name.toLowerCase().includes(term) || record.id.toLowerCase().includes(term)));
+  elements.readinessFire.replaceChildren(new Option(`View all matching assessments (${matches.length})`, ""));
+  for (const record of matches.sort((a, b) => a.name.localeCompare(b.name))) elements.readinessFire.add(new Option(`${record.name}${record.year ? ` (${record.year})` : ""} — ${record.id}`, record.id));
+  elements.readinessFire.disabled = false;
+}
+
+function renderReadinessList() {
+  elements.readinessList.replaceChildren();
+  const byId = new Map(state.readinessRecords.map((record) => [record.id, record]));
+  for (const id of state.readinessIntersectingIds.slice(0, 30)) {
+    const record = byId.get(id);
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = record ? `${record.name} — ${id}` : id;
+    button.addEventListener("click", () => openReadinessFire(id));
+    item.append(button);
+    elements.readinessList.append(item);
+  }
+}
+
+async function openReadinessFire(id) {
+  if (!id) return;
+  const record = state.readinessRecords.find((candidate) => candidate.id === id);
+  if (!record?.feature?.geometry) return;
+  const view = state.activeView === "3d" ? elements.scene.view : elements.map.view;
+  await view.goTo({ target: record.feature.geometry, zoom: 12 }, { duration: 650 }).catch(() => {});
+  view.openPopup({ features: [record.feature], location: record.feature.geometry });
+}
+
+function sqlString(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
 }
 
 function renderCountyDetail(county) {
@@ -788,7 +1043,7 @@ function renderCapabilities(capabilities = []) {
 function renderSourceLayers(countyId) {
   elements.layerList.replaceChildren();
   const visibleKeys = new Set(APP_CONFIG.countyLayerVisibility[countyId] || []);
-  const keys = [...visibleKeys, "censusDemographics"];
+  const keys = [...new Set([...visibleKeys, "usgsPostFire", "alertCameras", "caltransRoads", "hospitals", "shelterFacilities", "censusDemographics"])];
   const definitions = keys
     .map((key) => APP_CONFIG.operationalLayers.find((layer) => layer.key === key))
     .filter(Boolean);

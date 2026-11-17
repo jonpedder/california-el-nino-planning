@@ -2,9 +2,9 @@
 
 ## Status
 
-Twelve public portal items were verified and are connected as **map context**. They do not yet drive the placeholder KPIs or a composite risk score. The application distinguishes forecasts, advisories, planning hazards, exposure context, and incident/history layers in `config.js`.
+Eighteen public portal items were verified and are connected as map and analysis context. Bounded county counts and post-fire/weather intersections drive screening indicators, but the application does not calculate a composite risk score. It distinguishes forecasts, advisories, observations, planning hazards, facilities, exposure context, and incident/history layers in `config.js`.
 
-Verification date: **2026-11-16**
+Verification date: **2026-11-17**
 
 ## Connected sources
 
@@ -13,6 +13,12 @@ Verification date: **2026-11-16**
 | `precipitationForecast` | `f9e9283b9c9741d09aad633f68758bf6` | NWS via Esri Living Atlas | 72-hour quantitative precipitation **forecast** | NWS source hourly; service advertises 15-minute refresh | Approved for visualization. Multilayer item; do not present as observed rainfall. Informational and not monitored 24/7. |
 | `weatherWarnings` | `a6134ae01aad44c499d12feec782b386` | NWS via Esri Living Atlas | Current watches, warnings, and advisories | Approximately 5 minutes | Approved for visualization. Advisory issuance does not prove local impact. |
 | `liveStreamGauges` | `81c5a9f2a2704d54a49042a44eefa5d3` | USGS, NWS, and other contributors via Esri Living Atlas | Current stream stage, flow, status, forecast status, and observation freshness | Approximately hourly | Approved for visualization and freshness-aware analysis. California USGS records are filtered spatially on the Analysis page. Many USGS records do not supply a flood `statusClass`; gauge-specific reviewed thresholds are required before operational alerting. Stale records must not be treated as current. |
+| `usgsPostFire` | `cf3f58f60f774ad3b791ce5d90a0b92c` | USGS Landslide Hazards Program | Post-fire debris-flow fire locations, perimeters, basin/segment likelihood, volume, and combined hazards | Publisher-managed | Used for county assessment counts and spatial intersection with the selected NOAA outlook. A published assessment is not a prediction that debris flow will occur. |
+| `alertCameras` | `0c1c1166688f4f2db938194799337be4` | ALERTCalifornia / UC San Diego | Live camera situational context | Layer refreshes every 15 seconds | Optional and off by default. Images require interpretation and do not assert a hazard or closure. |
+| `caltransRoads` | `2d56e65de89c418780056651640291e8` | Caltrans | Statewide public-roads network | Publisher-managed | Used only to indicate that transportation screening data is connected. Not a live closure, passability, or damage feed. |
+| `hospitals` | `85672c5a514b4e1ebc08191a4bebf0c0` | FEMA Region 9 / USGS National Structures | Hospitals and medical centers | Publisher checks weekly | County feature counts support a screening KPI; count does not establish operating status, capacity, dependencies, or hazard impact. |
+| `shelterFacilities` | `61a97e7745ce4c8691044ff46769fb19` | FEMA Region 9 / National Shelter System | Shelter planning inventory and capacity fields | Publisher-managed | County rollup uses the larger numeric value from `EVAC_CAP` and `POSTIM_CAP` per facility. Capacity and availability must be verified operationally. |
+| `activeShelters` | `bc4f03b7ec3e4c8d86c3e2ebcd92e047` | Cal OES / American Red Cross | Active shelter status | Approximately 60 seconds | Visible by default. No capacity field is used; status and county count are context only. |
 | `fireHistory` | `5e72b1699bf74eefb3f3aff6f4ba5511` | NIFC / WFIGS | Fire-perimeter history and recent burn context | Approximately 5 minutes | Approved conditionally. Records before 2021 are incomplete; no relative-date query is issued by the app. A perimeter is not a debris-flow probability. |
 | `currentFirePerimeters` | `d1c32af3212341869b3c810f1a215824` | NIFC / WFIGS | Current incident context | Approximately 5 minutes | Available in the Layer List but off by default. Not a substitute for recent-burn-scar analysis. |
 | `floodHazards` | `ccd29fb4bd5e4b44a2d61638829a5d7e` | FEMA via Esri Living Atlas | Regulatory/planning flood-hazard context | Annual snapshot | Approved for planning visualization. Item is limited to scales of 1:400,000 and larger. It is not a live flood extent or forecast. |
@@ -25,7 +31,7 @@ Verification date: **2026-11-16**
 
 ## Portal and loading approach
 
-- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133`, which persists the twelve verified portal layers, basemap, extent, order, visibility, symbology, popups, sublayer organization, and attribution.
+- The Planning Map loads public Web Map `bc6d9edf97a0425eb53a1f7776c80133`, which persists the 18 verified portal layers, basemap, extent, order, visibility, symbology, popups, sublayer organization, and attribution.
 - The app uses the Public Safety ArcGIS Online organization for OAuth while loading public ArcGIS Online content across publisher organizations.
 - Each source loads independently. A failed item produces a partial/unavailable status instead of blocking county planning content.
 - County selection controls initial visibility. The map Layer List allows an analyst to adjust visibility afterward.
@@ -35,10 +41,10 @@ Verification date: **2026-11-16**
 
 | County | Initially visible sources |
 | --- | --- |
-| Marin | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
-| Santa Cruz | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
-| Los Angeles | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, LA County post-fire debris-flow hazards |
-| San Diego | NWS precipitation forecast, NWS warnings, live stream gauges, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers |
+| Marin | NWS precipitation forecast, NWS warnings, live stream gauges, Cal OES active shelters, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
+| Santa Cruz | NWS precipitation forecast, NWS warnings, live stream gauges, Cal OES active shelters, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, NOAA coastal-employment exposure |
+| Los Angeles | NWS precipitation forecast, NWS warnings, live stream gauges, Cal OES active shelters, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers, LA County post-fire debris-flow hazards |
+| San Diego | NWS precipitation forecast, NWS warnings, live stream gauges, Cal OES active shelters, WFIGS fire history, FEMA flood hazards, FEMA NRI county/tract layers |
 
 The NRI county layer displays at broader county scales and the tract layer takes over at 1:700,000 and larger. Current fire perimeters, USA Structures, and USA 2020 Census Population Characteristics remain available but off by default.
 
@@ -60,9 +66,10 @@ The displayed variables are 2026 total population, 2026 households, 2026 median 
 The following needs remain discovery or validation work and are not represented as operational layers:
 
 - State or county road closures and passability.
-- Critical facilities, shelters, capacities, and operational status.
-- Statewide post-fire debris-flow probability/volume products.
-- Flash-flood observations or forecast polygons beyond NWS advisory context.
+- Locally validated critical-facility operating status, dependencies, and surge capacity.
+- Confirmed shelter availability/capacity and local mass-care coordination status.
+- Live road closures, passability, damage, and audited flood-prone crossings.
+- Flash-flood observations beyond NWS advisory and NOAA outlook context.
 - County population exposure with an approved allocation method.
 - Coastal water-level observations and event-specific inundation forecasts.
 - San Diego, Marin, and Santa Cruz local debris-flow or drainage products.
@@ -83,7 +90,7 @@ Before any connected layer drives a KPI, priority score, alert, or workflow acti
 
 ## KPI provenance requirements
 
-All current KPI cards remain placeholders. Activating one requires a plain-language definition, exact layer/field bindings, spatial and temporal methods, null/suppression handling, expected range, independent validation, attribution, last-updated display, and stale/error behavior.
+KPI cards now distinguish source-connected screening results from unavailable operational impact measures. Facility and assessment counts, shelter planning-capacity rollups, source completeness, and network/source availability are active screening indicators. Activating an impact or risk metric still requires a plain-language definition, exact field bindings, spatial and temporal methods, null handling, independent validation, attribution, last-updated display, and stale/error behavior.
 
 | KPI | Current state | Minimum inputs before activation |
 | --- | --- | --- |
