@@ -259,6 +259,42 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .helper, .disclaimer, .empty-message { color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
 .disclaimer { margin-top: 1rem; padding: 0.75rem; border: 1px solid var(--border); background: #081e2c; }
 
+.polygon-report-dialog { width: min(1200px, 96vw); max-width: none; height: min(92vh, 980px); max-height: none; padding: 0; border: 1px solid var(--gold); background: var(--bg); color: var(--text); }
+.polygon-report-dialog::backdrop { background: rgb(2 10 16 / 82%); backdrop-filter: blur(3px); }
+.polygon-report-sheet { min-height: 100%; padding: 1rem; overflow: auto; }
+.polygon-report-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+.polygon-report-header h2 { font-size: 1.35rem; }
+.polygon-report-header p:last-child { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.75rem; }
+.polygon-report-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0.75rem 0; }
+.report-control { min-height: 36px; padding: 0.5rem 0.7rem; border: 1px solid var(--gold); background: transparent; color: var(--gold); font-weight: 700; cursor: pointer; }
+.report-control:hover { background: var(--panel2); }
+.report-control:disabled { opacity: 0.45; cursor: not-allowed; }
+.report-control-primary { background: rgb(242 169 0 / 18%); }
+.polygon-report-status { margin: 0 0 0.75rem; padding: 0.6rem 0.7rem; border-left: 3px solid var(--gold); background: var(--panel); color: var(--muted); font-size: 0.72rem; }
+.polygon-report-content { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr); gap: 0.8rem; }
+.polygon-report-map-wrap { min-height: 360px; border: 1px solid var(--border); background: var(--panel); }
+#polygon-report-map { width: 100%; height: 360px; display: block; }
+.polygon-report-summary { min-width: 0; }
+.polygon-report-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.polygon-report-kpis article { min-height: 92px; padding: 0.7rem; border-top: 3px solid var(--gold); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); background: var(--panel); }
+.polygon-report-kpis span, .polygon-report-kpis strong { display: block; }
+.polygon-report-kpis span { color: var(--muted); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.polygon-report-kpis strong { margin-top: 0.45rem; color: var(--text); font-size: 1.05rem; overflow-wrap: anywhere; }
+.report-highlights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; margin-top: 0.55rem; }
+.report-highlights article { padding: 0.6rem; border-left: 3px solid var(--gold); background: var(--panel2); }
+.report-highlights strong, .report-highlights span, .report-highlights small { display: block; }
+.report-highlights strong { font-size: 0.68rem; }
+.report-highlights span { margin-top: 0.25rem; color: var(--gold); font-size: 1rem; font-weight: 700; }
+.report-highlights small { margin-top: 0.2rem; color: var(--muted); font-size: 0.6rem; line-height: 1.35; }
+.polygon-report-table-section { grid-column: 1 / -1; padding: 0.8rem; border: 1px solid var(--border); background: var(--panel); }
+.polygon-report-table-wrap { max-height: 360px; overflow: auto; }
+.polygon-report-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+.polygon-report-table-wrap th { position: sticky; top: 0; padding: 0.55rem; border-bottom: 2px solid var(--border); background: #0a1d2a; color: var(--muted); text-align: left; text-transform: uppercase; }
+.polygon-report-table-wrap td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
+.report-status-ok { color: var(--low); font-weight: 700; }
+.report-status-error { color: #ff9cab; font-weight: 700; }
+.polygon-report-method { grid-column: 1 / -1; margin: 0; padding: 0.75rem; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: #081e2c; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
+
 footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: #06131c; color: var(--muted); font-size: 0.7rem; text-align: center; }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -285,6 +321,9 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
   .app-nav { justify-content: flex-start; }
   .session-area .user-chip { display: none; }
   .header-report-group > select { width: 132px; }
+  .polygon-report-content { grid-template-columns: 1fr; }
+  .polygon-report-map-wrap, #polygon-report-map { min-height: 300px; height: 300px; }
+  .polygon-report-kpis, .report-highlights { grid-template-columns: 1fr; }
   .command-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { display: block; height: auto; min-height: 0; overflow: visible; }
   .threat-panel, .detail-panel { border: 0; border-bottom: 1px solid var(--border); }
@@ -297,6 +336,21 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
 @media (max-width: 440px) {
   .county-list, .kpi-grid, .demographic-grid { grid-template-columns: 1fr; }
   .map-titlebar { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
+}
+
+@media print {
+  body > :not(.polygon-report-dialog) { display: none !important; }
+  .polygon-report-dialog { position: static; width: 100%; height: auto; max-height: none; border: 0; background: #fff; color: #111; }
+  .polygon-report-sheet { padding: 0; overflow: visible; }
+  .polygon-report-actions, .polygon-report-status, #close-polygon-report { display: none !important; }
+  .polygon-report-content { display: block !important; }
+  .polygon-report-map-wrap { margin-bottom: 0.5in; break-inside: avoid; }
+  .polygon-report-summary, .polygon-report-table-section, .polygon-report-method { margin-bottom: 0.25in; break-inside: avoid; }
+  .polygon-report-kpis, .report-highlights { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .polygon-report-table-wrap { max-height: none; overflow: visible; }
+  .polygon-report-table-wrap th { position: static; }
+  .polygon-report-dialog, .polygon-report-dialog * { color: #111 !important; }
+  .polygon-report-kpis article, .report-highlights article, .polygon-report-table-section, .polygon-report-method { background: #fff !important; border-color: #777 !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

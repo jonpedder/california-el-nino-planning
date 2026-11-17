@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
   <link rel="stylesheet" href="./styles.css?v=popup1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./header.js?v=header1"></script>
+  <script type="module" src="./header.js?v=polygon-report1"></script>
   <script type="module" src="./app.js?v=scene-recovery3"></script>
 </head>
 <body>
@@ -26,7 +26,7 @@
     <nav class="app-nav header-actions" aria-label="Primary navigation">
       <div class="header-report-group" aria-label="Reports">
         <label for="report-menu">Reports</label>
-        <select id="report-menu"><option value="" selected>Select a report</option><option value="./analysis.html#summaryPanel">Analysis summary</option><option value="./analysis.html#conditionsPanel">Forecast &amp; gauges</option><option value="./analysis.html#riskPanel">Risk &amp; timeline</option><option value="./analysis.html#sourcesAnalysisPanel">Source accountability</option></select>
+        <select id="report-menu"><option value="" selected>Select a report</option><option value="./index.html#polygon-report">Polygon summary</option><option value="./analysis.html#summaryPanel">Analysis summary</option><option value="./analysis.html#conditionsPanel">Forecast &amp; gauges</option><option value="./analysis.html#riskPanel">Risk &amp; timeline</option><option value="./analysis.html#sourcesAnalysisPanel">Source accountability</option></select>
         <button id="open-report" class="header-action header-action-small" type="button" disabled>Open</button>
       </div>
       <a class="app-nav-link active" href="./index.html" aria-current="page">Planning Map</a>
@@ -219,6 +219,39 @@
   <footer>
     Planning application • Public authoritative context layers • Derived indicators are screening estimates and require operational verification
   </footer>
+
+  <dialog id="polygon-report-dialog" class="polygon-report-dialog" aria-labelledby="polygon-report-title">
+    <article class="polygon-report-sheet">
+      <header class="polygon-report-header">
+        <div><p class="eyebrow">Operational area report</p><h2 id="polygon-report-title">Polygon Summary</h2><p id="polygon-report-subtitle">Select or draw a polygon to generate the report.</p></div>
+        <button id="close-polygon-report" class="report-control" type="button" aria-label="Close polygon report">Close</button>
+      </header>
+      <div class="polygon-report-actions" aria-label="Polygon report controls">
+        <button id="draw-report-polygon" class="report-control report-control-primary" type="button">Draw polygon</button>
+        <button id="use-popup-polygon" class="report-control" type="button">Use selected map polygon</button>
+        <button id="use-county-polygon" class="report-control" type="button">Use selected county</button>
+        <button id="print-polygon-report" class="report-control" type="button" disabled>Print report</button>
+      </div>
+      <p id="polygon-report-status" class="polygon-report-status" role="status" aria-live="polite">Choose a polygon source above.</p>
+      <section id="polygon-report-content" class="polygon-report-content" hidden>
+        <div class="polygon-report-map-wrap"><arcgis-map id="polygon-report-map" basemap="topo-vector" aria-label="Selected polygon report map"></arcgis-map></div>
+        <section class="polygon-report-summary" aria-label="Polygon summary">
+          <div class="polygon-report-kpis">
+            <article><span>Area</span><strong id="report-area">—</strong></article>
+            <article><span>Estimated population</span><strong id="report-population">—</strong></article>
+            <article><span>Intersecting layers</span><strong id="report-layer-count">—</strong></article>
+            <article><span>Generated</span><strong id="report-generated">—</strong></article>
+          </div>
+          <div id="report-highlights" class="report-highlights"></div>
+        </section>
+        <section class="polygon-report-table-section" aria-labelledby="report-layers-heading">
+          <h3 id="report-layers-heading">Intersecting layers and records</h3>
+          <div class="polygon-report-table-wrap"><table><thead><tr><th>Layer</th><th>Category</th><th>Intersecting records</th><th>Status</th></tr></thead><tbody id="report-layer-table"></tbody></table></div>
+        </section>
+        <aside id="polygon-report-method" class="analysis-disclaimer polygon-report-method"></aside>
+      </section>
+    </article>
+  </dialog>
 
   <div id="app-alert" class="sr-only" role="alert" aria-live="assertive"></div>
   <noscript>This application requires JavaScript to display the map and county planning profiles.</noscript>

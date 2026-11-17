@@ -5,7 +5,7 @@ const APP_PREFERENCES = loadPreferences();
 const APP_CONFIG = runtimeConfig(DEPLOYMENT_CONFIG, APP_PREFERENCES);
 applyPreferences(APP_PREFERENCES);
 
-const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine, Graphic, GraphicsLayer, SketchViewModel] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
@@ -13,7 +13,10 @@ const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLa
   "@arcgis/core/request.js",
   "@arcgis/core/layers/FeatureLayer.js",
   "@arcgis/core/layers/GroupLayer.js",
-  "@arcgis/core/geometry/geometryEngine.js"
+  "@arcgis/core/geometry/geometryEngine.js",
+  "@arcgis/core/Graphic.js",
+  "@arcgis/core/layers/GraphicsLayer.js",
+  "@arcgis/core/widgets/Sketch/SketchViewModel.js"
 ]);
 
 const elements = {
@@ -57,6 +60,23 @@ const elements = {
   mapPopups: [...document.querySelectorAll(".map-popup")],
   view2dButtons: [...document.querySelectorAll(".view-2d")],
   view3dButtons: [...document.querySelectorAll(".view-3d")],
+  reportDialog: document.querySelector("#polygon-report-dialog"),
+  reportSubtitle: document.querySelector("#polygon-report-subtitle"),
+  reportStatus: document.querySelector("#polygon-report-status"),
+  reportContent: document.querySelector("#polygon-report-content"),
+  reportMap: document.querySelector("#polygon-report-map"),
+  reportArea: document.querySelector("#report-area"),
+  reportPopulation: document.querySelector("#report-population"),
+  reportLayerCount: document.querySelector("#report-layer-count"),
+  reportGenerated: document.querySelector("#report-generated"),
+  reportHighlights: document.querySelector("#report-highlights"),
+  reportLayerTable: document.querySelector("#report-layer-table"),
+  reportMethod: document.querySelector("#polygon-report-method"),
+  drawReportPolygon: document.querySelector("#draw-report-polygon"),
+  usePopupPolygon: document.querySelector("#use-popup-polygon"),
+  useCountyPolygon: document.querySelector("#use-county-polygon"),
+  printPolygonReport: document.querySelector("#print-polygon-report"),
+  closePolygonReport: document.querySelector("#close-polygon-report"),
   appAlert: document.querySelector("#app-alert")
 };
 
@@ -85,10 +105,17 @@ const state = {
   readinessHighlightSceneLayer: null,
   populationCache: new Map(),
   weatherImpactCache: new Map(),
-  popupDemographicLayer: null
+  popupDemographicLayer: null,
+  reportGeometry: null,
+  reportGeometryLabel: "Selected polygon",
+  reportSketchLayer: null,
+  reportSketchViewModel: null,
+  reportMapLayer: null,
+  reportRun: 0
 };
 
 const enrichmentCache = new Map();
+window.__app = { APP_CONFIG, state, elements, openPolygonReport };
 
 esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
@@ -107,6 +134,11 @@ elements.readinessOutlook.addEventListener("change", () => refreshReadinessForSe
 elements.readinessYear.addEventListener("change", renderReadinessFireOptions);
 elements.readinessSearch.addEventListener("input", renderReadinessFireOptions);
 elements.readinessFire.addEventListener("change", () => openReadinessFire(elements.readinessFire.value));
+elements.closePolygonReport.addEventListener("click", () => elements.reportDialog.close());
+elements.printPolygonReport.addEventListener("click", () => window.print());
+elements.drawReportPolygon.addEventListener("click", startPolygonReportDrawing);
+elements.usePopupPolygon.addEventListener("click", useSelectedPopupPolygon);
+elements.useCountyPolygon.addEventListener("click", useSelectedCountyPolygon);
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -123,6 +155,7 @@ async function initialize() {
     const index = APP_CONFIG.preferences?.initialView === "3d" ? 1 : 0;
     if (elements.legendExpands[index]) elements.legendExpands[index].expanded = true;
   }
+  if (window.location.hash === "#polygon-report") await openPolygonReport();
 }
 
 async function initializeAuthentication() {
@@ -240,7 +273,7 @@ async function initializeMap() {
     await loadOperationalLayers();
   } catch (layerError) {
     console.error("Operational context layers could not be fully initialized.", layerError);
-    window.__app = { APP_CONFIG, state, elements };
+    window.__app = { APP_CONFIG, state, elements, openPolygonReport };
     window.__esriLayers ||= {};
     setDataStatus("Map loaded • context layers partial", "partial");
   }
@@ -437,7 +470,7 @@ async function loadOperationalLayers() {
     window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
     if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
   }
-  window.__app = { APP_CONFIG, state, elements };
+  window.__app = { APP_CONFIG, state, elements, openPolygonReport };
 
   if (mapLayers.length === APP_CONFIG.operationalLayers.length) {
     setDataStatus(`${mapLayers.length} layers • ${state.sceneReady ? "2D/3D" : "2D"}`, "connected");
@@ -1258,6 +1291,235 @@ async function createWeatherImpactPopupContent(event) {
   } catch (error) {
     return popupAnalysisPanel("Weather impact context unavailable", [["Status", "Analysis could not complete"]], "The ACS, fire, or geometry analysis did not return a usable result.", "No impact is asserted.");
   }
+}
+
+function selectedPopupPolygon() {
+  const popupIndex = state.activeView === "3d" ? 1 : 0;
+  const popup = elements.mapPopups[popupIndex];
+  const feature = popup?.selectedFeature;
+  return feature?.geometry?.type === "polygon" ? feature : null;
+}
+
+function openPolygonReport() {
+  if (!elements.reportDialog.open) elements.reportDialog.showModal();
+  elements.usePopupPolygon.disabled = !selectedPopupPolygon();
+  elements.useCountyPolygon.disabled = !state.selectedCountyId;
+  if (state.reportGeometry) {
+    buildPolygonReport(state.reportGeometry, state.reportGeometryLabel);
+  } else if (selectedPopupPolygon()) {
+    useSelectedPopupPolygon();
+  } else {
+    elements.reportContent.hidden = true;
+    elements.printPolygonReport.disabled = true;
+    elements.reportSubtitle.textContent = "Select a map polygon, draw an area, or use the selected county boundary.";
+    elements.reportStatus.textContent = "Choose a polygon source above. To use a map feature, open its popup first.";
+  }
+}
+
+async function useSelectedPopupPolygon() {
+  const feature = selectedPopupPolygon();
+  if (!feature) {
+    elements.reportStatus.textContent = "No polygon feature is selected. Open a polygon popup on the map and try again.";
+    return;
+  }
+  state.reportGeometry = feature.geometry;
+  state.reportGeometryLabel = feature.layer?.title || feature.sourceLayer?.title || "Selected map polygon";
+  await buildPolygonReport(state.reportGeometry, state.reportGeometryLabel);
+}
+
+async function useSelectedCountyPolygon() {
+  const county = state.counties.find((item) => item.id === state.selectedCountyId);
+  if (!county) {
+    elements.reportStatus.textContent = "Select a county before using its boundary.";
+    return;
+  }
+  elements.reportStatus.textContent = `Loading ${county.name} County boundary…`;
+  const geometry = await getCountyGeometry(county);
+  state.reportGeometry = geometry;
+  state.reportGeometryLabel = `${county.name} County boundary`;
+  await buildPolygonReport(geometry, state.reportGeometryLabel);
+}
+
+function ensureReportSketch() {
+  if (state.reportSketchViewModel) return state.reportSketchViewModel;
+  state.reportSketchLayer = new GraphicsLayer({ title: "Polygon report drawing", listMode: "hide" });
+  elements.map.map.add(state.reportSketchLayer);
+  state.reportSketchViewModel = new SketchViewModel({
+    view: elements.map.view,
+    layer: state.reportSketchLayer,
+    polygonSymbol: {
+      type: "simple-fill",
+      color: [242, 169, 0, 0.18],
+      outline: { color: [242, 169, 0, 1], width: 2.5 }
+    },
+    defaultCreateOptions: { mode: "click" }
+  });
+  state.reportSketchViewModel.on("create", (event) => {
+    if (event.state === "complete") {
+      state.reportGeometry = event.graphic.geometry;
+      state.reportGeometryLabel = "User-drawn area of interest";
+      elements.mapSelection.textContent = "Report polygon selected";
+      openPolygonReport();
+    } else if (event.state === "cancel") {
+      elements.mapSelection.textContent = state.selectedCountyId
+        ? `${state.counties.find((item) => item.id === state.selectedCountyId)?.name || "Selected"} County`
+        : "No county selected";
+      announce("Polygon drawing cancelled.");
+    }
+  });
+  return state.reportSketchViewModel;
+}
+
+async function startPolygonReportDrawing() {
+  if (!state.mapReady) {
+    elements.reportStatus.textContent = "The 2D map must finish loading before an area can be drawn.";
+    return;
+  }
+  if (state.activeView !== "2d") await switchView("2d");
+  elements.reportDialog.close();
+  const sketch = ensureReportSketch();
+  state.reportSketchLayer.removeAll();
+  elements.mapSelection.textContent = "Drawing report polygon — double-click to finish";
+  announce("Draw a polygon on the map. Double-click to finish, or press Escape to cancel.");
+  sketch.create("polygon");
+}
+
+async function drawReportMap(geometry) {
+  elements.reportContent.hidden = false;
+  await elements.reportMap.viewOnReady();
+  await elements.reportMap.view.when();
+  if (!state.reportMapLayer) {
+    state.reportMapLayer = new GraphicsLayer({ title: "Report area" });
+    elements.reportMap.map.add(state.reportMapLayer);
+  }
+  state.reportMapLayer.removeAll();
+  const graphic = new Graphic({
+    geometry,
+    symbol: {
+      type: "simple-fill",
+      color: [242, 169, 0, 0.2],
+      outline: { color: [177, 92, 0, 1], width: 2.5 }
+    }
+  });
+  state.reportMapLayer.add(graphic);
+  await elements.reportMap.view.goTo(graphic, { padding: 35, duration: 0 });
+}
+
+async function countIntersectingRecords(layer, geometry) {
+  await layer.load();
+  const candidates = layer.type === "feature"
+    ? [layer]
+    : (layer.allLayers?.toArray?.() || []).filter((candidate) => candidate.type === "feature");
+  if (!candidates.length) return { count: 0, status: "No queryable feature layer" };
+  const results = await Promise.allSettled(candidates.map(async (candidate) => {
+    await candidate.load();
+    const query = candidate.createQuery();
+    query.geometry = geometry;
+    query.spatialRelationship = "intersects";
+    query.where = candidate.definitionExpression || "1=1";
+    return candidate.queryFeatureCount(query);
+  }));
+  const fulfilled = results.filter((result) => result.status === "fulfilled");
+  if (!fulfilled.length) throw results[0]?.reason || new Error("Intersection count unavailable.");
+  return {
+    count: fulfilled.reduce((sum, result) => sum + Number(result.value || 0), 0),
+    status: fulfilled.length === results.length ? "Connected" : "Partial"
+  };
+}
+
+function reportHighlight(label, value, note) {
+  const article = document.createElement("article");
+  const heading = document.createElement("strong");
+  const metric = document.createElement("span");
+  const detail = document.createElement("small");
+  heading.textContent = label;
+  metric.textContent = value;
+  detail.textContent = note;
+  article.append(heading, metric, detail);
+  return article;
+}
+
+async function buildPolygonReport(geometry, label) {
+  if (!geometry?.rings) {
+    elements.reportStatus.textContent = "The selected feature is not a polygon.";
+    return;
+  }
+  const run = ++state.reportRun;
+  if (!elements.reportDialog.open) elements.reportDialog.showModal();
+  elements.reportSubtitle.textContent = label;
+  elements.reportStatus.textContent = "Building map, demographics, and layer intersections…";
+  elements.reportContent.hidden = false;
+  elements.printPolygonReport.disabled = true;
+  elements.reportLayerTable.replaceChildren();
+  elements.reportHighlights.replaceChildren();
+  elements.reportArea.textContent = "…";
+  elements.reportPopulation.textContent = "…";
+  elements.reportLayerCount.textContent = "…";
+  elements.reportGenerated.textContent = "…";
+
+  let areaSquareMiles = null;
+  try {
+    areaSquareMiles = Math.abs(geometryEngine.geodesicArea(geometry, "square-miles"));
+  } catch (error) {
+    console.warn("Polygon area measurement unavailable.", error);
+  }
+  await drawReportMap(geometry);
+
+  const definitions = new Map(APP_CONFIG.operationalLayers.map((definition) => [definition.key, definition]));
+  const layerJobs = [...state.operationalLayers.entries()].map(async ([key, layer]) => {
+    const definition = definitions.get(key) || {};
+    try {
+      const result = await countIntersectingRecords(layer, geometry);
+      return { key, title: layer.title, category: definition.category || "Operational context", ...result };
+    } catch (error) {
+      return { key, title: layer.title, category: definition.category || "Operational context", count: null, status: "Unavailable" };
+    }
+  });
+
+  const [populationResult, layerResults] = await Promise.all([
+    estimatePopulationForGeometry(geometry, { maxBoundaryTracts: 0 }).catch(() => null),
+    Promise.all(layerJobs)
+  ]);
+  if (run !== state.reportRun) return;
+
+  const sortedLayers = layerResults.sort((a, b) => (b.count ?? -1) - (a.count ?? -1) || a.title.localeCompare(b.title));
+  const intersecting = sortedLayers.filter((item) => Number(item.count) > 0);
+  const generated = new Date();
+  elements.reportArea.textContent = Number.isFinite(areaSquareMiles) ? `${areaSquareMiles.toLocaleString(undefined, { maximumFractionDigits: 1 })} sq mi` : "Unavailable";
+  elements.reportPopulation.textContent = populationResult ? formatCount(populationResult.population) : "Unavailable";
+  elements.reportLayerCount.textContent = formatCount(intersecting.length);
+  elements.reportGenerated.textContent = generated.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+  const byKey = new Map(sortedLayers.map((item) => [item.key, item]));
+  const metric = (key) => byKey.get(key)?.count == null ? "Unavailable" : formatCount(byKey.get(key).count);
+  elements.reportHighlights.append(
+    reportHighlight("Current advisories", metric("weatherWarnings"), "NWS polygons intersecting the selected area"),
+    reportHighlight("Live gauges", metric("liveStreamGauges"), "Gauge locations intersecting the selected area"),
+    reportHighlight("Hospitals", metric("hospitals"), "Mapped medical facilities in the selected area"),
+    reportHighlight("Active shelters", metric("activeShelters"), "Currently published shelter records"),
+    reportHighlight("Recent fire perimeters", metric("currentFirePerimeters"), "Current WFIGS perimeter records"),
+    reportHighlight("Structures", metric("structures"), "Mapped structure records; verify source completeness")
+  );
+
+  sortedLayers.forEach((item) => {
+    const row = document.createElement("tr");
+    [item.title, item.category, item.count == null ? "—" : formatCount(item.count), item.status].forEach((value, index) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      if (index === 3) cell.className = item.status === "Connected" ? "report-status-ok" : item.status === "Unavailable" ? "report-status-error" : "";
+      row.append(cell);
+    });
+    elements.reportLayerTable.append(row);
+  });
+
+  const methodText = populationResult?.weighted
+    ? `Population is area-weighted from 2020–2024 ACS 5-year census-tract estimates across ${formatCount(populationResult.tractCount)} intersecting tracts.`
+    : populationResult
+      ? `Population is an intersecting-tract screening total from 2020–2024 ACS 5-year estimates across ${formatCount(populationResult.tractCount)} tracts and may overstate population along the polygon boundary.`
+      : "Population could not be calculated from the ACS tract source.";
+  elements.reportMethod.textContent = `${methodText} Layer values are record counts returned by spatial intersection, not validated exposure, occupancy, capacity, or impact totals. Confirm operational decisions with source agencies.`;
+  elements.reportStatus.textContent = `Report complete — ${intersecting.length} intersecting operational layers summarized.`;
+  elements.printPolygonReport.disabled = false;
 }
 
 function clearReadinessRuntimeLayers() {

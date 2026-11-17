@@ -12,6 +12,11 @@ if (reportMenu && openReportButton) {
     const currentPath = window.location.pathname.replace(/\/$/, "/index.html");
     const destinationPath = destination.pathname.replace(/\/$/, "/index.html");
 
+    if (currentPath === destinationPath && destination.hash === "#polygon-report" && window.__app?.openPolygonReport) {
+      window.__app.openPolygonReport();
+      return;
+    }
+
     if (currentPath === destinationPath && destination.hash) {
       const panelId = destination.hash.slice(1);
       const tab = [...document.querySelectorAll("[role='tab'][aria-controls]")]
