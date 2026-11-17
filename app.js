@@ -1150,7 +1150,7 @@ async function createWeatherImpactPopupContent(event) {
     let impact = state.weatherImpactCache.get(cacheKey);
     if (!impact) {
       const [population, fireCount] = await Promise.all([
-        estimatePopulationForGeometry(geometry, { maxBoundaryTracts: 25 }),
+        estimatePopulationForGeometry(geometry, { maxBoundaryTracts: 0 }),
         countDistinctFiresForGeometry(geometry)
       ]);
       impact = { ...population, fireCount };
