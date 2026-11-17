@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "./config.js?v=postfire5";
+import { APP_CONFIG } from "./config.js?v=postfire6";
 
 const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
@@ -250,6 +250,10 @@ function updateViewToggleButtons() {
   });
 }
 
+function normalizeLayerTitle(value) {
+  return String(value || "").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 async function loadOperationalLayers() {
   elements.mapState.hidden = false;
   elements.mapState.textContent = "Loading verified public layers…";
@@ -258,7 +262,7 @@ async function loadOperationalLayers() {
   await elements.map.map.loadAll();
   const savedLayers = elements.map.map.layers.toArray();
   const results = await Promise.allSettled(APP_CONFIG.operationalLayers.map(async (definition) => {
-    const titleMatch = savedLayers.find((candidate) => candidate.title === definition.title);
+    const titleMatch = savedLayers.find((candidate) => normalizeLayerTitle(candidate.title) === normalizeLayerTitle(definition.title));
     const itemMatch = definition.matchTitleOnly ? null : savedLayers.find((candidate) => candidate.portalItem?.id === definition.itemId);
     let layer = titleMatch || itemMatch;
     if (!layer) {
