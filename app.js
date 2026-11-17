@@ -66,6 +66,7 @@ const state = {
   signedIn: false,
   mapReady: false,
   sceneReady: false,
+  sceneRecoveryPromise: null,
   activeView: "2d",
   operationalLayers: new Map(),
   sceneOperationalLayers: new Map(),
@@ -223,8 +224,8 @@ async function initializeMap() {
     state.sceneReady = false;
     console.warn("3D scene initialization unavailable; continuing with the 2D planning map.", sceneError);
     elements.view3dButtons.forEach((button) => {
-      button.disabled = true;
-      button.title = "3D scene unavailable";
+      button.disabled = false;
+      button.title = "3D is still loading — select to retry";
     });
   }
 
@@ -266,11 +267,70 @@ function configureMapOverlays() {
   if (state.sceneReady && elements.scene.view) elements.scene.view.on("click", collapseMapOverlays);
 }
 
+async function recoverSceneFor3D() {
+  if (state.sceneReady) return true;
+  if (state.sceneRecoveryPromise) return state.sceneRecoveryPromise;
+
+  state.sceneRecoveryPromise = (async () => {
+    elements.view3dButtons.forEach((button) => {
+      button.disabled = true;
+      button.title = "Loading 3D scene…";
+    });
+    announce("Loading the 3D scene. Please wait.");
+    try {
+      await waitForComponentView(elements.scene, 3);
+      elements.scene.view.map.ground = "world-elevation";
+      elements.scene.view.qualityProfile = "medium";
+      elements.scene.view.environment = {
+        lighting: { type: "virtual", directShadowsEnabled: true },
+        atmosphereEnabled: true,
+        starsEnabled: false
+      };
+      state.sceneReady = true;
+
+      const sceneLayers = await loadLayerSet(
+        elements.scene.view.map,
+        state.sceneOperationalLayers,
+        state.sceneLayerFailures,
+        "Web Scene"
+      );
+      await ensureDerivedReadinessLayers();
+      window.__esriSceneView = elements.scene.view;
+      window.__esriScene = elements.scene.view.map;
+      window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
+      if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
+      elements.scene.view.on("click", collapseMapOverlays);
+      if (state.selectedCountyId) applyCountyLayerVisibility(state.selectedCountyId);
+      if (state.operationalLayers.size === APP_CONFIG.operationalLayers.length && sceneLayers.length === APP_CONFIG.operationalLayers.length) {
+        setDataStatus(`${state.operationalLayers.size} layers • 2D/3D`, "connected");
+      }
+      return true;
+    } catch (error) {
+      state.sceneReady = false;
+      console.error("3D scene recovery failed.", error);
+      announce("The 3D scene could not be loaded. The 2D map remains available.");
+      return false;
+    } finally {
+      elements.view3dButtons.forEach((button) => {
+        button.disabled = false;
+        button.title = state.sceneReady ? "Switch to 3D" : "Retry loading the 3D scene";
+      });
+      state.sceneRecoveryPromise = null;
+    }
+  })();
+
+  return state.sceneRecoveryPromise;
+}
+
 async function switchView(mode) {
   if (mode === state.activeView) return;
-  if (!state.mapReady || !state.sceneReady) {
-    announce("The alternate view is still loading.");
+  if (!state.mapReady) {
+    announce("The 2D map is still loading.");
     return;
+  }
+  if (mode === "3d" && !state.sceneReady) {
+    const recovered = await recoverSceneFor3D();
+    if (!recovered) return;
   }
 
   const source = state.activeView === "2d" ? elements.map : elements.scene;
