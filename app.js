@@ -132,7 +132,7 @@ elements.view2dButtons.forEach((button) => button.addEventListener("click", () =
 elements.view3dButtons.forEach((button) => button.addEventListener("click", () => switchView("3d")));
 elements.detailTabs.forEach((button) => button.addEventListener("click", () => setDetailTab(button.id)));
 document.querySelector(".detail-tabs")?.addEventListener("keydown", handleDetailTabKeydown);
-elements.readinessOutlook.addEventListener("change", () => refreshReadinessForSelectedCounty());
+elements.readinessOutlook.addEventListener("change", () => refreshReadinessForSelectedCounty({ zoomToForecast: true }));
 elements.readinessYear.addEventListener("change", renderReadinessFireOptions);
 elements.readinessSearch.addEventListener("input", renderReadinessFireOptions);
 elements.readinessFire.addEventListener("change", () => openReadinessFire(elements.readinessFire.value));
@@ -1804,12 +1804,27 @@ function formatSourceDate(value) {
   return Number.isNaN(date.valueOf()) ? String(value) : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 }
 
-async function refreshReadinessForSelectedCounty() {
+async function refreshReadinessForSelectedCounty({ zoomToForecast = false } = {}) {
   const county = state.counties.find((candidate) => candidate.id === state.selectedCountyId);
-  if (county) await refreshPostFireReadiness(county);
+  if (county) await refreshPostFireReadiness(county, { zoomToForecast });
 }
 
-async function refreshPostFireReadiness(county) {
+async function zoomToForecastPolygons(features) {
+  if (!features.length) return;
+  const view = state.activeView === "3d" && state.sceneReady ? elements.scene.view : elements.map.view;
+  if (!view) return;
+  try {
+    await view.goTo(features, {
+      duration: 750,
+      easing: "ease-in-out",
+      padding: { top: 70, right: 70, bottom: 70, left: 70 }
+    });
+  } catch (error) {
+    if (error?.name !== "AbortError") console.warn("Forecast polygon extent navigation was unavailable.", error);
+  }
+}
+
+async function refreshPostFireReadiness(county, { zoomToForecast = false } = {}) {
   const run = ++state.readinessRun;
   const product = APP_CONFIG.forecastProducts[elements.readinessOutlook.value] || APP_CONFIG.forecastProducts.ero1;
   elements.readinessStatus.textContent = `Evaluating ${product.shortLabel} against USGS post-fire assessments…`;
@@ -1882,6 +1897,10 @@ async function refreshPostFireReadiness(county) {
     await Promise.all([outlookLayer.load(), outlookSceneLayer?.load()].filter(Boolean));
     const outlooks = await outlookLayer.queryFeatures({ geometry, spatialRelationship: "intersects", where: product.where, outFields: ["*"], returnGeometry: true });
     if (run !== state.readinessRun) return;
+    if (zoomToForecast && outlooks.features.length) {
+      await zoomToForecastPolygons(outlooks.features);
+      if (run !== state.readinessRun) return;
+    }
     elements.readinessPolygons.textContent = formatCount(outlooks.features.length);
     if (outlooks.features.length) {
       const meta = outlooks.features[0].attributes || {};
