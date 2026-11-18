@@ -335,33 +335,22 @@ function configureTimeSliders() {
   });
 }
 
-function appendPopupFeatureBatch(target, batch) {
-  if (!batch) return;
-  if (Array.isArray(batch)) {
-    target.push(...batch);
-    return;
-  }
-  if (Array.isArray(batch.features)) {
-    target.push(...batch.features);
-    return;
-  }
-  if (batch.geometry || batch.layer) target.push(batch);
-}
-
 async function collectPopupFeatures(component, screenPoint) {
-  const result = await component.fetchPopupFeatures(screenPoint);
-  const features = [];
-  if (result?.[Symbol.asyncIterator]) {
-    for await (const batch of result) appendPopupFeatureBatch(features, batch);
-  } else {
-    appendPopupFeatureBatch(features, result);
-  }
+  const hit = await component.view.hitTest(screenPoint);
+  const features = hit.results
+    .filter((result) => result.type === "graphic")
+    .map((result) => result.graphic)
+    .filter((feature) => {
+      const layer = feature?.layer || feature?.sourceLayer;
+      if (!layer || layer.popupEnabled === false || layer.visible === false) return false;
+      return Boolean(feature.popupTemplate || layer.popupTemplate);
+    });
   const seen = new Set();
-  return features.filter((feature) => {
+  return features.filter((feature, index) => {
     const layer = feature.layer || feature.sourceLayer;
     const objectIdField = layer?.objectIdField;
     const objectId = objectIdField ? feature.attributes?.[objectIdField] : null;
-    const key = `${layer?.uid || layer?.id || layer?.title || "layer"}:${objectId ?? feature.uid ?? features.indexOf(feature)}`;
+    const key = `${layer?.uid || layer?.id || layer?.title || "layer"}:${objectId ?? feature.uid ?? index}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
