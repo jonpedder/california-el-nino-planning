@@ -455,7 +455,7 @@ function configureConsolidatedPopups() {
     const view = component?.view;
     if (!view || state.consolidatedPopupViews.has(view)) return;
     state.consolidatedPopupViews.add(view);
-    component.popupDisabled = true;
+    component.popupDisabled = false;
     view.on("click", (event) => openConsolidatedPopup(component, event));
   });
 }
