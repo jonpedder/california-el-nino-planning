@@ -58,6 +58,8 @@ const elements = {
   layersExpands: [...document.querySelectorAll(".layers-expand")],
   legendExpands: [...document.querySelectorAll(".legend-expand")],
   mapPopups: [...document.querySelectorAll(".map-popup")],
+  measurementPanels: [...document.querySelectorAll(".measurement-panel")],
+  timeSliders: [...document.querySelectorAll(".map-time-slider")],
   view2dButtons: [...document.querySelectorAll(".view-2d")],
   view3dButtons: [...document.querySelectorAll(".view-3d")],
   reportDialog: document.querySelector("#polygon-report-dialog"),
@@ -280,8 +282,54 @@ async function initializeMap() {
     setDataStatus("Map loaded • context layers partial", "partial");
   }
 
+  configureMeasurementTools();
+  configureTimeSliders();
   elements.mapState.hidden = true;
   elements.mapState.classList.remove("error");
+}
+
+function configureMeasurementTools() {
+  elements.measurementPanels.forEach((panel) => {
+    const measurement = panel.querySelector("arcgis-measurement");
+    const isScene = Boolean(panel.closest("arcgis-scene"));
+    const activate = (tool) => {
+      const activeTool = tool === "distance" && isScene ? "direct-line" : tool;
+      measurement.activeTool = activeTool;
+      panel.querySelectorAll("[data-measure-tool]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.measureTool === tool));
+      });
+      measurement.startMeasurement?.();
+    };
+    panel.querySelectorAll("[data-measure-tool]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const tool = button.dataset.measureTool;
+        if (tool === "clear") {
+          measurement.clear?.();
+          measurement.activeTool = null;
+          panel.querySelectorAll("[data-measure-tool]").forEach((candidate) => candidate.setAttribute("aria-pressed", "false"));
+          return;
+        }
+        activate(tool);
+      });
+    });
+    measurement.activeTool = isScene ? "direct-line" : "distance";
+  });
+}
+
+function configureTimeSliders() {
+  elements.timeSliders.forEach((slider) => {
+    const host = slider.closest("arcgis-map, arcgis-scene");
+    const timedLayers = host?.map?.allLayers?.toArray?.().filter((layer) => layer.timeInfo?.fullTimeExtent) || [];
+    const starts = timedLayers.map((layer) => layer.timeInfo.fullTimeExtent.start?.getTime()).filter(Number.isFinite);
+    const ends = timedLayers.map((layer) => layer.timeInfo.fullTimeExtent.end?.getTime()).filter(Number.isFinite);
+    if (!starts.length || !ends.length) return;
+    const start = new Date(Math.min(...starts));
+    const end = new Date(Math.max(...ends));
+    const windowStart = new Date(Math.max(start.getTime(), end.getTime() - (30 * 24 * 60 * 60 * 1000)));
+    slider.fullTimeExtent = { start, end };
+    slider.timeExtent = { start: windowStart, end };
+    slider.timeVisible = true;
+  });
 }
 
 function configureMapOverlays() {

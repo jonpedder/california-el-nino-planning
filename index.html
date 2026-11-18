@@ -10,10 +10,10 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=map-tools1">
+  <link rel="stylesheet" href="./styles.css?v=map-tools2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=polygon-report1"></script>
-  <script type="module" src="./app.js?v=forecast-zoom1"></script>
+  <script type="module" src="./app.js?v=map-tools2"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -78,7 +78,14 @@
             <arcgis-bookmarks class="user-bookmarks map-tool-panel" show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
           </arcgis-expand>
           <arcgis-expand class="measurement-expand" group="map-tools" slot="top-right" expand-icon="measure" expand-tooltip="Measure distance and area">
-            <arcgis-measurement class="map-measurement map-tool-panel"></arcgis-measurement>
+            <div class="measurement-panel map-tool-panel">
+              <div class="measurement-actions" role="group" aria-label="Measurement tools">
+                <button type="button" data-measure-tool="distance" aria-pressed="true">Distance</button>
+                <button type="button" data-measure-tool="area" aria-pressed="false">Area</button>
+                <button type="button" data-measure-tool="clear">Clear</button>
+              </div>
+              <arcgis-measurement class="map-measurement"></arcgis-measurement>
+            </div>
           </arcgis-expand>
           <arcgis-expand class="time-expand" group="map-tools" slot="top-right" expand-icon="clock" expand-tooltip="Time tool">
             <arcgis-time-slider class="map-time-slider map-tool-panel" mode="time-window"></arcgis-time-slider>
@@ -121,7 +128,14 @@
             <arcgis-bookmarks class="user-bookmarks map-tool-panel" show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
           </arcgis-expand>
           <arcgis-expand class="measurement-expand" group="map-tools" slot="top-right" expand-icon="measure" expand-tooltip="Measure distance and area">
-            <arcgis-measurement class="map-measurement map-tool-panel"></arcgis-measurement>
+            <div class="measurement-panel map-tool-panel">
+              <div class="measurement-actions" role="group" aria-label="Measurement tools">
+                <button type="button" data-measure-tool="distance" aria-pressed="true">Distance</button>
+                <button type="button" data-measure-tool="area" aria-pressed="false">Area</button>
+                <button type="button" data-measure-tool="clear">Clear</button>
+              </div>
+              <arcgis-measurement class="map-measurement"></arcgis-measurement>
+            </div>
           </arcgis-expand>
           <arcgis-expand class="time-expand" group="map-tools" slot="top-right" expand-icon="clock" expand-tooltip="Time tool">
             <arcgis-time-slider class="map-time-slider map-tool-panel" mode="time-window"></arcgis-time-slider>
