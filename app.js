@@ -115,11 +115,13 @@ const state = {
   reportSketchViewModel: null,
   reportMapLayer: null,
   reportRun: 0,
-  mapNavigationRun: 0
+  mapNavigationRun: 0,
+  consolidatedPopupRun: 0,
+  consolidatedPopupViews: new WeakSet()
 };
 
 const enrichmentCache = new Map();
-window.__app = { APP_CONFIG, state, elements, openPolygonReport };
+window.__app = { APP_CONFIG, state, elements, openPolygonReport, openConsolidatedPopup };
 
 esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
@@ -268,6 +270,7 @@ async function initializeMap() {
   }
 
   try {
+    configureConsolidatedPopups();
     configureMapOverlays();
   } catch (overlayError) {
     console.warn("One or more map overlay controls could not be initialized.", overlayError);
@@ -277,7 +280,7 @@ async function initializeMap() {
     await loadOperationalLayers();
   } catch (layerError) {
     console.error("Operational context layers could not be fully initialized.", layerError);
-    window.__app = { APP_CONFIG, state, elements, openPolygonReport };
+    window.__app = { APP_CONFIG, state, elements, openPolygonReport, openConsolidatedPopup };
     window.__esriLayers ||= {};
     setDataStatus("Map loaded • context layers partial", "partial");
   }
@@ -332,6 +335,138 @@ function configureTimeSliders() {
   });
 }
 
+function appendPopupFeatureBatch(target, batch) {
+  if (!batch) return;
+  if (Array.isArray(batch)) {
+    target.push(...batch);
+    return;
+  }
+  if (Array.isArray(batch.features)) {
+    target.push(...batch.features);
+    return;
+  }
+  if (batch.geometry || batch.layer) target.push(batch);
+}
+
+async function collectPopupFeatures(component, screenPoint) {
+  const result = await component.fetchPopupFeatures(screenPoint);
+  const features = [];
+  if (result?.[Symbol.asyncIterator]) {
+    for await (const batch of result) appendPopupFeatureBatch(features, batch);
+  } else {
+    appendPopupFeatureBatch(features, result);
+  }
+  const seen = new Set();
+  return features.filter((feature) => {
+    const layer = feature.layer || feature.sourceLayer;
+    const objectIdField = layer?.objectIdField;
+    const objectId = objectIdField ? feature.attributes?.[objectIdField] : null;
+    const key = `${layer?.uid || layer?.id || layer?.title || "layer"}:${objectId ?? feature.uid ?? features.indexOf(feature)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildConsolidatedPopupContent(component, features, location) {
+  const container = document.createElement("section");
+  container.className = "consolidated-popup-content";
+  const introduction = document.createElement("p");
+  introduction.className = "consolidated-popup-intro";
+  introduction.textContent = "All popup-enabled records at this location are grouped by source layer. Expand a section to review its configured fields, media, and Arcade-derived values.";
+  container.append(introduction);
+
+  const groups = new Map();
+  features.forEach((feature) => {
+    const layer = feature.layer || feature.sourceLayer;
+    const title = layer?.title || "Map information";
+    if (!groups.has(title)) groups.set(title, []);
+    groups.get(title).push(feature);
+  });
+
+  [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([title, layerFeatures], groupIndex) => {
+    const details = document.createElement("details");
+    details.className = "consolidated-popup-group";
+    details.open = groupIndex === 0;
+    const summary = document.createElement("summary");
+    const label = document.createElement("span");
+    label.textContent = title;
+    const count = document.createElement("span");
+    count.className = "consolidated-popup-count";
+    count.textContent = String(layerFeatures.length);
+    summary.append(label, count);
+    details.append(summary);
+
+    layerFeatures.forEach((feature, featureIndex) => {
+      const record = document.createElement("article");
+      record.className = "consolidated-popup-record";
+      if (layerFeatures.length > 1) {
+        const recordLabel = document.createElement("p");
+        recordLabel.className = "consolidated-popup-record-label";
+        recordLabel.textContent = `Record ${featureIndex + 1} of ${layerFeatures.length}`;
+        record.append(recordLabel);
+      }
+      const featureContent = document.createElement("arcgis-feature");
+      featureContent.graphic = feature;
+      featureContent.map = component.map;
+      featureContent.view = component.view;
+      featureContent.location = location;
+      featureContent.spatialReference = component.view?.spatialReference;
+      record.append(featureContent);
+      details.append(record);
+    });
+    container.append(details);
+  });
+  return container;
+}
+
+async function openConsolidatedPopup(component, event) {
+  const run = ++state.consolidatedPopupRun;
+  const screenPoint = { x: event.x, y: event.y };
+  const location = event.mapPoint || component.view?.toMap(screenPoint);
+  try {
+    const features = await collectPopupFeatures(component, screenPoint);
+    if (run !== state.consolidatedPopupRun) return;
+    if (!features.length || !location) {
+      component.closePopup?.();
+      return;
+    }
+    const layerCount = new Set(features.map((feature) => (feature.layer || feature.sourceLayer)?.uid || (feature.layer || feature.sourceLayer)?.title).filter(Boolean)).size;
+    const summaryFeature = new Graphic({
+      geometry: location,
+      attributes: { recordCount: features.length, layerCount },
+      popupTemplate: {
+        title: "{expression/consolidated_summary}",
+        outFields: ["*"],
+        expressionInfos: [{
+          name: "consolidated_summary",
+          title: "Consolidated results",
+          expression: "var r = $feature.recordCount; var l = $feature.layerCount; return Text(r, '#,###') + IIF(r == 1, ' record', ' records') + ' across ' + Text(l, '#,###') + IIF(l == 1, ' layer', ' layers');"
+        }],
+        content: [{
+          type: "custom",
+          outFields: ["*"],
+          creator: () => buildConsolidatedPopupContent(component, features, location)
+        }]
+      }
+    });
+    await component.openPopup({ features: [summaryFeature], location, shouldFocus: false });
+  } catch (error) {
+    if (run !== state.consolidatedPopupRun || error?.name === "AbortError") return;
+    console.warn("Consolidated popup could not be created.", error);
+  }
+}
+
+function configureConsolidatedPopups() {
+  [elements.map, elements.scene].forEach((component) => {
+    const view = component?.view;
+    if (!view || state.consolidatedPopupViews.has(view)) return;
+    state.consolidatedPopupViews.add(view);
+    component.popupDisabled = true;
+    view.on("click", (event) => openConsolidatedPopup(component, event));
+  });
+}
+
 function configureMapOverlays() {
   elements.layersExpands.forEach((layersExpand, index) => {
     const legendExpand = elements.legendExpands[index];
@@ -371,6 +506,7 @@ async function recoverSceneFor3D() {
       };
       state.sceneReady = true;
       state.sceneLastError = null;
+      configureConsolidatedPopups();
 
       const sceneLayers = await loadLayerSet(
         elements.scene.view.map,
@@ -520,7 +656,7 @@ async function loadOperationalLayers() {
     window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
     if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
   }
-  window.__app = { APP_CONFIG, state, elements, openPolygonReport };
+  window.__app = { APP_CONFIG, state, elements, openPolygonReport, openConsolidatedPopup };
 
   if (mapLayers.length === APP_CONFIG.operationalLayers.length) {
     setDataStatus(`${mapLayers.length} layers • ${state.sceneReady ? "2D/3D" : "2D"}`, "connected");

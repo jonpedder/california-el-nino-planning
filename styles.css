@@ -148,7 +148,17 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .planning-view { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; }
 .planning-view.inactive { z-index: 0; visibility: hidden; pointer-events: none; }
 .map-layer-list, .map-legend { width: min(340px, 78vw); max-height: min(55vh, 520px); overflow: auto; }
-.map-popup { max-width: min(420px, 84vw); }
+.map-popup { max-width: min(520px, 88vw); }
+.consolidated-popup-content { display: grid; gap: 0.5rem; min-width: min(420px, 76vw); }
+.consolidated-popup-intro { margin: 0 0 0.25rem; color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
+.consolidated-popup-group { border: 1px solid var(--border); background: var(--panel); }
+.consolidated-popup-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem; color: var(--text); font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.consolidated-popup-group[open] > summary { border-bottom: 1px solid var(--border); color: var(--gold); }
+.consolidated-popup-count { display: grid; min-width: 1.65rem; height: 1.65rem; place-items: center; border: 1px solid var(--gold); border-radius: 50%; color: var(--gold); font-size: 0.68rem; }
+.consolidated-popup-record { padding: 0.55rem; border-bottom: 1px solid var(--border); background: var(--panel2); }
+.consolidated-popup-record:last-child { border-bottom: 0; }
+.consolidated-popup-record-label { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.66rem; font-weight: 700; text-transform: uppercase; }
+.consolidated-popup-record arcgis-feature { display: block; width: 100%; }
 .nri-arcade-summary h3, .nri-arcade-summary h4 { margin: 0.55rem 0 0.3rem; color: var(--gold); }
 .nri-arcade-summary p { margin: 0.4rem 0; padding: 0.45rem; border-left: 2px solid var(--gold); background: var(--panel2); }
 .nri-arcade-summary ul { margin: 0.35rem 0 0.75rem; padding-left: 1.2rem; }
