@@ -213,6 +213,7 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .measurement-actions button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
 .measurement-actions button:hover { border-color: var(--gold); }
 .measurement-actions button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.measurement-helper { margin: 0; padding: 0.85rem; color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
 .map-measurement { display: block; min-height: 210px; }
 
 #detail-content { padding: 0 1rem; }

@@ -294,10 +294,12 @@ async function initializeMap() {
 function configureMeasurementTools() {
   elements.measurementPanels.forEach((panel) => {
     const measurement = panel.querySelector("arcgis-measurement");
+    const helper = panel.querySelector(".measurement-helper");
     const isScene = Boolean(panel.closest("arcgis-scene"));
     const activate = (tool) => {
       const activeTool = tool === "distance" && isScene ? "direct-line" : tool;
       measurement.activeTool = activeTool;
+      if (helper) helper.hidden = true;
       panel.querySelectorAll("[data-measure-tool]").forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.measureTool === tool));
       });
@@ -309,13 +311,14 @@ function configureMeasurementTools() {
         if (tool === "clear") {
           measurement.clear?.();
           measurement.activeTool = null;
+          if (helper) helper.hidden = false;
           panel.querySelectorAll("[data-measure-tool]").forEach((candidate) => candidate.setAttribute("aria-pressed", "false"));
           return;
         }
         activate(tool);
       });
     });
-    measurement.activeTool = isScene ? "direct-line" : "distance";
+    measurement.activeTool = null;
   });
 }
 
