@@ -1,4 +1,4 @@
-import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=emergency-infographic2";
+import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=incident-point1";
 import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=startup-extent1";
 
 const APP_PREFERENCES = loadPreferences();
@@ -91,6 +91,9 @@ const elements = {
   triageSource: document.querySelector("#triage-source"),
   triageArea: document.querySelector("#triage-area"),
   triagePopulation: document.querySelector("#triage-population"),
+  triageMap: document.querySelector("#triage-map"),
+  triagePointCoordinates: document.querySelector("#triage-point-coordinates"),
+  resetIncidentPoint: document.querySelector("#reset-incident-point"),
   triageIncidentNumber: document.querySelector("#triage-incident-number"),
   triageIncidentName: document.querySelector("#triage-incident-name"),
   triageDescription: document.querySelector("#triage-description"),
@@ -136,6 +139,13 @@ const state = {
   reportMapLayer: null,
   reportRun: 0,
   impactedAreaLayer: null,
+  incidentLocationLayer: null,
+  triageMapLayer: null,
+  triagePointGraphic: null,
+  triagePolygonGraphic: null,
+  triagePointSketchViewModel: null,
+  triageIncidentPoint: null,
+  triageCentroid: null,
   triageMetrics: null,
   triageSubmitting: false,
   triageRun: 0,
@@ -179,6 +189,7 @@ elements.triagePolygon.addEventListener("click", openTriageWorkflow);
 elements.triageForm.addEventListener("submit", handleTriageSubmit);
 elements.triageClose.addEventListener("click", () => elements.triageDialog.close());
 elements.triageCancel.addEventListener("click", () => elements.triageDialog.close());
+elements.resetIncidentPoint.addEventListener("click", resetTriageIncidentPoint);
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -1982,6 +1993,87 @@ async function refreshTriageContext(geometry) {
   setGeneratedTriageDescription();
 }
 
+function updateTriagePointCoordinates(point = state.triageIncidentPoint) {
+  if (!point) {
+    elements.triagePointCoordinates.textContent = "Incident point unavailable.";
+    return;
+  }
+  const longitude = Number(point.longitude);
+  const latitude = Number(point.latitude);
+  elements.triagePointCoordinates.textContent = Number.isFinite(longitude) && Number.isFinite(latitude)
+    ? `Incident point: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}. Drag the marker to refine the operational location.`
+    : `Incident point coordinates: ${Number(point.x).toFixed(2)}, ${Number(point.y).toFixed(2)} (WKID ${point.spatialReference?.wkid || "unknown"}).`;
+}
+
+async function initializeTriageIncidentPoint(geometry) {
+  const centroid = geometry.centroid || geometry.extent?.center;
+  if (!centroid) throw new Error("The selected polygon does not have a usable centroid.");
+  state.triageCentroid = centroid.clone();
+  state.triageIncidentPoint = centroid.clone();
+  updateTriagePointCoordinates();
+
+  await elements.triageMap.viewOnReady();
+  await elements.triageMap.view.when();
+  if (!state.triageMapLayer) {
+    state.triageMapLayer = new GraphicsLayer({ title: "Triage incident location" });
+    elements.triageMap.map.add(state.triageMapLayer);
+  }
+  state.triageMapLayer.removeAll();
+  state.triagePolygonGraphic = new Graphic({
+    geometry,
+    symbol: {
+      type: "simple-fill",
+      color: [242, 169, 0, 0.14],
+      outline: { color: [242, 169, 0, 0.9], width: 2 }
+    }
+  });
+  state.triagePointGraphic = new Graphic({
+    geometry: state.triageIncidentPoint,
+    symbol: {
+      type: "simple-marker",
+      style: "circle",
+      size: 15,
+      color: [224, 54, 73, 1],
+      outline: { color: [255, 255, 255, 1], width: 2 }
+    }
+  });
+  state.triageMapLayer.addMany([state.triagePolygonGraphic, state.triagePointGraphic]);
+  await elements.triageMap.view.goTo(state.triagePolygonGraphic, { padding: 28, duration: 0 });
+
+  if (!state.triagePointSketchViewModel) {
+    state.triagePointSketchViewModel = new SketchViewModel({
+      view: elements.triageMap.view,
+      layer: state.triageMapLayer,
+      defaultUpdateOptions: {
+        tool: "move",
+        enableRotation: false,
+        enableScaling: false,
+        toggleToolOnClick: false
+      }
+    });
+    state.triagePointSketchViewModel.on("update", (event) => {
+      const pointGraphic = event.graphics?.find((graphic) => graphic === state.triagePointGraphic);
+      if (!pointGraphic?.geometry) return;
+      state.triageIncidentPoint = pointGraphic.geometry.clone();
+      updateTriagePointCoordinates();
+      if (event.state === "complete" && elements.triageDialog.open) {
+        window.setTimeout(() => state.triagePointSketchViewModel.update(state.triagePointGraphic, { tool: "move" }), 0);
+      }
+    });
+  }
+  await state.triagePointSketchViewModel.cancel();
+  await state.triagePointSketchViewModel.update(state.triagePointGraphic, { tool: "move" });
+}
+
+async function resetTriageIncidentPoint() {
+  if (!state.triageCentroid || !state.triagePointGraphic) return;
+  state.triageIncidentPoint = state.triageCentroid.clone();
+  state.triagePointGraphic.geometry = state.triageIncidentPoint;
+  updateTriagePointCoordinates();
+  await state.triagePointSketchViewModel?.cancel();
+  await state.triagePointSketchViewModel?.update(state.triagePointGraphic, { tool: "move" });
+}
+
 async function openTriageWorkflow() {
   let geometry = state.reportGeometry;
   let label = state.reportGeometryLabel;
@@ -2009,7 +2101,7 @@ async function openTriageWorkflow() {
   state.reportGeometryLabel = label || "Selected planning polygon";
   state.triageMetrics = null;
   elements.triageSource.textContent = state.reportGeometryLabel;
-  elements.triageSubtitle.textContent = `${state.reportGeometryLabel} will be added to the Emergency Management Impacted Area layer.`;
+  elements.triageSubtitle.textContent = `${state.reportGeometryLabel} and its initial incident point will be added to the Emergency Management solution.`;
   elements.triageIncidentNumber.value = generateIncidentNumber();
   elements.triageIncidentName.value = `El Niño impacted area — ${state.reportGeometryLabel}`.slice(0, 255);
   elements.triageDescription.value = "";
@@ -2017,7 +2109,7 @@ async function openTriageWorkflow() {
   elements.openEmergencyManager.hidden = true;
   elements.submitTriage.disabled = !state.signedIn;
   elements.triageStatus.textContent = state.signedIn
-    ? "Review the incident information, then create the impacted area."
+    ? "Review the incident information and relocate the incident point if needed, then create both Emergency Management features."
     : "Sign in with an authorized Public Safety account before creating the impacted area.";
   elements.triageForm.querySelectorAll(".triage-steps li").forEach((step, index) => {
     step.classList.toggle("complete", index === 0);
@@ -2025,8 +2117,15 @@ async function openTriageWorkflow() {
   });
   if (elements.reportDialog.open) elements.reportDialog.close();
   if (!elements.triageDialog.open) elements.triageDialog.showModal();
-  elements.triageIncidentName.focus();
   refreshTriageContext(geometry);
+  try {
+    await initializeTriageIncidentPoint(geometry);
+    elements.triageIncidentName.focus();
+  } catch (error) {
+    console.error("Initial incident point preparation failed.", error);
+    elements.submitTriage.disabled = true;
+    elements.triageStatus.textContent = `The incident point could not be prepared. ${error?.message || "Close and reopen triage."}`;
+  }
 }
 
 async function ensureImpactedAreaLayer() {
@@ -2044,7 +2143,22 @@ async function ensureImpactedAreaLayer() {
   return state.impactedAreaLayer;
 }
 
-async function projectForImpactedArea(geometry, layer) {
+async function ensureIncidentLocationLayer() {
+  if (!state.incidentLocationLayer) {
+    state.incidentLocationLayer = new FeatureLayer({
+      portalItem: { id: APP_CONFIG.incidentLocationItemId },
+      layerId: 0,
+      outFields: ["*"]
+    });
+  }
+  await state.incidentLocationLayer.load();
+  if (!state.incidentLocationLayer.capabilities?.operations?.supportsAdd) {
+    throw new Error("The Incident Locations layer does not allow adding features for this account.");
+  }
+  return state.incidentLocationLayer;
+}
+
+async function projectForLayer(geometry, layer) {
   const target = layer.spatialReference || new SpatialReference({ wkid: 102100 });
   const source = geometry.spatialReference;
   const sameReference = source?.equals?.(target)
@@ -2053,22 +2167,66 @@ async function projectForImpactedArea(geometry, layer) {
   if (sameReference) return geometry.clone();
   await projectOperator.load();
   const projected = projectOperator.execute(geometry, target);
-  if (!projected) throw new Error("The selected polygon could not be projected to the Impacted Area layer spatial reference.");
+  if (!projected) throw new Error(`The ${geometry.type || "selected"} geometry could not be projected to the ${layer.title || "target"} layer spatial reference.`);
   return projected;
+}
+
+async function createTriageAuditJob({ incidentNumber, incidentName, description, impactedAreaObjectId, incidentPointObjectId, point }) {
+  const credential = await esriId.getCredential(`${APP_CONFIG.portalUrl}/sharing`);
+  const triagedAt = new Date().toISOString();
+  const locationGeometry = {
+    points: [[point.x, point.y]],
+    spatialReference: point.spatialReference?.toJSON?.() || { wkid: point.spatialReference?.wkid || 102100 }
+  };
+  const body = {
+    numberOfJobs: 1,
+    jobName: `${incidentNumber} — ${incidentName}`.slice(0, 255),
+    priority: "High",
+    description: description.slice(0, 2000),
+    extendedProperties: [
+      { identifier: "triage_audit.incident_id", value: String(incidentNumber) },
+      { identifier: "triage_audit.incident_name", value: String(incidentName) },
+      { identifier: "triage_audit.triaged_at", value: triagedAt },
+      { identifier: "triage_audit.triaged_by", value: String(credential.userId || "Unknown portal user") },
+      { identifier: "triage_audit.source_polygon", value: String(state.reportGeometryLabel || "Selected planning polygon") },
+      { identifier: "triage_audit.impacted_area_oid", value: String(impactedAreaObjectId) },
+      { identifier: "triage_audit.incident_point_oid", value: String(incidentPointObjectId) },
+      { identifier: "triage_audit.impacted_area_item", value: APP_CONFIG.impactedAreaItemId },
+      { identifier: "triage_audit.incident_point_item", value: APP_CONFIG.incidentLocationItemId }
+    ],
+    location: {
+      geometryType: "Multipoint",
+      geometry: JSON.stringify(locationGeometry)
+    }
+  };
+  const response = await esriRequest(`${APP_CONFIG.triageWorkflowUrl}/jobTemplates/${APP_CONFIG.triageWorkflowTemplateId}/job`, {
+    method: "post",
+    responseType: "json",
+    headers: {
+      Authorization: `Bearer ${credential.token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  if (response.data?.error) throw new Error(response.data.error.message || "Workflow Manager rejected the audit job.");
+  const jobId = response.data?.jobIds?.[0];
+  if (!jobId) throw new Error("Workflow Manager did not return an audit job identifier.");
+  return { jobId, triagedAt };
 }
 
 async function handleTriageSubmit(event) {
   event.preventDefault();
   if (state.triageSubmitting) return;
   if (!state.signedIn) {
-    elements.triageStatus.textContent = "Sign in before creating an impacted area.";
+    elements.triageStatus.textContent = "Sign in before creating Emergency Management incident features.";
     return;
   }
   const incidentName = elements.triageIncidentName.value.trim();
   const incidentNumber = elements.triageIncidentNumber.value.trim();
   const description = elements.triageDescription.value.trim();
-  if (!incidentName || !incidentNumber || !description || !state.reportGeometry?.rings) {
-    elements.triageStatus.textContent = "Incident number, name, description, and a polygon are required.";
+  if (!incidentName || !incidentNumber || !description || !state.reportGeometry?.rings || !state.triageIncidentPoint) {
+    elements.triageStatus.textContent = "Incident number, name, description, polygon, and incident point are required.";
     return;
   }
 
@@ -2077,12 +2235,19 @@ async function handleTriageSubmit(event) {
     : null;
   state.triageSubmitting = true;
   elements.submitTriage.disabled = true;
-  elements.triageStatus.textContent = "Creating the impacted area in the Emergency Management solution…";
+  elements.triageStatus.textContent = "Creating the impacted area and incident point in the Emergency Management solution…";
+  let operationalCreated = false;
   try {
-    const layer = await ensureImpactedAreaLayer();
-    const geometry = await projectForImpactedArea(state.reportGeometry, layer);
-    const feature = new Graphic({
-      geometry,
+    const [areaLayer, pointLayer] = await Promise.all([
+      ensureImpactedAreaLayer(),
+      ensureIncidentLocationLayer()
+    ]);
+    const [areaGeometry, pointGeometry] = await Promise.all([
+      projectForLayer(state.reportGeometry, areaLayer),
+      projectForLayer(state.triageIncidentPoint, pointLayer)
+    ]);
+    const areaFeature = new Graphic({
+      geometry: areaGeometry,
       attributes: {
         incidentid: incidentNumber,
         incidentnm: incidentName,
@@ -2091,28 +2256,75 @@ async function handleTriageSubmit(event) {
         archive: "No"
       }
     });
-    const result = await layer.applyEdits({ addFeatures: [feature] });
-    const addResult = result.addFeatureResults?.[0];
-    if (!addResult || addResult.error) {
-      throw new Error(addResult?.error?.message || "The feature service did not return a successful add result.");
+    const areaEdits = await areaLayer.applyEdits({ addFeatures: [areaFeature] });
+    const areaResult = areaEdits.addFeatureResults?.[0];
+    if (!areaResult || areaResult.error) {
+      throw new Error(areaResult?.error?.message || "The Impacted Area service did not return a successful add result.");
     }
 
-    elements.triageStatus.textContent = `Impacted area created successfully. Incident ${incidentNumber}; object ID ${addResult.objectId}.`;
+    const pointFeature = new Graphic({
+      geometry: pointGeometry,
+      attributes: {
+        incidentid: incidentNumber,
+        incidentnm: incidentName,
+        incidenttp: "Flooding",
+        reptime: Date.now(),
+        description: description.slice(0, 2000),
+        publicview: "No",
+        active: "Yes",
+        archive: "No",
+        primaryincident: "Yes"
+      }
+    });
+    const pointEdits = await pointLayer.applyEdits({ addFeatures: [pointFeature] });
+    const pointResult = pointEdits.addFeatureResults?.[0];
+    if (!pointResult || pointResult.error) {
+      try {
+        await areaLayer.applyEdits({
+          deleteFeatures: [new Graphic({ attributes: { [areaLayer.objectIdField]: areaResult.objectId } })]
+        });
+      } catch (rollbackError) {
+        console.error("Impacted Area rollback failed after Incident Location failure.", rollbackError);
+      }
+      throw new Error(pointResult?.error?.message || "The Incident Locations service did not return a successful add result.");
+    }
+    operationalCreated = true;
+
+    elements.triageStatus.textContent = "Emergency Management features created. Recording the Workflow Manager audit trail…";
+    const audit = await createTriageAuditJob({
+      incidentNumber,
+      incidentName,
+      description,
+      impactedAreaObjectId: areaResult.objectId,
+      incidentPointObjectId: pointResult.objectId,
+      point: pointGeometry
+    });
+
+    elements.triageStatus.textContent = `Triage complete. Impacted area ${areaResult.objectId}; incident point ${pointResult.objectId}; Workflow Manager audit job ${audit.jobId}.`;
     elements.openEmergencyManager.hidden = false;
-    elements.triageForm.querySelectorAll(".triage-steps li").forEach((step, index) => {
-      step.classList.toggle("complete", index <= 2);
-      step.classList.toggle("active", index === 3);
+    elements.triageForm.querySelectorAll(".triage-steps li").forEach((step) => {
+      step.classList.add("complete");
+      step.classList.remove("active");
     });
     if (managerWindow) {
       managerWindow.location.replace(APP_CONFIG.emergencyManagerUrl);
       managerWindow.focus();
     }
-    announce(`Impacted area created for incident ${incidentNumber}.`);
+    announce(`Incident ${incidentNumber} triaged with polygon, point, and Workflow Manager audit job.`);
   } catch (error) {
     console.error("Emergency Management triage failed.", error);
-    if (managerWindow && !managerWindow.closed) managerWindow.close();
-    elements.triageStatus.textContent = `Impacted area was not created. ${error?.message || "Check access and try again."}`;
-    elements.submitTriage.disabled = false;
+    if (operationalCreated) {
+      elements.openEmergencyManager.hidden = false;
+      elements.triageStatus.textContent = `The incident polygon and point were created, but the Workflow Manager audit record failed. ${error?.message || "Open Workflow Manager and record the audit manually."}`;
+      if (managerWindow) {
+        managerWindow.location.replace(APP_CONFIG.emergencyManagerUrl);
+        managerWindow.focus();
+      }
+    } else {
+      if (managerWindow && !managerWindow.closed) managerWindow.close();
+      elements.triageStatus.textContent = `The incident polygon and point were not both created. ${error?.message || "Check access and try again."}`;
+      elements.submitTriage.disabled = false;
+    }
   } finally {
     state.triageSubmitting = false;
   }

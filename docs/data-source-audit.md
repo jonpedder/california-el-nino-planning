@@ -66,6 +66,15 @@ The live application now generates the organization-owned **Emergency Informatio
 
 The displayed variables are 2026 total population, 2026 households, 2026 median household income, 2026 median age, and the 2026–2031 population growth rate. Reports are static generated snapshots and do not consume credits when viewed. Regeneration consumes GeoEnrichment credits. County totals provide planning context only and are not populations exposed to any hazard.
 
+## Emergency Management operationalization
+
+Authenticated triage writes the same generated incident number and user-confirmed incident name to two organization solution layers:
+
+- **Impacted Area** item `a4f5b5a92a9d4edc8651da2b97014b78` receives the selected planning polygon with `active=Yes` and `archive=No`.
+- **Incident Locations** item `23045ce56a244f499ced40d07a5b38d5` receives a point initialized from the polygon centroid and relocatable in the triage map. It is created as `incidenttp=Flooding`, `publicview=No`, `active=Yes`, `archive=No`, and `primaryincident=Yes`.
+
+Workflow Manager item `4c7ee40945294d9780cd6855abcc3d2f` (**El Nino Incident Triage Audit**) and job template `ZoWi7DyeTC2fcYK4UmnwKQ` record the triage timestamp, signed-in user, source polygon label, both feature object IDs, both source item IDs, and incident-point job location. The workflow audit is created only after both Emergency Management features succeed.
+
 ## Sources not yet connected
 
 The following needs remain discovery or validation work and are not represented as operational layers:

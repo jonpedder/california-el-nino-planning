@@ -10,10 +10,10 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=emergency-infographic2">
+  <link rel="stylesheet" href="./styles.css?v=incident-point1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./header.js?v=emergency-infographic2"></script>
-  <script type="module" src="./app.js?v=emergency-infographic2"></script>
+  <script type="module" src="./header.js?v=incident-point1"></script>
+  <script type="module" src="./app.js?v=incident-point1"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -304,7 +304,7 @@
       <ol class="triage-steps" aria-label="Triage workflow">
         <li class="complete"><strong>1</strong><span>Select polygon</span></li>
         <li class="active"><strong>2</strong><span>Confirm incident</span></li>
-        <li><strong>3</strong><span>Create impacted area</span></li>
+        <li><strong>3</strong><span>Create incident features</span></li>
         <li><strong>4</strong><span>Open manager</span></li>
       </ol>
       <section class="triage-context" aria-label="Selected planning context">
@@ -312,15 +312,20 @@
         <article><span>Area</span><strong id="triage-area">Calculating…</strong></article>
         <article><span>Estimated population</span><strong id="triage-population">Calculating…</strong></article>
       </section>
+      <section class="triage-location" aria-labelledby="triage-location-heading">
+        <header><div><h3 id="triage-location-heading">Initial incident point</h3><p>Created at the polygon centroid. Drag the marker to relocate it before submitting triage.</p></div><button id="reset-incident-point" class="report-control" type="button">Reset to centroid</button></header>
+        <div class="triage-map-wrap"><arcgis-map id="triage-map" basemap="streets-vector" aria-label="Relocate the initial incident point"></arcgis-map></div>
+        <p id="triage-point-coordinates" class="helper">Preparing incident point…</p>
+      </section>
       <div class="triage-fields">
         <label>Incident number<input id="triage-incident-number" type="text" readonly></label>
         <label>Impacted area / incident name<input id="triage-incident-name" type="text" maxlength="255" required></label>
         <label class="triage-description">Operational description<textarea id="triage-description" maxlength="1000" rows="6" required></textarea></label>
       </div>
       <div class="triage-defaults" aria-label="Emergency Management field defaults">
-        <span><strong>Active:</strong> Yes</span><span><strong>Archive:</strong> No</span>
+        <span><strong>Incident type:</strong> Flooding</span><span><strong>Active:</strong> Yes</span><span><strong>Public:</strong> No</span><span><strong>Archive:</strong> No</span><span><strong>Primary:</strong> Yes</span>
       </div>
-      <label class="triage-open-option"><input id="triage-open-manager" type="checkbox" checked> Open Emergency Information Manager after the impacted area is created</label>
+      <label class="triage-open-option"><input id="triage-open-manager" type="checkbox" checked> Open Emergency Information Manager after polygon, point, and audit records are created</label>
       <p id="triage-status" class="polygon-report-status" role="status" aria-live="polite">Review the incident information, then create the impacted area.</p>
       <footer class="triage-actions">
         <button id="cancel-triage" class="report-control" type="button">Cancel</button>

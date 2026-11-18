@@ -335,6 +335,13 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .triage-context span, .triage-context strong { display: block; }
 .triage-context span { color: var(--muted); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .triage-context strong { margin-top: 0.35rem; font-size: 0.83rem; overflow-wrap: anywhere; }
+.triage-location { margin-top: 0.75rem; padding: 0.7rem; border: 1px solid var(--border); background: var(--panel); }
+.triage-location > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.7rem; margin-bottom: 0.55rem; }
+.triage-location h3 { margin: 0; font-size: 0.9rem; }
+.triage-location header p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.67rem; line-height: 1.4; }
+.triage-map-wrap, #triage-map { width: 100%; height: 250px; min-height: 250px; display: block; }
+.triage-map-wrap { border: 1px solid var(--border); background: #071b28; }
+#triage-point-coordinates { margin: 0.45rem 0 0; }
 .triage-fields { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 0.65rem; margin-top: 0.8rem; }
 .triage-fields label { display: grid; gap: 0.3rem; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
 .triage-fields input, .triage-fields textarea { width: 100%; box-sizing: border-box; padding: 0.65rem; border: 1px solid var(--border); background: #071b28; color: var(--text); font: inherit; }
