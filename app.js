@@ -1,5 +1,5 @@
 import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=popup1";
-import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=settings1";
+import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=branding2";
 
 const APP_PREFERENCES = loadPreferences();
 const APP_CONFIG = runtimeConfig(DEPLOYMENT_CONFIG, APP_PREFERENCES);
@@ -1312,9 +1312,55 @@ async function createPolygonReportPdf() {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 30;
-    const brand = [166, 92, 0];
-    const navy = [8, 31, 43];
+    const hexToRgb = (value, fallback) => {
+      const match = String(value || "").trim().match(/^#([0-9a-f]{6})$/i);
+      return match ? [0, 2, 4].map((offset) => Number.parseInt(match[1].slice(offset, offset + 2), 16)) : fallback;
+    };
+    const rootStyle = getComputedStyle(document.documentElement);
+    const brand = hexToRgb(rootStyle.getPropertyValue("--gold"), [166, 92, 0]);
+    const navy = hexToRgb(rootStyle.getPropertyValue("--navy"), [8, 31, 43]);
     const text = [28, 45, 55];
+    let logoImage = APP_PREFERENCES.branding.logoData || "";
+    if (!logoImage && APP_PREFERENCES.branding.logoUrl) {
+      try {
+        const response = await fetch(APP_PREFERENCES.branding.logoUrl, { mode: "cors" });
+        if (response.ok) {
+          const blob = await response.blob();
+          logoImage = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.addEventListener("load", () => resolve(String(reader.result || "")), { once: true });
+            reader.addEventListener("error", reject, { once: true });
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (error) {
+        console.warn("Custom report logo could not be loaded", error);
+      }
+    }
+    let pdfLogo = "";
+    if (logoImage) {
+      try {
+        const image = await new Promise((resolve, reject) => {
+          const node = new Image();
+          node.addEventListener("load", () => resolve(node), { once: true });
+          node.addEventListener("error", reject, { once: true });
+          node.src = logoImage;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = 160;
+        canvas.height = 160;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        const scale = Math.min(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+        const width = image.naturalWidth * scale;
+        const height = image.naturalHeight * scale;
+        context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+        pdfLogo = canvas.toDataURL("image/png");
+      } catch (error) {
+        console.warn("Custom report logo could not be rendered", error);
+      }
+    }
     const safeLabel = state.reportGeometryLabel.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
     const filename = `Polygon-Summary-${safeLabel || "Area"}-${new Date().toISOString().slice(0, 10)}.pdf`;
     const header = (title, subtitle = "") => {
@@ -1327,6 +1373,10 @@ async function createPolygonReportPdf() {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
       if (subtitle) pdf.text(subtitle, margin, 42);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.text(APP_PREFERENCES.branding.title, pageWidth - (pdfLogo ? 78 : margin), 25, { align: "right" });
+      if (pdfLogo) pdf.addImage(pdfLogo, "PNG", pageWidth - 66, 8, 42, 38);
       pdf.setTextColor(...text);
     };
     const sectionTitle = (title, y) => {

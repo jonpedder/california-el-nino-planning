@@ -1,8 +1,35 @@
 import { APP_CONFIG } from "./config.js?v=settings1";
-import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=settings1";
+import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=branding2";
 
 const $ = (id) => document.getElementById(id);
 const preferences = loadPreferences();
+let uploadedLogoData = preferences.branding.logoData || "";
+
+function logoSource() {
+  return uploadedLogoData || $("logoUrl")?.value.trim() || "";
+}
+
+function updateLogoPreview() {
+  const preview = $("logoPreview");
+  if (!preview) return;
+  preview.replaceChildren();
+  const source = logoSource();
+  if (!source) {
+    preview.textContent = "CA";
+    preview.classList.remove("has-image");
+    return;
+  }
+  const image = document.createElement("img");
+  image.src = source;
+  image.alt = "Custom logo preview";
+  image.referrerPolicy = "no-referrer";
+  image.addEventListener("error", () => {
+    preview.textContent = "Logo unavailable";
+    preview.classList.remove("has-image");
+  }, { once: true });
+  preview.append(image);
+  preview.classList.add("has-image");
+}
 
 function toast(message, kind = "success") {
   const node = document.createElement("div");
@@ -31,6 +58,9 @@ function populate() {
   applyPreferences(preferences);
   $("appTitle").value = preferences.branding.title;
   $("appSubtitle").value = preferences.branding.subtitle;
+  $("logoUrl").value = preferences.branding.logoUrl || "";
+  uploadedLogoData = preferences.branding.logoData || "";
+  updateLogoPreview();
   for (const [id, key] of [
     ["navy", "navy"], ["background", "background"], ["panel", "panel"], ["panelAlt", "panelAlt"],
     ["accent", "accent"], ["textColor", "text"], ["muted", "muted"], ["border", "border"]
@@ -55,7 +85,9 @@ function values() {
   return {
     branding: {
       title: $("appTitle").value.trim() || DEFAULT_PREFERENCES.branding.title,
-      subtitle: $("appSubtitle").value.trim() || DEFAULT_PREFERENCES.branding.subtitle
+      subtitle: $("appSubtitle").value.trim() || DEFAULT_PREFERENCES.branding.subtitle,
+      logoUrl: $("logoUrl").value.trim(),
+      logoData: uploadedLogoData
     },
     theme: {
       navy: $("navy").value,
@@ -86,6 +118,8 @@ function values() {
 }
 
 function validate(value) {
+  if (value.branding.logoUrl && !/^https:\/\//i.test(value.branding.logoUrl)) throw new Error("Custom logo URL must use HTTPS.");
+  if (value.branding.logoData && !/^data:image\//i.test(value.branding.logoData)) throw new Error("Uploaded logo data is not a supported image.");
   for (const [label, url] of [["Portal URL", value.connection.portalUrl], ["OAuth redirect URI", value.connection.oauthRedirectUri]]) {
     if (!/^https:\/\//i.test(url)) throw new Error(`${label} must use HTTPS.`);
   }
@@ -139,6 +173,40 @@ document.querySelectorAll(".help-index a").forEach((link) => link.addEventListen
 for (const id of ["appTitle", "appSubtitle", "navy", "background", "panel", "panelAlt", "accent", "textColor", "muted", "border"]) {
   $(id).addEventListener("input", () => applyPreferences(values()));
 }
+$("logoUrl").addEventListener("input", () => {
+  updateLogoPreview();
+  applyPreferences(values());
+});
+$("logoUpload").addEventListener("change", () => {
+  const file = $("logoUpload").files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    toast("Choose a PNG, JPEG, WebP, or SVG image.", "error");
+    $("logoUpload").value = "";
+    return;
+  }
+  if (file.size > 750000) {
+    toast("Logo upload must be 750 KB or smaller for browser-local storage.", "error");
+    $("logoUpload").value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    uploadedLogoData = String(reader.result || "");
+    updateLogoPreview();
+    applyPreferences(values());
+    toast("Logo loaded. Choose Save & reload to keep it.");
+  });
+  reader.addEventListener("error", () => toast("The logo file could not be read.", "error"));
+  reader.readAsDataURL(file);
+});
+$("removeLogo").addEventListener("click", () => {
+  uploadedLogoData = "";
+  $("logoUrl").value = "";
+  $("logoUpload").value = "";
+  updateLogoPreview();
+  applyPreferences(values());
+});
 for (const id of ["portalUrl", "oauthClientId", "oauthRedirectUri", "webMapId", "webSceneId"]) $(id).addEventListener("input", renderDiagnostics);
 
 $("save").addEventListener("click", () => {

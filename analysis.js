@@ -1,4 +1,4 @@
-import { loadPreferences, applyPreferences } from "./preferences.js?v=settings1";
+import { loadPreferences, applyPreferences } from "./preferences.js?v=branding2";
 applyPreferences(loadPreferences());
 
 const FeatureLayer = await $arcgis.import("@arcgis/core/layers/FeatureLayer.js");

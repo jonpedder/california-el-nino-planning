@@ -3,7 +3,9 @@ const STORAGE_KEY = "california-el-nino-planning.preferences.v1";
 export const DEFAULT_PREFERENCES = Object.freeze({
   branding: Object.freeze({
     title: "El Niño Planning Console",
-    subtitle: "County threat posture and capability planning"
+    subtitle: "County threat posture and capability planning",
+    logoUrl: "",
+    logoData: ""
   }),
   theme: Object.freeze({
     navy: "#003b5c",
@@ -78,4 +80,23 @@ export function applyPreferences(preferences = loadPreferences()) {
   const subtitle = document.querySelector("[data-app-subtitle]");
   if (title) title.textContent = preferences.branding.title;
   if (subtitle) subtitle.textContent = preferences.branding.subtitle;
+  const logoSource = preferences.branding.logoData || preferences.branding.logoUrl;
+  document.querySelectorAll(".brand-mark").forEach((mark) => {
+    mark.replaceChildren();
+    if (logoSource) {
+      const image = document.createElement("img");
+      image.src = logoSource;
+      image.alt = "";
+      image.referrerPolicy = "no-referrer";
+      image.addEventListener("error", () => {
+        mark.replaceChildren(document.createTextNode("CA"));
+        mark.classList.remove("has-logo");
+      }, { once: true });
+      mark.append(image);
+      mark.classList.add("has-logo");
+    } else {
+      mark.append(document.createTextNode("CA"));
+      mark.classList.remove("has-logo");
+    }
+  });
 }
