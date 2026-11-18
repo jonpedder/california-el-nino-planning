@@ -342,8 +342,19 @@ async function collectPopupFeatures(component, screenPoint) {
     .map((result) => result.graphic)
     .filter((feature) => {
       const layer = feature?.layer || feature?.sourceLayer;
-      if (!layer || layer.popupEnabled === false || layer.visible === false) return false;
-      return Boolean(feature.popupTemplate || layer.popupTemplate);
+      if (!layer || layer.visible === false) return false;
+      if (!feature.popupTemplate && layer.popupTemplate) feature.popupTemplate = layer.popupTemplate;
+      if (!feature.popupTemplate) {
+        const aliases = new Map((layer.fields || []).map((field) => [field.name, field.alias || field.name]));
+        const fieldInfos = Object.keys(feature.attributes || {}).slice(0, 60).map((fieldName) => ({ fieldName, label: aliases.get(fieldName) || fieldName }));
+        if (!fieldInfos.length) return false;
+        feature.popupTemplate = {
+          title: layer.title || "Map record",
+          outFields: ["*"],
+          content: [{ type: "fields", fieldInfos }]
+        };
+      }
+      return true;
     });
   const seen = new Set();
   return features.filter((feature, index) => {
