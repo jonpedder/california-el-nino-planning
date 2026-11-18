@@ -1,7 +1,11 @@
-import { loadPreferences, applyPreferences } from "./preferences.js?v=analysis-repair1";
+import { APP_CONFIG } from "./config.js?v=analysis-summary-map1";
+import { loadPreferences, applyPreferences } from "./preferences.js?v=analysis-summary-map1";
 applyPreferences(loadPreferences());
 
-const FeatureLayer = await $arcgis.import("@arcgis/core/layers/FeatureLayer.js");
+const [FeatureLayer, Polygon] = await $arcgis.import([
+  "@arcgis/core/layers/FeatureLayer.js",
+  "@arcgis/core/geometry/Polygon.js"
+]);
 
 const ANALYSIS_CONFIG = Object.freeze({
   refreshMinutes: 15,
@@ -56,7 +60,11 @@ const elements = {
   sourceMatrix: document.querySelector("#source-matrix"),
   selection: document.querySelector("#analysis-selection"),
   selectionLabel: document.querySelector("#analysis-selection-label"),
-  clearSelection: document.querySelector("#clear-analysis-selection")
+  clearSelection: document.querySelector("#clear-analysis-selection"),
+  summaryMap: document.querySelector("#summary-map"),
+  summaryMapStatus: document.querySelector("#summary-map-status"),
+  summaryMapReset: document.querySelector("#summary-map-reset"),
+  summaryMapModeButtons: [...document.querySelectorAll("[data-summary-map-mode]")]
 };
 
 const layers = Object.fromEntries(
@@ -67,10 +75,21 @@ const state = {
   running: false,
   timer: null,
   lastResults: null,
-  selection: null
+  selection: null,
+  summaryMapReady: false,
+  summaryMapMode: "overview",
+  summaryMapScopeGeometry: null,
+  summaryMapDefaultViewpoint: null
 };
 
-window.__app = { ANALYSIS_CONFIG, layers, state, refresh: runAnalysis, setTab: setAnalysisTab };
+window.__app = {
+  ANALYSIS_CONFIG,
+  layers,
+  state,
+  refresh: runAnalysis,
+  setTab: setAnalysisTab,
+  setSummaryMapMode
+};
 
 elements.refreshButton.addEventListener("click", runAnalysis);
 elements.regionFilter.addEventListener("calciteSelectChange", runAnalysis);
@@ -83,6 +102,8 @@ elements.conditionsAoi.addEventListener("change", () => {
 });
 document.querySelector(".analysis-tabs")?.addEventListener("keydown", handleAnalysisTabKeydown);
 elements.clearSelection.addEventListener("click", clearElementFilter);
+elements.summaryMapModeButtons.forEach((button) => button.addEventListener("click", () => setSummaryMapMode(button.dataset.summaryMapMode)));
+elements.summaryMapReset.addEventListener("click", resetSummaryMap);
 [...document.querySelectorAll(".analysis-kpi")].forEach((card, index) => {
   card.tabIndex = 0;
   card.setAttribute("role", "button");
@@ -248,12 +269,115 @@ async function initialize() {
   const requestedTab = elements.tabs.find((tab) => tab.getAttribute("aria-controls") === requestedPanel);
   setAnalysisTab(requestedTab?.id || "summaryTab", { updateHash: false });
   await customElements.whenDefined("calcite-select");
+  const summaryMapPromise = initializeSummaryMap().catch((error) => {
+    console.error("Analysis Summary map initialization failed.", error);
+    elements.summaryMapStatus.textContent = "Map unavailable";
+    elements.summaryMapStatus.classList.add("value-stale");
+  });
   const layerLoads = await Promise.allSettled(Object.values(layers).map((layer) => layer.load()));
   if (layerLoads.every((result) => result.status === "rejected")) {
     throw new Error("No analysis source layers could be loaded.");
   }
   await runAnalysis();
+  await summaryMapPromise;
   state.timer = window.setInterval(runAnalysis, ANALYSIS_CONFIG.refreshMinutes * 60 * 1000);
+}
+
+const SUMMARY_MAP_LAYER_TITLES = Object.freeze({
+  forecast: "NWS Precipitation Forecast (72 hours)",
+  warnings: "USA Weather Watches and Warnings",
+  gauges: "USGS and Community Live Stream Gauges",
+  fire: "WFIGS Interagency Fire Perimeters",
+  risk: "FEMA National Risk Index Counties"
+});
+
+async function initializeSummaryMap() {
+  await customElements.whenDefined("arcgis-map");
+  elements.summaryMap.itemId = APP_CONFIG.analysisWebMapId;
+  await elements.summaryMap.viewOnReady();
+  await elements.summaryMap.view.when();
+
+  state.summaryMapReady = true;
+  state.summaryMapDefaultViewpoint = elements.summaryMap.view.viewpoint?.clone();
+  window.__esriView = elements.summaryMap.view;
+  window.__esriMap = elements.summaryMap.map;
+  window.__esriLayers = Object.fromEntries(
+    elements.summaryMap.map.allLayers.toArray().map((layer) => [layer.title, layer])
+  );
+
+  setSummaryMapMode("overview", { navigate: false });
+  if (state.lastResults) {
+    await syncSummaryMapScope(state.lastResults.selectedRegions, state.lastResults.historyDays);
+  }
+}
+
+function setSummaryMapMode(mode = "overview", { navigate = true } = {}) {
+  if (!Object.hasOwn(SUMMARY_MAP_LAYER_TITLES, mode) && mode !== "overview") mode = "overview";
+  state.summaryMapMode = mode;
+  elements.summaryMapModeButtons.forEach((button) => {
+    const active = button.dataset.summaryMapMode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (!state.summaryMapReady) return;
+
+  const overviewVisible = new Set(["forecast", "warnings", "gauges"]);
+  for (const [key, title] of Object.entries(SUMMARY_MAP_LAYER_TITLES)) {
+    const layer = elements.summaryMap.map.layers.find((candidate) => candidate.title === title);
+    if (layer) layer.visible = mode === "overview" ? overviewVisible.has(key) : key === mode;
+  }
+
+  const modeLabel = mode === "overview"
+    ? "Overview"
+    : elements.summaryMapModeButtons.find((button) => button.dataset.summaryMapMode === mode)?.textContent?.trim() || mode;
+  elements.summaryMapStatus.textContent = `Interactive · ${modeLabel}`;
+  if (navigate && state.summaryMapScopeGeometry) {
+    elements.summaryMap.view.goTo(state.summaryMapScopeGeometry.extent.expand(1.15), { duration: 700 }).catch(() => {});
+  }
+}
+
+async function resetSummaryMap() {
+  setSummaryMapMode("overview", { navigate: false });
+  if (state.lastResults) {
+    await syncSummaryMapScope(state.lastResults.selectedRegions, state.lastResults.historyDays);
+  } else if (state.summaryMapDefaultViewpoint) {
+    await elements.summaryMap.view.goTo(state.summaryMapDefaultViewpoint, { duration: 700 }).catch(() => {});
+  }
+}
+
+function createSummaryScopeGeometry(selectedRegions) {
+  const geometries = selectedRegions.map((region) => region.geometry).filter(Boolean);
+  if (!geometries.length) return null;
+  if (geometries.length === 1) return geometries[0];
+  return new Polygon({
+    spatialReference: geometries[0].spatialReference,
+    rings: geometries.flatMap((geometry) => geometry.rings)
+  });
+}
+
+async function syncSummaryMapScope(selectedRegions, historyDays) {
+  if (!state.summaryMapReady) return;
+  const scopeGeometry = createSummaryScopeGeometry(selectedRegions);
+  if (!scopeGeometry) return;
+  state.summaryMapScopeGeometry = scopeGeometry;
+
+  const countyNames = selectedRegions.map((region) => `'${region.county.replaceAll("'", "''")}'`).join(",");
+  const fireCutoff = new Date(Date.now() - historyDays * 86400000);
+  const featureLayers = elements.summaryMap.map.allLayers.toArray().filter((layer) => layer.type === "feature");
+
+  await Promise.allSettled(featureLayers.map(async (layer) => {
+    const identity = `${layer.title || ""} ${layer.url || ""}`.toLowerCase();
+    let where = "1=1";
+    if (identity.includes("ndfd_precipitation")) where = "region = 2";
+    if (identity.includes("live_stream_gauges")) where = "org = 'USGS'";
+    if (identity.includes("wfigs_interagency_perimeters")) where = `attr_FireDiscoveryDateTime >= TIMESTAMP '${formatSqlTimestamp(fireCutoff)}'`;
+    if (identity.includes("national_risk_index_counties")) where = `STATEABBRV = 'CA' AND COUNTY IN (${countyNames})`;
+    const layerView = await elements.summaryMap.view.whenLayerView(layer);
+    layerView.filter = { geometry: scopeGeometry, spatialRelationship: "intersects", where };
+  }));
+
+  await elements.summaryMap.view.goTo(scopeGeometry.extent.expand(1.15), { duration: 800 }).catch(() => {});
+  setSummaryMapMode(state.summaryMapMode, { navigate: false });
 }
 
 async function runAnalysis() {
@@ -319,6 +443,10 @@ async function runAnalysis() {
     const failed = names.filter((name) => results[name].status === "rejected");
     const partial = names.filter((name) => data[name].partial);
     state.lastResults = { selectedRegions, historyDays, forecast, cumulative, warnings, gauges, fires, risk, timeline, queryResults: results, failed, partial };
+    await syncSummaryMapScope(selectedRegions, historyDays).catch((error) => {
+      console.error("Analysis Summary map synchronization failed.", error);
+      elements.summaryMapStatus.textContent = "Map filter unavailable";
+    });
     elements.content.hidden = false;
     elements.loading.hidden = true;
     elements.status.textContent = failed.length || partial.length

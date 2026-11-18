@@ -10,11 +10,11 @@
   <meta http-equiv="Expires" content="0">
   <title>El Niño Regional Analysis</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=analysis-repair1">
-  <link rel="stylesheet" href="./analysis.css?v=analysis-repair1">
+  <link rel="stylesheet" href="./styles.css?v=analysis-summary-map1">
+  <link rel="stylesheet" href="./analysis.css?v=analysis-summary-map1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=polygon-report1"></script>
-  <script type="module" src="./analysis.js?v=analysis-repair1"></script>
+  <script type="module" src="./analysis.js?v=analysis-summary-map1"></script>
 </head>
 <body class="analysis-body">
   <a class="skip-link" href="#analysis-main">Skip to analysis</a>
@@ -78,6 +78,51 @@
           <article class="analysis-kpi"><span>Recent fire footprint</span><strong id="kpi-fire-acres">—</strong><small>Maximum perimeter acres by incident in the selected window</small></article>
           <article class="analysis-kpi"><span>FEMA risk baseline</span><strong id="kpi-risk">—</strong><small>Highest composite rating among selected counties</small></article>
         </section>
+
+        <article class="summary-map-card" aria-labelledby="summary-map-heading">
+          <header class="summary-map-header">
+            <div>
+              <p class="eyebrow">Spatial dashboard</p>
+              <h2 id="summary-map-heading">KPI conditions map</h2>
+              <p>Explore the same forecast, advisory, gauge, fire, and FEMA risk sources used by the indicators above.</p>
+            </div>
+            <span id="summary-map-status" class="analysis-badge" role="status" aria-live="polite">Loading map…</span>
+          </header>
+          <div class="summary-map-toolbar" role="group" aria-label="Choose KPI map layer">
+            <button type="button" data-summary-map-mode="overview" class="active" aria-pressed="true">Overview</button>
+            <button type="button" data-summary-map-mode="forecast" aria-pressed="false">Forecast</button>
+            <button type="button" data-summary-map-mode="warnings" aria-pressed="false">Advisories</button>
+            <button type="button" data-summary-map-mode="gauges" aria-pressed="false">Gauges</button>
+            <button type="button" data-summary-map-mode="fire" aria-pressed="false">Fire history</button>
+            <button type="button" data-summary-map-mode="risk" aria-pressed="false">FEMA risk</button>
+            <button id="summary-map-reset" type="button">Reset map</button>
+          </div>
+          <div class="summary-map-stage">
+            <arcgis-map id="summary-map" popup-component-enabled aria-label="Interactive Analysis Summary KPI map">
+              <arcgis-zoom slot="top-left"></arcgis-zoom>
+              <arcgis-home slot="top-left"></arcgis-home>
+              <arcgis-fullscreen slot="top-left"></arcgis-fullscreen>
+              <arcgis-search slot="top-right"></arcgis-search>
+              <arcgis-expand group="summary-map-tools" slot="top-right" expand-icon="bookmark" expand-tooltip="Bookmarks">
+                <arcgis-bookmarks show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
+              </arcgis-expand>
+              <arcgis-expand group="summary-map-tools" slot="top-right" expand-icon="basemap" expand-tooltip="Basemaps">
+                <arcgis-basemap-gallery></arcgis-basemap-gallery>
+              </arcgis-expand>
+              <arcgis-expand group="summary-map-tools" slot="top-right" expand-icon="layers" expand-tooltip="KPI layers">
+                <arcgis-layer-list></arcgis-layer-list>
+              </arcgis-expand>
+              <arcgis-expand group="summary-map-tools" slot="bottom-right" expand-icon="legend" expand-tooltip="Map legend">
+                <arcgis-legend></arcgis-legend>
+              </arcgis-expand>
+              <arcgis-scale-bar slot="bottom-left" unit="dual"></arcgis-scale-bar>
+            </arcgis-map>
+          </div>
+          <footer class="summary-map-footer">
+            <span>Region and historical-window filters also constrain the map.</span>
+            <a href="https://publicsafety.maps.arcgis.com/home/item.html?id=1522124b4f904c1aa10f10fc7c4892bf" target="_blank" rel="noopener">Open Web Map item</a>
+          </footer>
+        </article>
       </section>
 
       <section id="conditionsPanel" class="analysis-tab-panel" role="tabpanel" aria-labelledby="conditionsTab" hidden>

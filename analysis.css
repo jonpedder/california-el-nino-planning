@@ -59,6 +59,22 @@
 .analysis-kpi strong { margin-top: 0.4rem; color: var(--text); font-size: clamp(1rem, 2vw, 1.45rem); overflow-wrap: anywhere; }
 .analysis-kpi small { margin-top: 0.3rem; color: var(--muted); font-size: 0.64rem; line-height: 1.35; }
 
+.summary-map-card { min-width: 0; border: 1px solid var(--border); border-top: 3px solid var(--gold); background: var(--panel); box-shadow: 0 12px 28px rgb(0 0 0 / 18%); }
+.summary-map-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 0.85rem 0.95rem; border-bottom: 1px solid var(--border); background: linear-gradient(90deg, #0c2231, #0a2a3c); }
+.summary-map-header h2 { margin: 0; font-size: 1rem; }
+.summary-map-header p:last-child { max-width: 760px; margin: 0.35rem 0 0; color: var(--muted); font-size: 0.7rem; line-height: 1.45; }
+.summary-map-toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); background: #081c29; }
+.summary-map-toolbar button { min-height: 34px; padding: 0.4rem 0.65rem; border: 1px solid var(--border); background: #0a2332; color: var(--muted); font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+.summary-map-toolbar button:hover, .summary-map-toolbar button:focus-visible { border-color: var(--gold); color: var(--text); }
+.summary-map-toolbar button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.summary-map-toolbar button.active { border-color: var(--gold); background: rgb(242 169 0 / 18%); color: var(--gold); }
+.summary-map-toolbar #summary-map-reset { margin-left: auto; border-color: var(--gold); color: var(--gold); }
+.summary-map-stage { position: relative; height: clamp(430px, 58vh, 650px); min-height: 430px; background: #061722; }
+.summary-map-stage arcgis-map { width: 100%; height: 100%; display: block; }
+.summary-map-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.55rem 0.75rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.66rem; }
+.summary-map-footer a { color: var(--gold); font-weight: 700; }
+.summary-map-card .esri-ui, .summary-map-card arcgis-map { --calcite-color-brand: var(--gold); --calcite-color-foreground-1: #0c2231; --calcite-color-foreground-2: #123247; --calcite-color-text-1: var(--text); --calcite-color-text-2: var(--muted); }
+
 .analysis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
 .analysis-card { min-width: 0; padding: 0.9rem; border: 1px solid var(--border); background: var(--panel); box-shadow: 0 8px 24px rgb(0 0 0 / 12%); }
 .analysis-card-wide { grid-column: 1 / -1; }
@@ -133,6 +149,9 @@
   .analysis-controls > * { margin-bottom: 0.65rem; }
   .analysis-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analysis-card { margin-bottom: 0.75rem; }
+  .summary-map-header, .summary-map-footer { align-items: flex-start; flex-direction: column; }
+  .summary-map-toolbar #summary-map-reset { margin-left: 0; }
+  .summary-map-stage { height: 480px; min-height: 380px; }
   .forecast-chart { height: 250px; }
   .timeline-list::before { left: 6.2rem; }
   .timeline-item, .timeline-now { grid-template-columns: 5.5rem 1.2rem minmax(0, 1fr); }

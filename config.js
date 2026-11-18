@@ -3,6 +3,7 @@ export const APP_CONFIG = Object.freeze({
   oauthClientId: "2eURPxapfMdaZiS7",
   oauthRedirectUri: "https://jonpedder.github.io/california-el-nino-planning/",
   webMapId: "bc6d9edf97a0425eb53a1f7776c80133",
+  analysisWebMapId: "1522124b4f904c1aa10f10fc7c4892bf",
   webSceneId: "1f7d06bbc0254ac3be1bfab108ed597e",
   basemap: "dark-gray-vector",
   countyDataUrl: "./data/county-capabilities.json",
