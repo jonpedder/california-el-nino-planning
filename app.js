@@ -117,7 +117,11 @@ const state = {
   reportRun: 0,
   mapNavigationRun: 0,
   consolidatedPopupRun: 0,
-  consolidatedPopupViews: new WeakSet()
+  consolidatedPopupViews: new WeakSet(),
+  startupMapViewpoint: null,
+  startupSceneViewpoint: null,
+  startupLayerVisibility: new Map(),
+  startupSceneLayerVisibility: new Map()
 };
 
 const enrichmentCache = new Map();
@@ -287,8 +291,24 @@ async function initializeMap() {
 
   configureMeasurementTools();
   configureTimeSliders();
+  captureStartupMapState();
   elements.mapState.hidden = true;
   elements.mapState.classList.remove("error");
+}
+
+function captureStartupMapState() {
+  if (!state.startupMapViewpoint && elements.map.view?.viewpoint) {
+    state.startupMapViewpoint = (elements.map.map.initialViewProperties?.viewpoint || elements.map.view.viewpoint).clone();
+  }
+  if (!state.startupSceneViewpoint && state.sceneReady && elements.scene.view?.viewpoint) {
+    state.startupSceneViewpoint = (elements.scene.view.map.initialViewProperties?.viewpoint || elements.scene.view.viewpoint).clone();
+  }
+  if (!state.startupLayerVisibility.size) {
+    for (const [key, layer] of state.operationalLayers) state.startupLayerVisibility.set(key, layer.visible);
+  }
+  if (!state.startupSceneLayerVisibility.size) {
+    for (const [key, layer] of state.sceneOperationalLayers) state.startupSceneLayerVisibility.set(key, layer.visible);
+  }
 }
 
 function configureMeasurementTools() {
@@ -528,6 +548,7 @@ async function recoverSceneFor3D() {
         "Web Scene"
       );
       await ensureDerivedReadinessLayers();
+      captureStartupMapState();
       window.__esriSceneView = elements.scene.view;
       window.__esriScene = elements.scene.view.map;
       window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
@@ -1146,6 +1167,49 @@ function renderCountyQueue() {
   }
 }
 
+async function clearCountySelectionAndRestoreExtent() {
+  state.selectedCountyId = null;
+  state.readinessRun += 1;
+  clearReadinessRuntimeLayers();
+  elements.mapPopups.forEach((popup) => { popup.open = false; });
+  elements.mapSelection.textContent = "No county selected";
+  elements.detailHeading.textContent = "Select a county";
+  elements.detailContent.hidden = true;
+  elements.detailState.hidden = false;
+  elements.detailState.textContent = "Choose a county from the threat queue to review its planning profile.";
+  for (const button of elements.countyList.querySelectorAll(".county-card")) {
+    button.classList.remove("selected");
+    button.setAttribute("aria-pressed", "false");
+    button.removeAttribute("title");
+  }
+  for (const [key, visible] of state.startupLayerVisibility) {
+    const layer = state.operationalLayers.get(key);
+    if (layer) layer.visible = visible;
+  }
+  for (const [key, visible] of state.startupSceneLayerVisibility) {
+    const layer = state.sceneOperationalLayers.get(key);
+    if (layer) layer.visible = visible;
+  }
+
+  const navigationRun = ++state.mapNavigationRun;
+  const navigation = [];
+  if (state.startupMapViewpoint && elements.map.view) {
+    navigation.push(elements.map.view.goTo(state.startupMapViewpoint, { duration: 700, easing: "ease-in-out" }));
+  }
+  if (state.startupSceneViewpoint && state.sceneReady && elements.scene.view) {
+    navigation.push(elements.scene.view.goTo(state.startupSceneViewpoint, { duration: 850, easing: "ease-in-out" }));
+  }
+  const results = await Promise.allSettled(navigation);
+  if (navigationRun !== state.mapNavigationRun) return;
+  if (results.some((result) => result.status === "rejected")) {
+    console.error("One or more map views could not return to the startup extent.", results);
+    showMapNavigationError("A map view could not return to the original extent.");
+  } else {
+    clearMapNavigationError();
+  }
+  announce("County selection cleared. The original map extent has been restored.");
+}
+
 function selectCounty(countyId, { moveFocus = false } = {}) {
   const county = state.counties.find((candidate) => candidate.id === countyId);
   if (!county) {
@@ -1155,6 +1219,10 @@ function selectCounty(countyId, { moveFocus = false } = {}) {
     announce("County profile unavailable.");
     return;
   }
+  if (state.selectedCountyId === county.id) {
+    clearCountySelectionAndRestoreExtent();
+    return;
+  }
 
   state.selectedCountyId = county.id;
   setDetailTab("overviewTab");
@@ -1162,6 +1230,8 @@ function selectCounty(countyId, { moveFocus = false } = {}) {
     const selected = button.dataset.countyId === county.id;
     button.classList.toggle("selected", selected);
     button.setAttribute("aria-pressed", String(selected));
+    if (selected) button.title = "Select this county again to clear the selection and restore the original map extent.";
+    else button.removeAttribute("title");
     if (selected && moveFocus) button.focus();
   }
 
@@ -2343,12 +2413,12 @@ function clearMapNavigationError() {
   elements.mapState.replaceChildren();
 }
 
-function showMapNavigationError() {
+function showMapNavigationError(messageText = "A map view could not navigate to the selected county.") {
   elements.mapState.hidden = false;
   elements.mapState.classList.add("error", "acknowledgeable");
   elements.mapState.dataset.messageType = "navigation";
   const message = document.createElement("span");
-  message.textContent = "A map view could not navigate to the selected county.";
+  message.textContent = messageText;
   const acknowledge = document.createElement("button");
   acknowledge.type = "button";
   acknowledge.className = "map-state-acknowledge";
