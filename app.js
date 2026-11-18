@@ -1,4 +1,4 @@
-import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=emergency-triage1";
+import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=emergency-infographic2";
 import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=startup-extent1";
 
 const APP_PREFERENCES = loadPreferences();
@@ -50,6 +50,7 @@ const elements = {
   demographicGrid: document.querySelector("#demographic-grid"),
   demographicVintage: document.querySelector("#demographic-vintage"),
   infographicLink: document.querySelector("#infographic-link"),
+  infographicStatus: document.querySelector("#infographic-status"),
   capabilityList: document.querySelector("#capability-list"),
   layerList: document.querySelector("#layer-list"),
   disclaimer: document.querySelector("#county-disclaimer"),
@@ -81,6 +82,7 @@ const elements = {
   usePopupPolygon: document.querySelector("#use-popup-polygon"),
   useCountyPolygon: document.querySelector("#use-county-polygon"),
   printPolygonReport: document.querySelector("#print-polygon-report"),
+  reportEmergencyInfographic: document.querySelector("#report-emergency-infographic"),
   triagePolygon: document.querySelector("#triage-polygon"),
   closePolygonReport: document.querySelector("#close-polygon-report"),
   triageDialog: document.querySelector("#triage-dialog"),
@@ -171,6 +173,8 @@ elements.printPolygonReport.addEventListener("click", createPolygonReportPdf);
 elements.drawReportPolygon.addEventListener("click", startPolygonReportDrawing);
 elements.usePopupPolygon.addEventListener("click", useSelectedPopupPolygon);
 elements.useCountyPolygon.addEventListener("click", useSelectedCountyPolygon);
+elements.infographicLink.addEventListener("click", createEmergencyInfographic);
+elements.reportEmergencyInfographic.addEventListener("click", createEmergencyInfographic);
 elements.triagePolygon.addEventListener("click", openTriageWorkflow);
 elements.triageForm.addEventListener("submit", handleTriageSubmit);
 elements.triageClose.addEventListener("click", () => elements.triageDialog.close());
@@ -1811,9 +1815,112 @@ function openPolygonReport() {
   } else {
     elements.reportContent.hidden = true;
     elements.printPolygonReport.disabled = true;
+    elements.reportEmergencyInfographic.disabled = true;
     elements.triagePolygon.disabled = true;
     elements.reportSubtitle.textContent = "Select a map polygon, draw an area, or use the selected county boundary.";
     elements.reportStatus.textContent = "Choose a polygon source above. To use a map feature, open its popup first.";
+  }
+}
+
+async function resolveInfographicPolygon(preferReport = false) {
+  if (preferReport && state.reportGeometry?.rings) {
+    return { geometry: state.reportGeometry, label: state.reportGeometryLabel };
+  }
+  const popupFeature = selectedPopupPolygon();
+  if (popupFeature) {
+    return {
+      geometry: popupFeature.geometry,
+      label: popupFeature.layer?.title || popupFeature.sourceLayer?.title || "Selected map polygon"
+    };
+  }
+  if (state.selectedCountyId) {
+    const county = state.counties.find((item) => item.id === state.selectedCountyId);
+    if (county) return { geometry: await getCountyGeometry(county), label: `${county.name} County boundary` };
+  }
+  if (state.reportGeometry?.rings) return { geometry: state.reportGeometry, label: state.reportGeometryLabel };
+  return null;
+}
+
+function setInfographicStatus(message) {
+  elements.infographicStatus.textContent = message;
+  if (elements.reportDialog.open) elements.reportStatus.textContent = message;
+}
+
+async function createEmergencyInfographic(event) {
+  if (!state.signedIn) {
+    setInfographicStatus("Sign in with a Business Analyst-enabled account before creating the infographic.");
+    announce("Sign-in is required to create the Business Analyst infographic.");
+    return;
+  }
+  const preferReport = event?.currentTarget === elements.reportEmergencyInfographic;
+  const selection = await resolveInfographicPolygon(preferReport);
+  if (!selection?.geometry?.rings) {
+    openPolygonReport();
+    elements.reportStatus.textContent = "Select or draw a polygon, then choose Create Emergency Information infographic.";
+    return;
+  }
+
+  const controls = [elements.infographicLink, elements.reportEmergencyInfographic];
+  const labels = controls.map((control) => control.textContent);
+  controls.forEach((control) => { control.disabled = true; });
+  elements.infographicLink.textContent = "Creating Emergency Information infographic…";
+  elements.reportEmergencyInfographic.textContent = "Creating infographic…";
+  setInfographicStatus(`Running the Business Analyst Emergency Information template for ${selection.label}…`);
+
+  const reportWindow = window.open("about:blank", "business-analyst-emergency-information");
+  if (reportWindow) {
+    reportWindow.document.title = "Creating Emergency Information infographic";
+    reportWindow.document.body.textContent = "Business Analyst is creating the Emergency Information infographic…";
+  }
+
+  try {
+    const credential = await esriId.getCredential(`${APP_CONFIG.portalUrl}/sharing`);
+    const template = {
+      itemid: APP_CONFIG.emergencyInfographicTemplateItemId,
+      url: APP_CONFIG.portalUrl,
+      token: credential.token
+    };
+    const response = await esriRequest(APP_CONFIG.geoenrichmentReportUrl, {
+      method: "post",
+      authMode: "immediate",
+      responseType: "blob",
+      query: {
+        f: "bin",
+        studyAreas: JSON.stringify([{ geometry: selection.geometry.toJSON(), attributes: { name: selection.label } }]),
+        report: JSON.stringify(template),
+        format: "html",
+        useData: JSON.stringify({ sourceCountry: "US", hierarchy: APP_CONFIG.emergencyInfographicHierarchy }),
+        langCode: "en-us",
+        forStorage: false
+      }
+    });
+    const blob = response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: "text/html" });
+    const reportUrl = URL.createObjectURL(blob);
+    if (reportWindow) {
+      reportWindow.location.replace(reportUrl);
+      reportWindow.focus();
+    } else {
+      const download = document.createElement("a");
+      download.href = reportUrl;
+      download.download = `Emergency-Information-${selection.label.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "Selected-Area"}.html`;
+      document.body.append(download);
+      download.click();
+      download.remove();
+    }
+    window.setTimeout(() => URL.revokeObjectURL(reportUrl), 600000);
+    setInfographicStatus(`Business Analyst Emergency Information infographic created for ${selection.label}.`);
+    announce("Emergency Information infographic created.");
+  } catch (error) {
+    console.error("Emergency Information infographic generation failed.", error);
+    if (reportWindow && !reportWindow.closed) reportWindow.close();
+    setInfographicStatus(`The Emergency Information infographic could not be created. ${error?.message || "Confirm Business Analyst privileges and credits."}`);
+  } finally {
+    controls.forEach((control, index) => {
+      control.disabled = false;
+      control.textContent = labels[index];
+    });
   }
 }
 
@@ -2182,6 +2289,8 @@ async function buildPolygonReport(geometry, label) {
   elements.reportStatus.textContent = "Building map, demographics, and layer intersections…";
   elements.reportContent.hidden = false;
   elements.printPolygonReport.disabled = true;
+  elements.reportEmergencyInfographic.disabled = true;
+  elements.triagePolygon.disabled = true;
   elements.reportLayerTable.replaceChildren();
   elements.reportDemographics.replaceChildren();
   elements.reportHighlights.replaceChildren();
@@ -2274,6 +2383,7 @@ async function buildPolygonReport(geometry, label) {
       : "Population could not be calculated from the ACS tract source.";
   elements.reportMethod.textContent = `${methodText} Contains counts source features contained by the selected polygon; Intersects counts features sharing any space with it; Within counts source polygons that contain the selected area. Demographic and housing values are whole-tract screening totals. These are source-record counts, not validated exposure, occupancy, capacity, damage, or impact totals. Confirm operational decisions with source agencies.`;
   elements.reportStatus.textContent = `Report complete — ${intersecting.length} intersecting operational layers summarized.`;
+  elements.reportEmergencyInfographic.disabled = false;
   elements.triagePolygon.disabled = false;
   elements.printPolygonReport.disabled = false;
 }
@@ -2547,6 +2657,7 @@ function renderDemographics(demographics) {
   if (!demographics) {
     appendEmpty(elements.demographicGrid, "Demographic context is unavailable.");
     elements.demographicVintage.textContent = "";
+    elements.infographicStatus.textContent = "Select a county or polygon to create an Emergency Information infographic.";
     elements.infographicLink.hidden = true;
     return;
   }
@@ -2571,8 +2682,8 @@ function renderDemographics(demographics) {
   }
 
   elements.demographicVintage.textContent = `${demographics.vintage}. County standard geography; estimates are context, not hazard exposure counts.`;
-  elements.infographicLink.href = demographics.infographicUrl;
-  elements.infographicLink.hidden = !demographics.infographicUrl;
+  elements.infographicStatus.textContent = "Uses the active report, popup, or county polygon. Sign-in and GeoEnrichment credits are required.";
+  elements.infographicLink.hidden = false;
 }
 
 function formatCount(value) {

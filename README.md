@@ -23,7 +23,7 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - Signed-in, on-demand Business Analyst demographics calculated for each opened polygon and cached for the browser session.
 - Synchronized 2D map and 3D terrain scene with a lower-left view toggle.
 - Collapsible Layer List and Legend controls plus a docked, closable popup to prevent map-overlay collisions.
-- County demographic cards and generated ArcGIS Business Analyst Graphic Profile infographics.
+- County demographic cards plus signed-in, polygon-driven ArcGIS Business Analyst **Emergency Information** infographics generated from custom report template `cce6c76fd22047cbb1a98effb43b45bc`. Legacy county Graphic Profile snapshots remain in `reports/` for reference.
 - Authenticated Emergency Management triage that converts the active drawn, popup, or county polygon into a uniquely numbered feature in the `Impacted Area` solution layer, with an option to open the Emergency Information Manager experience.
 - Scale controls for detailed flood and structure content; USA Structures and Census demographics are off by default.
 - Independent layer loading with connected, partial, unavailable, map-failure, configuration-error, signed-in, and signed-out states.
@@ -55,7 +55,7 @@ The connected items are documented in [`docs/data-source-audit.md`](docs/data-so
 - USA 2020 Census Population Characteristics — public demographic map context, off by default.
 - Los Angeles County Post-Fire Debris Flow Hazards — LA County-specific planning context.
 
-County detail includes 2026 Esri Updated Demographics and a generated Business Analyst Graphic Profile for each county. Those county cards and committed reports are documented snapshots. In addition, signed-in users receive current on-demand Business Analyst demographic context inside each polygon popup. Polygon results are cached for the browser session to prevent repeat requests for the same feature. Each new polygon enrichment consumes GeoEnrichment credits; viewing committed reports does not. Graphic Profile templates carry their own labeled data vintages, which can differ from current-year popup and county-card values.
+County detail includes 2026 Esri Updated Demographics. Signed-in users can generate the Business Analyst **Emergency Information - pedder** infographic from the active Polygon Summary area, selected map-popup polygon, or selected county boundary. The custom template uses the `esri2026` hierarchy and consumes GeoEnrichment report credits each time it runs. Legacy committed Graphic Profile reports remain documented snapshots and do not consume credits when viewed. Signed-in users also receive current on-demand Business Analyst demographic context inside supported polygon popups; those enrichment results are cached for the browser session to prevent repeat credit use for the same feature.
 
 The FEMA National Risk Index popups use Arcade expressions for a concise risk snapshot and El Niño-relevant hazard ratings, append on-demand polygon demographics for signed-in users, and expose every FEMA source attribute in nested collapsible categories. The National Risk Index is a December 2025 planning dataset for broad comparisons, not a real-time forecast or a substitute for localized risk analysis.
 

@@ -55,6 +55,8 @@ The NRI county layer displays at broader county scales and the tract layer takes
 
 County demographic cards and linked Graphic Profile infographics were generated on **2026-11-16** with ArcGIS GeoEnrichment / Business Analyst using standard county geography IDs. The cards use current 2026/2031 variables. The Graphic Profile template renders its own labeled vintages (including 2024/2029 and 2025/2030 in the generated report), which may differ from the cards and must be read from the report itself.
 
+The live application now generates the organization-owned **Emergency Information - pedder** Business Analyst infographic from custom report template item `cce6c76fd22047cbb1a98effb43b45bc`. It runs against the active report, selected popup, or selected county polygon with the `esri2026` hierarchy. Each generation requires sign-in, Business Analyst/GeoEnrichment privileges, and report credits.
+
 | County | Geography ID | Graphic Profile |
 | --- | --- | --- |
 | Marin | `06041` | `reports/marin-graphic-profile.html` |

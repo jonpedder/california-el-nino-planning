@@ -271,7 +271,8 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .demographic-stat strong, .demographic-stat span { display: block; }
 .demographic-stat strong { color: var(--text); font-size: 0.92rem; }
 .demographic-stat span { margin-top: 0.25rem; color: var(--muted); font-size: 0.66rem; line-height: 1.3; }
-.report-link { display: inline-flex; align-items: center; margin-top: 0.25rem; padding: 0.55rem 0.7rem; border: 1px solid var(--gold); color: var(--gold); font-size: 0.72rem; font-weight: 700; text-decoration: none; }
+.report-link { display: inline-flex; align-items: center; margin-top: 0.25rem; padding: 0.55rem 0.7rem; border: 1px solid var(--gold); background: transparent; color: var(--gold); font: inherit; font-size: 0.72rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+.report-link:disabled { opacity: 0.55; cursor: progress; }
 .report-link:hover { background: rgb(242 169 0 / 12%); color: #ffc13b; }
 .capability-list li { margin-bottom: 0.5rem; padding: 0.65rem; border-left: 2px solid var(--gold); background: var(--panel2); }
 .capability-list strong, .capability-list span { display: block; }

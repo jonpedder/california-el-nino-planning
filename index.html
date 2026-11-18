@@ -10,10 +10,10 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=measure-off1">
+  <link rel="stylesheet" href="./styles.css?v=emergency-infographic2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./header.js?v=polygon-report1"></script>
-  <script type="module" src="./app.js?v=county-toggle1"></script>
+  <script type="module" src="./header.js?v=emergency-infographic2"></script>
+  <script type="module" src="./app.js?v=emergency-infographic2"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -233,9 +233,10 @@
           <h3 id="demographics-heading">Demographic context</h3>
           <div id="demographic-grid" class="demographic-grid"></div>
           <p id="demographic-vintage" class="helper"></p>
-          <a id="infographic-link" class="report-link" href="#" target="_blank" rel="noopener noreferrer">
-            Open Business Analyst Graphic Profile
-          </a>
+          <button id="infographic-link" class="report-link" type="button">
+            Create Business Analyst Emergency Information infographic
+          </button>
+          <p id="infographic-status" class="helper" role="status" aria-live="polite">Uses the active report, popup, or county polygon. Sign-in and GeoEnrichment credits are required.</p>
         </section>
         <section aria-labelledby="capabilities-heading">
           <h3 id="capabilities-heading">Enabled capabilities</h3>
@@ -267,6 +268,7 @@
         <button id="use-popup-polygon" class="report-control" type="button">Use selected map polygon</button>
         <button id="use-county-polygon" class="report-control" type="button">Use selected county</button>
         <button id="print-polygon-report" class="report-control" type="button" disabled>Create PDF</button>
+        <button id="report-emergency-infographic" class="report-control" type="button" disabled>Create Emergency Information infographic</button>
         <button id="triage-polygon" class="report-control report-control-primary" type="button" disabled>Triage impacted area</button>
       </div>
       <p id="polygon-report-status" class="polygon-report-status" role="status" aria-live="polite">Choose a polygon source above.</p>
@@ -332,3 +334,4 @@
   <noscript>This application requires JavaScript to display the map and county planning profiles.</noscript>
 </body>
 </html>
+>
