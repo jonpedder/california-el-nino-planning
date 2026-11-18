@@ -24,6 +24,7 @@ A no-build static ArcGIS application for county-level El Niño planning. It uses
 - Synchronized 2D map and 3D terrain scene with a lower-left view toggle.
 - Collapsible Layer List and Legend controls plus a docked, closable popup to prevent map-overlay collisions.
 - County demographic cards and generated ArcGIS Business Analyst Graphic Profile infographics.
+- Authenticated Emergency Management triage that converts the active drawn, popup, or county polygon into a uniquely numbered feature in the `Impacted Area` solution layer, with an option to open the Emergency Information Manager experience.
 - Scale controls for detailed flood and structure content; USA Structures and Census demographics are off by default.
 - Independent layer loading with connected, partial, unavailable, map-failure, configuration-error, signed-in, and signed-out states.
 - Native/Calcite controls, visible keyboard focus, a skip link, semantic headings, and live status announcements.

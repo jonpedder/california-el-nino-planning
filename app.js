@@ -1,11 +1,11 @@
-import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=popup1";
+import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=emergency-triage1";
 import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=startup-extent1";
 
 const APP_PREFERENCES = loadPreferences();
 const APP_CONFIG = runtimeConfig(DEPLOYMENT_CONFIG, APP_PREFERENCES);
 applyPreferences(APP_PREFERENCES);
 
-const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine, Graphic, GraphicsLayer, SketchViewModel] = await $arcgis.import([
+const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLayer, geometryEngine, Graphic, GraphicsLayer, SketchViewModel, projectOperator, SpatialReference] = await $arcgis.import([
   "@arcgis/core/identity/OAuthInfo.js",
   "@arcgis/core/identity/IdentityManager.js",
   "@arcgis/core/portal/Portal.js",
@@ -16,7 +16,9 @@ const [OAuthInfo, esriId, Portal, esriConfig, esriRequest, FeatureLayer, GroupLa
   "@arcgis/core/geometry/geometryEngine.js",
   "@arcgis/core/Graphic.js",
   "@arcgis/core/layers/GraphicsLayer.js",
-  "@arcgis/core/widgets/Sketch/SketchViewModel.js"
+  "@arcgis/core/widgets/Sketch/SketchViewModel.js",
+  "@arcgis/core/geometry/operators/projectOperator.js",
+  "@arcgis/core/geometry/SpatialReference.js"
 ]);
 
 const elements = {
@@ -79,7 +81,23 @@ const elements = {
   usePopupPolygon: document.querySelector("#use-popup-polygon"),
   useCountyPolygon: document.querySelector("#use-county-polygon"),
   printPolygonReport: document.querySelector("#print-polygon-report"),
+  triagePolygon: document.querySelector("#triage-polygon"),
   closePolygonReport: document.querySelector("#close-polygon-report"),
+  triageDialog: document.querySelector("#triage-dialog"),
+  triageForm: document.querySelector("#triage-form"),
+  triageSubtitle: document.querySelector("#triage-subtitle"),
+  triageSource: document.querySelector("#triage-source"),
+  triageArea: document.querySelector("#triage-area"),
+  triagePopulation: document.querySelector("#triage-population"),
+  triageIncidentNumber: document.querySelector("#triage-incident-number"),
+  triageIncidentName: document.querySelector("#triage-incident-name"),
+  triageDescription: document.querySelector("#triage-description"),
+  triageOpenManager: document.querySelector("#triage-open-manager"),
+  triageStatus: document.querySelector("#triage-status"),
+  submitTriage: document.querySelector("#submit-triage"),
+  triageClose: document.querySelector("#close-triage"),
+  triageCancel: document.querySelector("#cancel-triage"),
+  openEmergencyManager: document.querySelector("#open-emergency-manager"),
   appAlert: document.querySelector("#app-alert")
 };
 
@@ -115,6 +133,10 @@ const state = {
   reportSketchViewModel: null,
   reportMapLayer: null,
   reportRun: 0,
+  impactedAreaLayer: null,
+  triageMetrics: null,
+  triageSubmitting: false,
+  triageRun: 0,
   mapNavigationRun: 0,
   consolidatedPopupRun: 0,
   consolidatedPopupViews: new WeakSet(),
@@ -125,7 +147,7 @@ const state = {
 };
 
 const enrichmentCache = new Map();
-window.__app = { APP_CONFIG, state, elements, openPolygonReport, openConsolidatedPopup };
+window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openConsolidatedPopup };
 
 esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
@@ -149,6 +171,10 @@ elements.printPolygonReport.addEventListener("click", createPolygonReportPdf);
 elements.drawReportPolygon.addEventListener("click", startPolygonReportDrawing);
 elements.usePopupPolygon.addEventListener("click", useSelectedPopupPolygon);
 elements.useCountyPolygon.addEventListener("click", useSelectedCountyPolygon);
+elements.triagePolygon.addEventListener("click", openTriageWorkflow);
+elements.triageForm.addEventListener("submit", handleTriageSubmit);
+elements.triageClose.addEventListener("click", () => elements.triageDialog.close());
+elements.triageCancel.addEventListener("click", () => elements.triageDialog.close());
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -166,6 +192,7 @@ async function initialize() {
     if (elements.legendExpands[index]) elements.legendExpands[index].expanded = true;
   }
   if (window.location.hash === "#polygon-report") await openPolygonReport();
+  if (window.location.hash === "#triage") await openTriageWorkflow();
 }
 
 async function initializeAuthentication() {
@@ -284,7 +311,7 @@ async function initializeMap() {
     await loadOperationalLayers();
   } catch (layerError) {
     console.error("Operational context layers could not be fully initialized.", layerError);
-    window.__app = { APP_CONFIG, state, elements, openPolygonReport, openConsolidatedPopup };
+    window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openConsolidatedPopup };
     window.__esriLayers ||= {};
     setDataStatus("Map loaded • context layers partial", "partial");
   }
@@ -690,7 +717,7 @@ async function loadOperationalLayers() {
     window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
     if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
   }
-  window.__app = { APP_CONFIG, state, elements, openPolygonReport, openConsolidatedPopup };
+  window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openConsolidatedPopup };
 
   if (mapLayers.length === APP_CONFIG.operationalLayers.length) {
     setDataStatus(`${mapLayers.length} layers • ${state.sceneReady ? "2D/3D" : "2D"}`, "connected");
@@ -1784,8 +1811,203 @@ function openPolygonReport() {
   } else {
     elements.reportContent.hidden = true;
     elements.printPolygonReport.disabled = true;
+    elements.triagePolygon.disabled = true;
     elements.reportSubtitle.textContent = "Select a map polygon, draw an area, or use the selected county boundary.";
     elements.reportStatus.textContent = "Choose a polygon source above. To use a map feature, open its popup first.";
+  }
+}
+
+function generateIncidentNumber() {
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+  const suffix = globalThis.crypto?.randomUUID?.().replace(/-/g, "").slice(0, 8).toUpperCase()
+    || Math.random().toString(36).slice(2, 10).toUpperCase();
+  return `ELN-${stamp}-${suffix}`;
+}
+
+function formatTriageArea(geometry) {
+  try {
+    const value = Math.abs(geometryEngine.geodesicArea(geometry, "square-miles"));
+    return Number.isFinite(value) ? `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} sq mi` : "Unavailable";
+  } catch {
+    return "Unavailable";
+  }
+}
+
+function buildTriageDescription(metrics = state.triageMetrics) {
+  const parts = [
+    "Created from the California El Niño Planning Console triage workflow.",
+    `Planning polygon: ${state.reportGeometryLabel}.`,
+    `Area: ${metrics?.area || "Unavailable"}.`,
+    `Estimated population: ${metrics?.population || "Calculating or unavailable"}.`,
+    `Triage timestamp: ${new Date().toLocaleString()}.`,
+    "Planning values are screening estimates and require operational verification."
+  ];
+  return parts.join(" ").slice(0, 1000);
+}
+
+function setGeneratedTriageDescription() {
+  const previousGenerated = elements.triageDescription.dataset.generated || "";
+  const nextGenerated = buildTriageDescription();
+  if (!elements.triageDescription.value || elements.triageDescription.value === previousGenerated) {
+    elements.triageDescription.value = nextGenerated;
+  }
+  elements.triageDescription.dataset.generated = nextGenerated;
+}
+
+async function refreshTriageContext(geometry) {
+  const run = ++state.triageRun;
+  const area = formatTriageArea(geometry);
+  state.triageMetrics = { area, population: "Calculating…" };
+  elements.triageArea.textContent = area;
+  elements.triagePopulation.textContent = "Calculating…";
+  setGeneratedTriageDescription();
+  try {
+    const result = await estimatePopulationForGeometry(geometry, { maxBoundaryTracts: 0 });
+    if (run !== state.triageRun) return;
+    state.triageMetrics.population = formatCount(result.population);
+    elements.triagePopulation.textContent = state.triageMetrics.population;
+  } catch (error) {
+    if (run !== state.triageRun) return;
+    console.warn("Triage population context unavailable.", error);
+    state.triageMetrics.population = "Unavailable";
+    elements.triagePopulation.textContent = "Unavailable";
+  }
+  setGeneratedTriageDescription();
+}
+
+async function openTriageWorkflow() {
+  let geometry = state.reportGeometry;
+  let label = state.reportGeometryLabel;
+  if (!geometry) {
+    const popupFeature = selectedPopupPolygon();
+    if (popupFeature) {
+      geometry = popupFeature.geometry;
+      label = popupFeature.layer?.title || popupFeature.sourceLayer?.title || "Selected map polygon";
+    }
+  }
+  if (!geometry && state.selectedCountyId) {
+    const county = state.counties.find((item) => item.id === state.selectedCountyId);
+    if (county) {
+      geometry = await getCountyGeometry(county);
+      label = `${county.name} County boundary`;
+    }
+  }
+  if (!geometry?.rings) {
+    openPolygonReport();
+    elements.reportStatus.textContent = "Select or draw a polygon, then choose Triage impacted area.";
+    return;
+  }
+
+  state.reportGeometry = geometry;
+  state.reportGeometryLabel = label || "Selected planning polygon";
+  state.triageMetrics = null;
+  elements.triageSource.textContent = state.reportGeometryLabel;
+  elements.triageSubtitle.textContent = `${state.reportGeometryLabel} will be added to the Emergency Management Impacted Area layer.`;
+  elements.triageIncidentNumber.value = generateIncidentNumber();
+  elements.triageIncidentName.value = `El Niño impacted area — ${state.reportGeometryLabel}`.slice(0, 255);
+  elements.triageDescription.value = "";
+  elements.triageDescription.dataset.generated = "";
+  elements.openEmergencyManager.hidden = true;
+  elements.submitTriage.disabled = !state.signedIn;
+  elements.triageStatus.textContent = state.signedIn
+    ? "Review the incident information, then create the impacted area."
+    : "Sign in with an authorized Public Safety account before creating the impacted area.";
+  elements.triageForm.querySelectorAll(".triage-steps li").forEach((step, index) => {
+    step.classList.toggle("complete", index === 0);
+    step.classList.toggle("active", index === 1);
+  });
+  if (elements.reportDialog.open) elements.reportDialog.close();
+  if (!elements.triageDialog.open) elements.triageDialog.showModal();
+  elements.triageIncidentName.focus();
+  refreshTriageContext(geometry);
+}
+
+async function ensureImpactedAreaLayer() {
+  if (!state.impactedAreaLayer) {
+    state.impactedAreaLayer = new FeatureLayer({
+      portalItem: { id: APP_CONFIG.impactedAreaItemId },
+      layerId: 0,
+      outFields: ["*"]
+    });
+  }
+  await state.impactedAreaLayer.load();
+  if (!state.impactedAreaLayer.capabilities?.operations?.supportsAdd) {
+    throw new Error("The Impacted Area layer does not allow adding features for this account.");
+  }
+  return state.impactedAreaLayer;
+}
+
+async function projectForImpactedArea(geometry, layer) {
+  const target = layer.spatialReference || new SpatialReference({ wkid: 102100 });
+  const source = geometry.spatialReference;
+  const sameReference = source?.equals?.(target)
+    || (source?.wkid && target?.wkid && [source.wkid, source.latestWkid].includes(target.wkid))
+    || (target?.wkid && source?.wkid && [target.wkid, target.latestWkid].includes(source.wkid));
+  if (sameReference) return geometry.clone();
+  await projectOperator.load();
+  const projected = projectOperator.execute(geometry, target);
+  if (!projected) throw new Error("The selected polygon could not be projected to the Impacted Area layer spatial reference.");
+  return projected;
+}
+
+async function handleTriageSubmit(event) {
+  event.preventDefault();
+  if (state.triageSubmitting) return;
+  if (!state.signedIn) {
+    elements.triageStatus.textContent = "Sign in before creating an impacted area.";
+    return;
+  }
+  const incidentName = elements.triageIncidentName.value.trim();
+  const incidentNumber = elements.triageIncidentNumber.value.trim();
+  const description = elements.triageDescription.value.trim();
+  if (!incidentName || !incidentNumber || !description || !state.reportGeometry?.rings) {
+    elements.triageStatus.textContent = "Incident number, name, description, and a polygon are required.";
+    return;
+  }
+
+  const managerWindow = elements.triageOpenManager.checked
+    ? window.open("about:blank", "emergency-information-manager")
+    : null;
+  state.triageSubmitting = true;
+  elements.submitTriage.disabled = true;
+  elements.triageStatus.textContent = "Creating the impacted area in the Emergency Management solution…";
+  try {
+    const layer = await ensureImpactedAreaLayer();
+    const geometry = await projectForImpactedArea(state.reportGeometry, layer);
+    const feature = new Graphic({
+      geometry,
+      attributes: {
+        incidentid: incidentNumber,
+        incidentnm: incidentName,
+        description: description.slice(0, 1000),
+        active: "Yes",
+        archive: "No"
+      }
+    });
+    const result = await layer.applyEdits({ addFeatures: [feature] });
+    const addResult = result.addFeatureResults?.[0];
+    if (!addResult || addResult.error) {
+      throw new Error(addResult?.error?.message || "The feature service did not return a successful add result.");
+    }
+
+    elements.triageStatus.textContent = `Impacted area created successfully. Incident ${incidentNumber}; object ID ${addResult.objectId}.`;
+    elements.openEmergencyManager.hidden = false;
+    elements.triageForm.querySelectorAll(".triage-steps li").forEach((step, index) => {
+      step.classList.toggle("complete", index <= 2);
+      step.classList.toggle("active", index === 3);
+    });
+    if (managerWindow) {
+      managerWindow.location.replace(APP_CONFIG.emergencyManagerUrl);
+      managerWindow.focus();
+    }
+    announce(`Impacted area created for incident ${incidentNumber}.`);
+  } catch (error) {
+    console.error("Emergency Management triage failed.", error);
+    if (managerWindow && !managerWindow.closed) managerWindow.close();
+    elements.triageStatus.textContent = `Impacted area was not created. ${error?.message || "Check access and try again."}`;
+    elements.submitTriage.disabled = false;
+  } finally {
+    state.triageSubmitting = false;
   }
 }
 
@@ -2052,6 +2274,7 @@ async function buildPolygonReport(geometry, label) {
       : "Population could not be calculated from the ACS tract source.";
   elements.reportMethod.textContent = `${methodText} Contains counts source features contained by the selected polygon; Intersects counts features sharing any space with it; Within counts source polygons that contain the selected area. Demographic and housing values are whole-tract screening totals. These are source-record counts, not validated exposure, occupancy, capacity, damage, or impact totals. Confirm operational decisions with source agencies.`;
   elements.reportStatus.textContent = `Report complete — ${intersecting.length} intersecting operational layers summarized.`;
+  elements.triagePolygon.disabled = false;
   elements.printPolygonReport.disabled = false;
 }
 

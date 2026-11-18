@@ -321,6 +321,32 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .report-status-error { color: #ff9cab; font-weight: 700; }
 .polygon-report-method { grid-column: 1 / -1; margin: 0; padding: 0.75rem; border: 1px solid var(--border); border-left: 3px solid var(--gold); background: #081e2c; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
 
+.triage-dialog { width: min(840px, 96vw); max-width: none; max-height: 92vh; padding: 0; border: 1px solid var(--gold); background: var(--bg); color: var(--text); }
+.triage-dialog::backdrop { background: rgb(2 10 16 / 82%); backdrop-filter: blur(3px); }
+.triage-sheet { padding: 1rem; overflow: auto; }
+.triage-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; margin: 0.8rem 0; padding: 0; list-style: none; }
+.triage-steps li { display: flex; align-items: center; gap: 0.4rem; min-height: 45px; padding: 0.5rem; border: 1px solid var(--border); background: var(--panel); color: var(--muted); font-size: 0.67rem; }
+.triage-steps li strong { display: grid; place-items: center; flex: 0 0 24px; height: 24px; border: 1px solid currentColor; border-radius: 50%; }
+.triage-steps li.active { border-color: var(--gold); color: var(--gold); }
+.triage-steps li.complete { border-color: var(--low); color: var(--low); }
+.triage-context { display: grid; grid-template-columns: 1.4fr 0.8fr 0.8fr; gap: 0.45rem; }
+.triage-context article { min-height: 76px; padding: 0.65rem; border-left: 3px solid var(--gold); background: var(--panel2); }
+.triage-context span, .triage-context strong { display: block; }
+.triage-context span { color: var(--muted); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.triage-context strong { margin-top: 0.35rem; font-size: 0.83rem; overflow-wrap: anywhere; }
+.triage-fields { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 0.65rem; margin-top: 0.8rem; }
+.triage-fields label { display: grid; gap: 0.3rem; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+.triage-fields input, .triage-fields textarea { width: 100%; box-sizing: border-box; padding: 0.65rem; border: 1px solid var(--border); background: #071b28; color: var(--text); font: inherit; }
+.triage-fields input[readonly] { color: var(--focus); }
+.triage-description { grid-column: 1 / -1; }
+.triage-description textarea { resize: vertical; min-height: 110px; line-height: 1.45; }
+.triage-defaults { display: flex; gap: 1rem; margin-top: 0.65rem; padding: 0.55rem 0.65rem; border-left: 3px solid var(--low); background: var(--panel); color: var(--muted); font-size: 0.68rem; }
+.triage-defaults strong { color: var(--text); }
+.triage-open-option { display: flex; align-items: center; gap: 0.5rem; margin: 0.7rem 0; color: var(--text); font-size: 0.72rem; }
+.triage-open-option input { width: 17px; height: 17px; accent-color: var(--gold); }
+.triage-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.45rem; }
+.triage-actions a { text-decoration: none; }
+
 footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: #06131c; color: var(--muted); font-size: 0.7rem; text-align: center; }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -349,7 +375,9 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
   .header-report-group > select { width: 132px; }
   .polygon-report-content { grid-template-columns: 1fr; }
   .polygon-report-map-wrap, #polygon-report-map { min-height: 300px; height: 300px; }
-  .polygon-report-kpis, .report-highlights { grid-template-columns: 1fr; }
+  .polygon-report-kpis, .report-highlights, .triage-context, .triage-fields { grid-template-columns: 1fr; }
+  .triage-description { grid-column: auto; }
+  .triage-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .command-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { display: block; height: auto; min-height: 0; overflow: visible; }
   .threat-panel, .detail-panel { border: 0; border-bottom: 1px solid var(--border); }

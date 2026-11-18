@@ -17,6 +17,11 @@ if (reportMenu && openReportButton) {
       return;
     }
 
+    if (currentPath === destinationPath && destination.hash === "#triage" && window.__app?.openTriageWorkflow) {
+      window.__app.openTriageWorkflow();
+      return;
+    }
+
     if (currentPath === destinationPath && destination.hash) {
       const panelId = destination.hash.slice(1);
       const tab = [...document.querySelectorAll("[role='tab'][aria-controls]")]

@@ -26,7 +26,7 @@
     <nav class="app-nav header-actions" aria-label="Primary navigation">
       <div class="header-report-group" aria-label="Reports">
         <label for="report-menu">Reports</label>
-        <select id="report-menu"><option value="" selected>Select a report</option><option value="./index.html#polygon-report">Polygon summary</option><option value="./analysis.html#summaryPanel">Analysis summary</option><option value="./analysis.html#conditionsPanel">Forecast &amp; gauges</option><option value="./analysis.html#riskPanel">Risk &amp; timeline</option><option value="./analysis.html#sourcesAnalysisPanel">Source accountability</option></select>
+        <select id="report-menu"><option value="" selected>Select a report</option><option value="./index.html#polygon-report">Polygon summary</option><option value="./index.html#triage">Emergency triage</option><option value="./analysis.html#summaryPanel">Analysis summary</option><option value="./analysis.html#conditionsPanel">Forecast &amp; gauges</option><option value="./analysis.html#riskPanel">Risk &amp; timeline</option><option value="./analysis.html#sourcesAnalysisPanel">Source accountability</option></select>
         <button id="open-report" class="header-action header-action-small" type="button" disabled>Open</button>
       </div>
       <a class="app-nav-link active" href="./index.html" aria-current="page">Planning Map</a>
@@ -267,6 +267,7 @@
         <button id="use-popup-polygon" class="report-control" type="button">Use selected map polygon</button>
         <button id="use-county-polygon" class="report-control" type="button">Use selected county</button>
         <button id="print-polygon-report" class="report-control" type="button" disabled>Create PDF</button>
+        <button id="triage-polygon" class="report-control report-control-primary" type="button" disabled>Triage impacted area</button>
       </div>
       <p id="polygon-report-status" class="polygon-report-status" role="status" aria-live="polite">Choose a polygon source above.</p>
       <section id="polygon-report-content" class="polygon-report-content" hidden>
@@ -290,6 +291,41 @@
         <aside id="polygon-report-method" class="analysis-disclaimer polygon-report-method"></aside>
       </section>
     </article>
+  </dialog>
+
+  <dialog id="triage-dialog" class="triage-dialog" aria-labelledby="triage-title">
+    <form id="triage-form" class="triage-sheet">
+      <header class="polygon-report-header">
+        <div><p class="eyebrow">Emergency Management solution</p><h2 id="triage-title">Triage impacted area</h2><p id="triage-subtitle">Review the selected planning polygon before creating the operational incident area.</p></div>
+        <button id="close-triage" class="report-control" type="button" aria-label="Close triage workflow">Close</button>
+      </header>
+      <ol class="triage-steps" aria-label="Triage workflow">
+        <li class="complete"><strong>1</strong><span>Select polygon</span></li>
+        <li class="active"><strong>2</strong><span>Confirm incident</span></li>
+        <li><strong>3</strong><span>Create impacted area</span></li>
+        <li><strong>4</strong><span>Open manager</span></li>
+      </ol>
+      <section class="triage-context" aria-label="Selected planning context">
+        <article><span>Source polygon</span><strong id="triage-source">—</strong></article>
+        <article><span>Area</span><strong id="triage-area">Calculating…</strong></article>
+        <article><span>Estimated population</span><strong id="triage-population">Calculating…</strong></article>
+      </section>
+      <div class="triage-fields">
+        <label>Incident number<input id="triage-incident-number" type="text" readonly></label>
+        <label>Impacted area / incident name<input id="triage-incident-name" type="text" maxlength="255" required></label>
+        <label class="triage-description">Operational description<textarea id="triage-description" maxlength="1000" rows="6" required></textarea></label>
+      </div>
+      <div class="triage-defaults" aria-label="Emergency Management field defaults">
+        <span><strong>Active:</strong> Yes</span><span><strong>Archive:</strong> No</span>
+      </div>
+      <label class="triage-open-option"><input id="triage-open-manager" type="checkbox" checked> Open Emergency Information Manager after the impacted area is created</label>
+      <p id="triage-status" class="polygon-report-status" role="status" aria-live="polite">Review the incident information, then create the impacted area.</p>
+      <footer class="triage-actions">
+        <button id="cancel-triage" class="report-control" type="button">Cancel</button>
+        <a id="open-emergency-manager" class="report-control" href="https://experience.arcgis.com/experience/955a77f3c6fd4c6c95aec8d909f25cd1" target="_blank" rel="noopener noreferrer" hidden>Open Emergency Information Manager</a>
+        <button id="submit-triage" class="report-control report-control-primary" type="submit">Create impacted area</button>
+      </footer>
+    </form>
   </dialog>
 
   <div id="app-alert" class="sr-only" role="alert" aria-live="assertive"></div>
