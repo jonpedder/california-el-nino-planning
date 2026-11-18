@@ -427,8 +427,9 @@ async function openConsolidatedPopup(component, event) {
   try {
     const features = await collectPopupFeatures(component, screenPoint);
     if (run !== state.consolidatedPopupRun) return;
+    const popup = component.querySelector("arcgis-popup") || component.popupElement;
     if (!features.length || !location) {
-      component.closePopup?.();
+      if (popup) popup.open = false;
       return;
     }
     const layerCount = new Set(features.map((feature) => (feature.layer || feature.sourceLayer)?.uid || (feature.layer || feature.sourceLayer)?.title).filter(Boolean)).size;
@@ -450,7 +451,10 @@ async function openConsolidatedPopup(component, event) {
         }]
       }
     });
-    await component.openPopup({ features: [summaryFeature], location, shouldFocus: false });
+    if (!popup) throw new Error("The map popup component is unavailable.");
+    popup.features = [summaryFeature];
+    popup.location = location;
+    popup.open = true;
   } catch (error) {
     if (run !== state.consolidatedPopupRun || error?.name === "AbortError") return;
     console.warn("Consolidated popup could not be created.", error);
