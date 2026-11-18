@@ -10,7 +10,7 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=nav-ack2">
+  <link rel="stylesheet" href="./styles.css?v=map-tools1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=polygon-report1"></script>
   <script type="module" src="./app.js?v=forecast-zoom1"></script>
@@ -72,7 +72,17 @@
         <arcgis-map id="planning-map" class="planning-view" item-id="bc6d9edf97a0425eb53a1f7776c80133" popup-component-enabled aria-label="California county planning map in 2D">
           <arcgis-zoom slot="top-left"></arcgis-zoom>
           <arcgis-home slot="top-left"></arcgis-home>
+          <arcgis-fullscreen slot="top-left"></arcgis-fullscreen>
           <arcgis-search slot="top-right"></arcgis-search>
+          <arcgis-expand class="bookmarks-expand" group="map-tools" slot="top-right" expand-icon="bookmark" expand-tooltip="Bookmarks">
+            <arcgis-bookmarks class="user-bookmarks map-tool-panel" show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
+          </arcgis-expand>
+          <arcgis-expand class="measurement-expand" group="map-tools" slot="top-right" expand-icon="measure" expand-tooltip="Measure distance and area">
+            <arcgis-measurement class="map-measurement map-tool-panel"></arcgis-measurement>
+          </arcgis-expand>
+          <arcgis-expand class="time-expand" group="map-tools" slot="top-right" expand-icon="clock" expand-tooltip="Time tool">
+            <arcgis-time-slider class="map-time-slider map-tool-panel" mode="time-window"></arcgis-time-slider>
+          </arcgis-expand>
           <arcgis-expand class="basemap-expand" group="map-tools" slot="top-right" expand-icon="basemap" expand-tooltip="Basemaps">
             <arcgis-basemap-gallery></arcgis-basemap-gallery>
           </arcgis-expand>
@@ -105,7 +115,17 @@
         <arcgis-scene id="planning-scene" class="planning-view inactive" item-id="1f7d06bbc0254ac3be1bfab108ed597e" popup-component-enabled aria-label="California county planning scene in 3D" aria-hidden="true">
           <arcgis-zoom slot="top-left"></arcgis-zoom>
           <arcgis-home slot="top-left"></arcgis-home>
+          <arcgis-fullscreen slot="top-left"></arcgis-fullscreen>
           <arcgis-search slot="top-right"></arcgis-search>
+          <arcgis-expand class="bookmarks-expand" group="map-tools" slot="top-right" expand-icon="bookmark" expand-tooltip="Bookmarks">
+            <arcgis-bookmarks class="user-bookmarks map-tool-panel" show-add-bookmark-button show-edit-bookmark-button></arcgis-bookmarks>
+          </arcgis-expand>
+          <arcgis-expand class="measurement-expand" group="map-tools" slot="top-right" expand-icon="measure" expand-tooltip="Measure distance and area">
+            <arcgis-measurement class="map-measurement map-tool-panel"></arcgis-measurement>
+          </arcgis-expand>
+          <arcgis-expand class="time-expand" group="map-tools" slot="top-right" expand-icon="clock" expand-tooltip="Time tool">
+            <arcgis-time-slider class="map-time-slider map-tool-panel" mode="time-window"></arcgis-time-slider>
+          </arcgis-expand>
           <arcgis-expand class="basemap-expand" group="map-tools" slot="top-right" expand-icon="basemap" expand-tooltip="Basemaps">
             <arcgis-basemap-gallery></arcgis-basemap-gallery>
           </arcgis-expand>

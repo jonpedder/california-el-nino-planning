@@ -195,6 +195,9 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .map-state-acknowledge { flex: 0 0 auto; min-height: 30px; padding: 0.35rem 0.55rem; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
 .map-state-acknowledge:hover { background: rgb(217 54 79 / 14%); }
 .map-state-acknowledge:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.map-tool-panel { display: block; width: min(360px, 78vw); max-height: min(520px, 70vh); overflow: auto; }
+.map-time-slider { width: min(420px, 78vw); min-height: 140px; }
+.map-measurement { min-height: 210px; }
 
 #detail-content { padding: 0 1rem; }
 .detail-tabs { position: sticky; z-index: 4; top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 -1rem 0.75rem; border-bottom: 1px solid var(--border); background: var(--panel); }
