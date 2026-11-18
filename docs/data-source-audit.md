@@ -53,7 +53,7 @@ The NRI county layer displays at broader county scales and the tract layer takes
 
 ## Business Analyst demographic context
 
-County demographic cards were generated on **2026-11-16** with ArcGIS GeoEnrichment / Business Analyst using standard county geography IDs. The cards use current 2026/2031 variables. The application now replaces the former static Graphic Profile links with a dynamic Emergency Information infographic driven by the active drawn, popup, or county polygon; its Census and operational values retain the methods and limitations stated in the Polygon Summary.
+County demographic cards and linked Graphic Profile infographics were generated on **2026-11-16** with ArcGIS GeoEnrichment / Business Analyst using standard county geography IDs. The cards use current 2026/2031 variables. The Graphic Profile template renders its own labeled vintages (including 2024/2029 and 2025/2030 in the generated report), which may differ from the cards and must be read from the report itself.
 
 | County | Geography ID | Graphic Profile |
 | --- | --- | --- |

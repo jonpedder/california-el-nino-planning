@@ -10,10 +10,10 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=emergency-info1">
+  <link rel="stylesheet" href="./styles.css?v=measure-off1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
   <script type="module" src="./header.js?v=polygon-report1"></script>
-  <script type="module" src="./app.js?v=emergency-info1"></script>
+  <script type="module" src="./app.js?v=county-toggle1"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -233,9 +233,9 @@
           <h3 id="demographics-heading">Demographic context</h3>
           <div id="demographic-grid" class="demographic-grid"></div>
           <p id="demographic-vintage" class="helper"></p>
-          <button id="infographic-link" class="report-link" type="button">
-            Generate Emergency Information infographic
-          </button>
+          <a id="infographic-link" class="report-link" href="#" target="_blank" rel="noopener noreferrer">
+            Open Business Analyst Graphic Profile
+          </a>
         </section>
         <section aria-labelledby="capabilities-heading">
           <h3 id="capabilities-heading">Enabled capabilities</h3>
@@ -278,21 +278,10 @@
             <article><span>Intersecting layers</span><strong id="report-layer-count">—</strong></article>
             <article><span>Generated</span><strong id="report-generated">—</strong></article>
           </div>
-          <section class="emergency-infographic" aria-labelledby="emergency-infographic-heading">
-            <header class="emergency-infographic-header">
-              <div><p class="eyebrow">Emergency Information</p><h3 id="emergency-infographic-heading">Selected-area readiness snapshot</h3></div>
-              <span id="report-emergency-headline" class="emergency-status">Waiting for polygon analysis</span>
-            </header>
-            <p class="emergency-infographic-note">Generated dynamically from the selected polygon. Values are screening context and require source-agency validation.</p>
-            <section class="emergency-infographic-section" aria-labelledby="emergency-people-heading">
-              <h4 id="emergency-people-heading">People and housing</h4>
-              <div id="report-demographics" class="report-highlights emergency-metrics"></div>
-            </section>
-            <section class="emergency-infographic-section" aria-labelledby="emergency-operations-heading">
-              <h4 id="emergency-operations-heading">Hazards, response, and critical facilities</h4>
-              <div id="report-highlights" class="report-highlights emergency-metrics"></div>
-            </section>
-          </section>
+          <h3>Demographics, housing, and people potentially at risk</h3>
+          <div id="report-demographics" class="report-highlights"></div>
+          <h3>Operational highlights</h3>
+          <div id="report-highlights" class="report-highlights"></div>
         </section>
         <section class="polygon-report-table-section" aria-labelledby="report-layers-heading">
           <h3 id="report-layers-heading">Intersecting layers and records</h3>

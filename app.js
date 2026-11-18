@@ -73,7 +73,6 @@ const elements = {
   reportGenerated: document.querySelector("#report-generated"),
   reportDemographics: document.querySelector("#report-demographics"),
   reportHighlights: document.querySelector("#report-highlights"),
-  reportEmergencyHeadline: document.querySelector("#report-emergency-headline"),
   reportLayerTable: document.querySelector("#report-layer-table"),
   reportMethod: document.querySelector("#polygon-report-method"),
   drawReportPolygon: document.querySelector("#draw-report-polygon"),
@@ -150,7 +149,6 @@ elements.printPolygonReport.addEventListener("click", createPolygonReportPdf);
 elements.drawReportPolygon.addEventListener("click", startPolygonReportDrawing);
 elements.usePopupPolygon.addEventListener("click", useSelectedPopupPolygon);
 elements.useCountyPolygon.addEventListener("click", useSelectedCountyPolygon);
-elements.infographicLink.addEventListener("click", openEmergencyInfographic);
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -1775,26 +1773,6 @@ async function createPolygonReportPdf() {
   }
 }
 
-async function openEmergencyInfographic() {
-  const popupPolygon = selectedPopupPolygon();
-  if (popupPolygon) {
-    state.reportGeometry = popupPolygon.geometry;
-    state.reportGeometryLabel = popupPolygon.layer?.title || popupPolygon.sourceLayer?.title || "Selected map polygon";
-    await buildPolygonReport(state.reportGeometry, state.reportGeometryLabel);
-    return;
-  }
-  if (state.reportGeometry) {
-    await buildPolygonReport(state.reportGeometry, state.reportGeometryLabel);
-    return;
-  }
-  if (state.selectedCountyId) {
-    await useSelectedCountyPolygon();
-    return;
-  }
-  openPolygonReport();
-  elements.reportStatus.textContent = "Select a map polygon, draw an area, or choose a county to generate Emergency Information.";
-}
-
 function openPolygonReport() {
   if (!elements.reportDialog.open) elements.reportDialog.showModal();
   elements.usePopupPolygon.disabled = !selectedPopupPolygon();
@@ -1926,9 +1904,8 @@ async function countSpatialRelationships(layer, geometry) {
   };
 }
 
-function reportHighlight(label, value, note, tone = "") {
+function reportHighlight(label, value, note) {
   const article = document.createElement("article");
-  if (tone) article.classList.add(`emergency-${tone}`);
   const heading = document.createElement("strong");
   const metric = document.createElement("span");
   const detail = document.createElement("small");
@@ -1986,8 +1963,6 @@ async function buildPolygonReport(geometry, label) {
   elements.reportLayerTable.replaceChildren();
   elements.reportDemographics.replaceChildren();
   elements.reportHighlights.replaceChildren();
-  elements.reportEmergencyHeadline.textContent = "Analyzing selected polygon…";
-  elements.reportEmergencyHeadline.dataset.level = "busy";
   elements.reportArea.textContent = "…";
   elements.reportPopulation.textContent = "…";
   elements.reportLayerCount.textContent = "…";
@@ -2028,43 +2003,28 @@ async function buildPolygonReport(geometry, label) {
   elements.reportGenerated.textContent = generated.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
   const byKey = new Map(sortedLayers.map((item) => [item.key, item]));
-  const rawMetric = (key) => byKey.get(key)?.count == null ? null : Number(byKey.get(key).count);
-  const metric = (key) => rawMetric(key) == null ? "Unavailable" : formatCount(rawMetric(key));
-  const advisories = rawMetric("weatherWarnings");
-  const currentFires = rawMetric("currentFirePerimeters");
-  const activeShelters = rawMetric("activeShelters");
-  if ((advisories || 0) > 0) {
-    elements.reportEmergencyHeadline.textContent = `${formatCount(advisories)} advisory record${advisories === 1 ? "" : "s"} intersect the selected area`;
-    elements.reportEmergencyHeadline.dataset.level = "critical";
-  } else if ((currentFires || 0) > 0) {
-    elements.reportEmergencyHeadline.textContent = `${formatCount(currentFires)} current fire perimeter record${currentFires === 1 ? "" : "s"} intersect the selected area`;
-    elements.reportEmergencyHeadline.dataset.level = "high";
-  } else {
-    elements.reportEmergencyHeadline.textContent = "No current advisory or fire-perimeter records intersected";
-    elements.reportEmergencyHeadline.dataset.level = "normal";
-  }
-
+  const metric = (key) => byKey.get(key)?.count == null ? "Unavailable" : formatCount(byKey.get(key).count);
   if (demographics) {
     elements.reportDemographics.append(
-      reportHighlight("2020 Census population", formatCount(demographics.population), `${formatCount(demographics.tractCount)} intersecting census tracts`, "population"),
-      reportHighlight("Housing units potentially at risk", formatCount(demographics.housingUnits), "Whole-tract screening total", "housing"),
-      reportHighlight("Occupied housing units", formatCount(demographics.households), "Census households in intersecting tracts", "housing"),
-      reportHighlight("Population under 18", formatCount(demographics.under18), "Potentially vulnerable age group", "watch"),
-      reportHighlight("Population age 65+", formatCount(demographics.age65Plus), "Potentially vulnerable age group", "watch"),
-      reportHighlight("Dependent-age population", formatCount(demographics.dependentAge), "Under 18 and age 65+ combined", "watch")
+      reportHighlight("2020 Census population", formatCount(demographics.population), `${formatCount(demographics.tractCount)} intersecting census tracts`),
+      reportHighlight("Housing units potentially at risk", formatCount(demographics.housingUnits), "Whole-tract screening total"),
+      reportHighlight("Occupied housing units", formatCount(demographics.households), "Census households in intersecting tracts"),
+      reportHighlight("Population under 18", formatCount(demographics.under18), "Potentially vulnerable age group"),
+      reportHighlight("Population age 65+", formatCount(demographics.age65Plus), "Potentially vulnerable age group"),
+      reportHighlight("Dependent-age population", formatCount(demographics.dependentAge), "Under 18 and age 65+ combined")
     );
   } else {
-    elements.reportDemographics.append(reportHighlight("Demographics and housing", "Unavailable", "The Census tract source could not be summarized.", "unavailable"));
+    elements.reportDemographics.append(reportHighlight("Demographics and housing", "Unavailable", "The Census tract source could not be summarized."));
   }
   elements.reportHighlights.append(
-    reportHighlight("Current advisories", metric("weatherWarnings"), "NWS polygons intersecting the selected area", (advisories || 0) > 0 ? "critical" : "normal"),
-    reportHighlight("Live stream gauges", metric("liveStreamGauges"), "Gauge locations intersecting the selected area", "information"),
-    reportHighlight("Current fire perimeters", metric("currentFirePerimeters"), "Current WFIGS perimeter records", (currentFires || 0) > 0 ? "high" : "normal"),
-    reportHighlight("Past fire perimeters", metric("fireHistory"), "Historical WFIGS perimeter records", "information"),
-    reportHighlight("USGS post-fire records", metric("usgsPostFire"), "Assessment points, perimeters, basins, and segments", "watch"),
-    reportHighlight("Hospitals", metric("hospitals"), "Mapped medical facilities in the selected area", "facility"),
-    reportHighlight("Active shelters", metric("activeShelters"), "Currently published shelter records", (activeShelters || 0) > 0 ? "facility" : "information"),
-    reportHighlight("Structures", metric("structures"), "Mapped structure records; verify source completeness", "information")
+    reportHighlight("Current advisories", metric("weatherWarnings"), "NWS polygons intersecting the selected area"),
+    reportHighlight("Live stream gauges", metric("liveStreamGauges"), "Gauge locations intersecting the selected area"),
+    reportHighlight("Current fire perimeters", metric("currentFirePerimeters"), "Current WFIGS perimeter records"),
+    reportHighlight("Past fire perimeters", metric("fireHistory"), "Historical WFIGS perimeter records"),
+    reportHighlight("USGS post-fire records", metric("usgsPostFire"), "Assessment points, perimeters, basins, and segments"),
+    reportHighlight("Hospitals", metric("hospitals"), "Mapped medical facilities in the selected area"),
+    reportHighlight("Active shelters", metric("activeShelters"), "Currently published shelter records"),
+    reportHighlight("Structures", metric("structures"), "Mapped structure records; verify source completeness")
   );
 
   sortedLayers.forEach((item) => {
@@ -2388,8 +2348,8 @@ function renderDemographics(demographics) {
   }
 
   elements.demographicVintage.textContent = `${demographics.vintage}. County standard geography; estimates are context, not hazard exposure counts.`;
-  elements.infographicLink.textContent = "Generate Emergency Information infographic";
-  elements.infographicLink.hidden = false;
+  elements.infographicLink.href = demographics.infographicUrl;
+  elements.infographicLink.hidden = !demographics.infographicUrl;
 }
 
 function formatCount(value) {
