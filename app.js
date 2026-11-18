@@ -371,8 +371,10 @@ async function collectPopupFeatures(component, screenPoint) {
 function buildConsolidatedPopupContent(component, features, location) {
   const container = document.createElement("section");
   container.className = "consolidated-popup-content";
+  container.style.cssText = "display:grid;gap:0.5rem;min-width:min(420px,76vw);";
   const introduction = document.createElement("p");
   introduction.className = "consolidated-popup-intro";
+  introduction.style.cssText = "margin:0 0 0.25rem;color:var(--muted,#afc3cf);font-size:0.72rem;line-height:1.45;";
   introduction.textContent = "All popup-enabled records at this location are grouped by source layer. Expand a section to review its configured fields, media, and Arcade-derived values.";
   container.append(introduction);
 
@@ -387,12 +389,15 @@ function buildConsolidatedPopupContent(component, features, location) {
   [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([title, layerFeatures], groupIndex) => {
     const details = document.createElement("details");
     details.className = "consolidated-popup-group";
+    details.style.cssText = "border:1px solid var(--border,#28495b);background:var(--panel,#0c2231);";
     details.open = groupIndex === 0;
     const summary = document.createElement("summary");
+    summary.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.65rem;color:var(--text,#f4f7f9);font-size:0.78rem;font-weight:700;cursor:pointer;";
     const label = document.createElement("span");
     label.textContent = title;
     const count = document.createElement("span");
     count.className = "consolidated-popup-count";
+    count.style.cssText = "display:grid;min-width:1.65rem;height:1.65rem;place-items:center;border:1px solid var(--gold,#f2a900);border-radius:50%;color:var(--gold,#f2a900);font-size:0.68rem;";
     count.textContent = String(layerFeatures.length);
     summary.append(label, count);
     details.append(summary);
@@ -400,6 +405,7 @@ function buildConsolidatedPopupContent(component, features, location) {
     layerFeatures.forEach((feature, featureIndex) => {
       const record = document.createElement("article");
       record.className = "consolidated-popup-record";
+      record.style.cssText = "padding:0.55rem;border-top:1px solid var(--border,#28495b);background:var(--panel2,#123247);";
       if (layerFeatures.length > 1) {
         const recordLabel = document.createElement("p");
         recordLabel.className = "consolidated-popup-record-label";
