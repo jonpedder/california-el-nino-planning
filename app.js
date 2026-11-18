@@ -112,7 +112,8 @@ const state = {
   reportSketchLayer: null,
   reportSketchViewModel: null,
   reportMapLayer: null,
-  reportRun: 0
+  reportRun: 0,
+  mapNavigationRun: 0
 };
 
 const enrichmentCache = new Map();
@@ -2114,12 +2115,37 @@ function renderSourceLayers(countyId) {
   }
 }
 
+function clearMapNavigationError() {
+  if (elements.mapState.dataset.messageType !== "navigation") return;
+  elements.mapState.hidden = true;
+  elements.mapState.classList.remove("error", "acknowledgeable");
+  elements.mapState.removeAttribute("data-message-type");
+  elements.mapState.replaceChildren();
+}
+
+function showMapNavigationError() {
+  elements.mapState.hidden = false;
+  elements.mapState.classList.add("error", "acknowledgeable");
+  elements.mapState.dataset.messageType = "navigation";
+  const message = document.createElement("span");
+  message.textContent = "A map view could not navigate to the selected county.";
+  const acknowledge = document.createElement("button");
+  acknowledge.type = "button";
+  acknowledge.className = "map-state-acknowledge";
+  acknowledge.textContent = "Acknowledge";
+  acknowledge.setAttribute("aria-label", "Acknowledge and dismiss map navigation error");
+  acknowledge.addEventListener("click", clearMapNavigationError, { once: true });
+  elements.mapState.replaceChildren(message, acknowledge);
+}
+
 function updateMap(county) {
   collapseMapOverlays();
   elements.mapPopups.forEach((popup) => popup.close?.());
   applyCountyLayerVisibility(county.id);
   if (!state.mapReady) return;
 
+  const navigationRun = ++state.mapNavigationRun;
+  clearMapNavigationError();
   const navigation = [elements.map.view.goTo({
     center: county.mapViewpoint.center,
     zoom: county.mapViewpoint.zoom
@@ -2135,12 +2161,13 @@ function updateMap(county) {
   }
 
   Promise.allSettled(navigation).then((results) => {
+    if (navigationRun !== state.mapNavigationRun) return;
     if (results.some((result) => result.status === "rejected")) {
       console.error("One or more map views could not navigate.", results);
-      elements.mapState.hidden = false;
-      elements.mapState.textContent = "A map view could not navigate to the selected county.";
-      elements.mapState.classList.add("error");
+      showMapNavigationError();
+      return;
     }
+    clearMapNavigationError();
   });
 }
 
