@@ -18,7 +18,6 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     border: "#28495b"
   }),
   operation: Object.freeze({
-    initialCounty: "marin",
     initialView: "2d",
     showActiveShelters: true,
     showFireHistory: true,

@@ -1,5 +1,5 @@
 import { APP_CONFIG } from "./config.js?v=settings1";
-import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=branding2";
+import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=startup-extent1";
 
 const $ = (id) => document.getElementById(id);
 const preferences = loadPreferences();
@@ -65,7 +65,6 @@ function populate() {
     ["navy", "navy"], ["background", "background"], ["panel", "panel"], ["panelAlt", "panelAlt"],
     ["accent", "accent"], ["textColor", "text"], ["muted", "muted"], ["border", "border"]
   ]) $(id).value = preferences.theme[key];
-  $("initialCounty").value = preferences.operation.initialCounty;
   $("initialView").value = preferences.operation.initialView;
   $("showActiveShelters").checked = preferences.operation.showActiveShelters;
   $("showFireHistory").checked = preferences.operation.showFireHistory;
@@ -100,7 +99,6 @@ function values() {
       border: $("border").value
     },
     operation: {
-      initialCounty: $("initialCounty").value,
       initialView: $("initialView").value,
       showActiveShelters: $("showActiveShelters").checked,
       showFireHistory: $("showFireHistory").checked,

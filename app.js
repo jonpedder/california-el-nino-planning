@@ -1,5 +1,5 @@
 import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=popup1";
-import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=branding2";
+import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=startup-extent1";
 
 const APP_PREFERENCES = loadPreferences();
 const APP_CONFIG = runtimeConfig(DEPLOYMENT_CONFIG, APP_PREFERENCES);
@@ -956,8 +956,12 @@ async function loadCountyData() {
     renderCountyQueue();
     elements.countyState.hidden = true;
     elements.countyList.hidden = false;
-    const initialCounty = state.counties.find((county) => county.id === APP_CONFIG.preferences?.initialCounty) || state.counties[0];
-    selectCounty(initialCounty.id, { moveFocus: false });
+    state.selectedCountyId = null;
+    elements.mapSelection.textContent = "No county selected";
+    elements.detailHeading.textContent = "Select a county";
+    elements.detailState.hidden = false;
+    elements.detailState.textContent = "Choose a county from the threat queue to review its planning profile.";
+    elements.detailContent.hidden = true;
   } catch (error) {
     console.error("County data load failed.", error);
     showCountyError("County configuration is unavailable. Check the JSON file and hosting path.");
