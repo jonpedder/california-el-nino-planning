@@ -271,7 +271,7 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .demographic-stat strong, .demographic-stat span { display: block; }
 .demographic-stat strong { color: var(--text); font-size: 0.92rem; }
 .demographic-stat span { margin-top: 0.25rem; color: var(--muted); font-size: 0.66rem; line-height: 1.3; }
-.report-link { display: inline-flex; align-items: center; margin-top: 0.25rem; padding: 0.55rem 0.7rem; border: 1px solid var(--gold); color: var(--gold); font-size: 0.72rem; font-weight: 700; text-decoration: none; }
+.report-link { display: inline-flex; align-items: center; margin-top: 0.25rem; padding: 0.55rem 0.7rem; border: 1px solid var(--gold); background: transparent; color: var(--gold); font: inherit; font-size: 0.72rem; font-weight: 700; text-decoration: none; cursor: pointer; }
 .report-link:hover { background: rgb(242 169 0 / 12%); color: #ffc13b; }
 .capability-list li { margin-bottom: 0.5rem; padding: 0.65rem; border-left: 2px solid var(--gold); background: var(--panel2); }
 .capability-list strong, .capability-list span { display: block; }
@@ -306,12 +306,36 @@ h3 { margin: 1rem 0 0.55rem; color: var(--muted); font-size: 0.75rem; letter-spa
 .polygon-report-kpis span, .polygon-report-kpis strong { display: block; }
 .polygon-report-kpis span { color: var(--muted); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .polygon-report-kpis strong { margin-top: 0.45rem; color: var(--text); font-size: 1.05rem; overflow-wrap: anywhere; }
+.emergency-infographic { margin-top: 0.7rem; border: 1px solid var(--border); border-top: 4px solid var(--gold); background: #081c29; }
+.emergency-infographic-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--border); background: linear-gradient(90deg, #003b5c, #0c2231); }
+.emergency-infographic-header h3 { margin: 0.15rem 0 0; color: var(--text); font-size: 0.95rem; }
+.emergency-status { max-width: 48%; padding: 0.35rem 0.5rem; border: 1px solid var(--focus); background: rgb(139 211 255 / 10%); color: var(--focus); font-size: 0.64rem; font-weight: 700; line-height: 1.35; text-align: right; }
+.emergency-status[data-level="critical"] { border-color: var(--critical); background: rgb(217 54 79 / 12%); color: #ff9cab; }
+.emergency-status[data-level="high"] { border-color: var(--high); background: rgb(242 140 40 / 12%); color: #ffb66f; }
+.emergency-status[data-level="normal"] { border-color: var(--low); background: rgb(54 179 126 / 12%); color: #69d3a4; }
+.emergency-infographic-note { margin: 0; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 0.62rem; line-height: 1.4; }
+.emergency-infographic-section { padding: 0.65rem 0.7rem 0.75rem; }
+.emergency-infographic-section + .emergency-infographic-section { border-top: 1px solid var(--border); }
+.emergency-infographic-section h4 { margin: 0; color: var(--gold); font-size: 0.67rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .report-highlights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; margin-top: 0.55rem; }
 .report-highlights article { padding: 0.6rem; border-left: 3px solid var(--gold); background: var(--panel2); }
 .report-highlights strong, .report-highlights span, .report-highlights small { display: block; }
 .report-highlights strong { font-size: 0.68rem; }
 .report-highlights span { margin-top: 0.25rem; color: var(--gold); font-size: 1rem; font-weight: 700; }
 .report-highlights small { margin-top: 0.2rem; color: var(--muted); font-size: 0.6rem; line-height: 1.35; }
+.emergency-metrics article { position: relative; min-height: 88px; border: 1px solid var(--border); border-left-width: 4px; background: #102c3d; }
+.emergency-metrics article::after { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: currentColor; opacity: 0.25; }
+.emergency-metrics .emergency-critical { border-left-color: var(--critical); }
+.emergency-metrics .emergency-critical span { color: #ff9cab; }
+.emergency-metrics .emergency-high { border-left-color: var(--high); }
+.emergency-metrics .emergency-high span { color: #ffb66f; }
+.emergency-metrics .emergency-watch { border-left-color: var(--medium); }
+.emergency-metrics .emergency-watch span { color: var(--medium); }
+.emergency-metrics .emergency-normal, .emergency-metrics .emergency-facility { border-left-color: var(--low); }
+.emergency-metrics .emergency-normal span, .emergency-metrics .emergency-facility span { color: #69d3a4; }
+.emergency-metrics .emergency-information, .emergency-metrics .emergency-population, .emergency-metrics .emergency-housing { border-left-color: var(--focus); }
+.emergency-metrics .emergency-information span, .emergency-metrics .emergency-population span, .emergency-metrics .emergency-housing span { color: var(--focus); }
+.emergency-metrics .emergency-unavailable { border-left-color: var(--muted); opacity: 0.8; }
 .polygon-report-table-section { grid-column: 1 / -1; padding: 0.8rem; border: 1px solid var(--border); background: var(--panel); }
 .polygon-report-table-wrap { max-height: 360px; overflow: auto; }
 .polygon-report-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
@@ -348,6 +372,8 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
   .session-area .user-chip { display: none; }
   .header-report-group > select { width: 132px; }
   .polygon-report-content { grid-template-columns: 1fr; }
+  .emergency-infographic-header { flex-direction: column; }
+  .emergency-status { max-width: none; text-align: left; }
   .polygon-report-map-wrap, #polygon-report-map { min-height: 300px; height: 300px; }
   .polygon-report-kpis, .report-highlights { grid-template-columns: 1fr; }
   .command-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -376,7 +402,8 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
   .polygon-report-table-wrap { max-height: none; overflow: visible; }
   .polygon-report-table-wrap th { position: static; }
   .polygon-report-dialog, .polygon-report-dialog * { color: #111 !important; }
-  .polygon-report-kpis article, .report-highlights article, .polygon-report-table-section, .polygon-report-method { background: #fff !important; border-color: #777 !important; }
+  .polygon-report-kpis article, .report-highlights article, .polygon-report-table-section, .polygon-report-method, .emergency-infographic, .emergency-infographic-header { background: #fff !important; border-color: #777 !important; }
+  .emergency-status { max-width: none; border-color: #777 !important; text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {
