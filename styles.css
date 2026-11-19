@@ -362,7 +362,7 @@ footer { padding: 0.7rem 1rem; border-top: 1px solid var(--border); background: 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .workflow-audit-dialog { width: min(1220px, calc(100% - 2rem)); }
-.workflow-audit-actions { display: grid; grid-template-columns: auto minmax(260px, 1fr) auto; align-items: center; gap: 0.7rem; margin-bottom: 0.75rem; padding: 0.7rem; border: 1px solid var(--border); background: var(--panel2); }
+.workflow-audit-actions { display: grid; grid-template-columns: auto minmax(260px, 1fr) auto auto; align-items: center; gap: 0.7rem; margin-bottom: 0.75rem; padding: 0.7rem; border: 1px solid var(--border); background: var(--panel2); }
 .workflow-audit-actions label { color: var(--muted); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
 .workflow-audit-actions select { min-height: 38px; padding: 0.45rem 0.55rem; border: 1px solid #4f7189; background: var(--bg); color: var(--text); }
 .workflow-audit-content { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr); gap: 0.8rem; }

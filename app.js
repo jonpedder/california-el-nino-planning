@@ -121,6 +121,7 @@ const elements = {
   workflowAuditSolutionRecords: document.querySelector("#workflow-audit-solution-records"),
   workflowAuditTimeline: document.querySelector("#workflow-audit-timeline"),
   refreshWorkflowAudit: document.querySelector("#refresh-workflow-audit"),
+  downloadWorkflowAudit: document.querySelector("#download-workflow-audit"),
   closeWorkflowAudit: document.querySelector("#close-workflow-audit"),
   appAlert: document.querySelector("#app-alert")
 };
@@ -214,6 +215,7 @@ elements.triageCancel.addEventListener("click", () => elements.triageDialog.clos
 elements.resetIncidentPoint.addEventListener("click", resetTriageIncidentPoint);
 elements.closeWorkflowAudit.addEventListener("click", () => elements.workflowAuditDialog.close());
 elements.refreshWorkflowAudit.addEventListener("click", () => loadWorkflowAuditJobs({ preserveSelection: true }));
+elements.downloadWorkflowAudit.addEventListener("click", createWorkflowAuditPdf);
 elements.workflowAuditJob.addEventListener("change", () => loadWorkflowAuditJob(elements.workflowAuditJob.value));
 
 initialize().catch((error) => {
@@ -2277,6 +2279,7 @@ function workflowExtendedProperties(job) {
 async function openWorkflowAuditReport() {
   if (!elements.workflowAuditDialog.open) elements.workflowAuditDialog.showModal();
   elements.workflowAuditContent.hidden = true;
+  elements.downloadWorkflowAudit.disabled = true;
   if (!state.signedIn) {
     elements.workflowAuditStatus.textContent = "Sign in with an authorized Public Safety account to read Workflow Manager audit records.";
     elements.workflowAuditJob.innerHTML = "<option value=''>Sign-in required</option>";
@@ -2396,6 +2399,7 @@ async function loadWorkflowAuditJob(jobId) {
   const run = ++state.workflowAuditRun;
   elements.workflowAuditStatus.textContent = "Loading audit details, solution records, history, and map…";
   elements.workflowAuditContent.hidden = true;
+  elements.downloadWorkflowAudit.disabled = true;
   try {
     const [job, historyResponse] = await Promise.all([
       workflowManagerRequest(`jobs/${jobId}`, { query: { extProps: true } }),
@@ -2470,11 +2474,160 @@ async function loadWorkflowAuditJob(jobId) {
     elements.workflowAuditContent.hidden = false;
     await drawWorkflowAuditMap(areaFeature, pointFeature);
     elements.workflowAuditStatus.textContent = `Audit report loaded — ${events.length} timeline events and ${[areaFeature, pointFeature].filter(Boolean).length} mapped solution records.`;
+    elements.downloadWorkflowAudit.disabled = false;
   } catch (error) {
     console.error("Workflow audit report failed.", error);
     if (run !== state.workflowAuditRun) return;
     elements.workflowAuditStatus.textContent = `The workflow audit report could not be loaded. ${error?.message || "Check workflow and feature-service access."}`;
     elements.workflowAuditContent.hidden = true;
+  }
+}
+
+async function createWorkflowAuditPdf() {
+  if (elements.workflowAuditContent.hidden) return;
+  const originalLabel = elements.downloadWorkflowAudit.textContent;
+  elements.downloadWorkflowAudit.disabled = true;
+  elements.downloadWorkflowAudit.textContent = "Creating PDF…";
+  elements.workflowAuditStatus.textContent = "Creating a downloadable Workflow Manager audit PDF…";
+  try {
+    const { jsPDF } = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm");
+    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 30;
+    const navy = [8, 31, 43];
+    const brand = [177, 92, 0];
+    const pale = [239, 245, 248];
+    const text = [28, 45, 55];
+    const incidentId = elements.workflowAuditIncidentId.textContent.trim() || "Incident";
+    const incidentName = elements.workflowAuditIncidentName.textContent.trim();
+    const generated = formatAuditDate(new Date());
+    const safeId = incidentId.replace(/[^a-z0-9_-]+/gi, "-").replace(/^-|-$/g, "");
+    const filename = `Workflow-Audit-${safeId || "Incident"}-${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    const header = (title, subtitle) => {
+      pdf.setFillColor(...navy);
+      pdf.rect(0, 0, pageWidth, 56, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(title, margin, 25);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8.5);
+      pdf.text(pdf.splitTextToSize(subtitle, pageWidth - margin * 2 - 180)[0] || "", margin, 42);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.text(APP_PREFERENCES.branding.title, pageWidth - margin, 25, { align: "right" });
+      pdf.setTextColor(...text);
+    };
+    const sectionTitle = (title, y) => {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(...brand);
+      pdf.text(title.toUpperCase(), margin, y);
+      pdf.setTextColor(...text);
+    };
+    const drawField = (label, value, x, y, width, height = 48) => {
+      pdf.setFillColor(...pale);
+      pdf.rect(x, y, width, height, "F");
+      pdf.setDrawColor(...brand);
+      pdf.line(x, y, x, y + height);
+      pdf.setTextColor(...text);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(7.5);
+      pdf.text(label.toUpperCase(), x + 8, y + 13);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9.5);
+      const lines = pdf.splitTextToSize(value || "Not recorded", width - 16).slice(0, 3);
+      pdf.text(lines, x + 8, y + 29);
+    };
+
+    header("Incident Triage Audit", `${incidentId} • ${incidentName}`);
+    try {
+      const screenshot = await elements.workflowAuditMap.view.takeScreenshot({ format: "png", quality: 90, width: 1200, height: 650 });
+      pdf.addImage(screenshot.dataUrl, "PNG", margin, 72, 420, 228);
+    } catch (error) {
+      console.warn("Workflow audit map could not be captured for PDF.", error);
+      pdf.setFillColor(...pale);
+      pdf.rect(margin, 72, 420, 228, "F");
+      pdf.setFontSize(10);
+      pdf.text("Map image unavailable", margin + 16, 94);
+    }
+
+    const summaryX = 466;
+    const summaryWidth = pageWidth - margin - summaryX;
+    const gap = 8;
+    const cardWidth = (summaryWidth - gap) / 2;
+    drawField("Triaged by", elements.workflowAuditUser.textContent, summaryX, 72, cardWidth, 66);
+    drawField("Triaged at", elements.workflowAuditTriaged.textContent, summaryX + cardWidth + gap, 72, cardWidth, 66);
+    drawField("Written to solution", elements.workflowAuditWritten.textContent, summaryX, 146, cardWidth, 66);
+    drawField("Workflow status", elements.workflowAuditState.textContent, summaryX + cardWidth + gap, 146, cardWidth, 66);
+    drawField("Current workflow step", elements.workflowAuditCurrentStep.textContent, summaryX, 220, summaryWidth, 80);
+
+    sectionTitle("Audit identifiers and source records", 325);
+    const detailPairs = [
+      ["Incident number", elements.workflowAuditIncidentId.textContent],
+      ["Incident name", elements.workflowAuditIncidentName.textContent],
+      ["Planning polygon", elements.workflowAuditSource.textContent],
+      ["Workflow job ID", elements.workflowAuditJobId.textContent],
+      ["Solution records", elements.workflowAuditSolutionRecords.textContent],
+      ["PDF generated", generated]
+    ];
+    const detailWidth = (pageWidth - margin * 2 - gap * 2) / 3;
+    detailPairs.forEach(([label, value], index) => {
+      drawField(label, value, margin + (index % 3) * (detailWidth + gap), 338 + Math.floor(index / 3) * 58, detailWidth, 50);
+    });
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(90, 105, 115);
+    pdf.text(pdf.splitTextToSize("Map geometry comes from the persisted Emergency Management Impacted Area and Incident Locations records. Solution write times come from feature-service editor tracking.", pageWidth - margin * 2), margin, 472);
+
+    const timelineRows = [...elements.workflowAuditTimeline.querySelectorAll("li")].map((item) => ({
+      title: item.querySelector("strong")?.textContent?.trim() || "Audit event",
+      meta: item.querySelector("span:not(.workflow-audit-marker)")?.textContent?.trim() || "",
+      detail: item.querySelector("p")?.textContent?.trim() || ""
+    }));
+    let y = 0;
+    const timelineHeader = () => {
+      pdf.addPage();
+      header("Complete Audit Timeline", `${incidentId} • ${timelineRows.length} recorded events`);
+      sectionTitle("Workflow Manager history and solution writes", 82);
+      y = 96;
+    };
+    timelineHeader();
+    timelineRows.forEach((row, index) => {
+      const detailLines = pdf.splitTextToSize(row.detail || "No additional details recorded.", pageWidth - margin * 2 - 48);
+      const rowHeight = Math.max(62, 46 + detailLines.length * 9);
+      if (y + rowHeight > pageHeight - 48) timelineHeader();
+      pdf.setFillColor(index % 2 === 0 ? 246 : 239, index % 2 === 0 ? 249 : 245, index % 2 === 0 ? 250 : 248);
+      pdf.rect(margin, y, pageWidth - margin * 2, rowHeight - 6, "F");
+      pdf.setFillColor(...brand);
+      pdf.circle(margin + 14, y + 18, 5, "F");
+      pdf.setTextColor(...text);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9.5);
+      pdf.text(row.title, margin + 30, y + 16);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(...brand);
+      pdf.text(row.meta, margin + 30, y + 29);
+      pdf.setTextColor(75, 92, 103);
+      pdf.text(detailLines, margin + 30, y + 43);
+      y += rowHeight;
+    });
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(90, 105, 115);
+    pdf.text("Workflow Manager history is the audit source for workflow actions. Feature-service editor tracking supplies the Emergency Management solution write times.", margin, pageHeight - 24);
+
+    pdf.save(filename);
+    elements.workflowAuditStatus.textContent = `PDF downloaded — ${filename}`;
+  } catch (error) {
+    console.error("Workflow audit PDF generation failed.", error);
+    elements.workflowAuditStatus.textContent = `Workflow audit PDF generation failed. ${error?.message || "Check the browser connection and try again."}`;
+  } finally {
+    elements.downloadWorkflowAudit.disabled = elements.workflowAuditContent.hidden;
+    elements.downloadWorkflowAudit.textContent = originalLabel;
   }
 }
 

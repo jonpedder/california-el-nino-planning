@@ -10,10 +10,10 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=workflow-audit1">
+  <link rel="stylesheet" href="./styles.css?v=workflow-audit2">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./header.js?v=workflow-audit1"></script>
-  <script type="module" src="./app.js?v=workflow-audit1"></script>
+  <script type="module" src="./header.js?v=workflow-audit2"></script>
+  <script type="module" src="./app.js?v=workflow-audit2"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -305,6 +305,7 @@
         <label for="workflow-audit-job">Audited incident</label>
         <select id="workflow-audit-job"><option value="">Loading audit jobs…</option></select>
         <button id="refresh-workflow-audit" class="report-control" type="button">Refresh audit</button>
+        <button id="download-workflow-audit" class="report-control report-control-primary" type="button" disabled>Create PDF</button>
       </div>
       <p id="workflow-audit-status" class="polygon-report-status" role="status" aria-live="polite">Loading Workflow Manager audit records…</p>
       <section id="workflow-audit-content" class="workflow-audit-content" hidden>
