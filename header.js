@@ -22,6 +22,11 @@ if (reportMenu && openReportButton) {
       return;
     }
 
+    if (currentPath === destinationPath && destination.hash === "#workflow-audit" && window.__app?.openWorkflowAuditReport) {
+      window.__app.openWorkflowAuditReport();
+      return;
+    }
+
     if (currentPath === destinationPath && destination.hash) {
       const panelId = destination.hash.slice(1);
       const tab = [...document.querySelectorAll("[role='tab'][aria-controls]")]

@@ -1,4 +1,4 @@
-import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=incident-point1";
+import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=workflow-audit1";
 import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=startup-extent1";
 
 const APP_PREFERENCES = loadPreferences();
@@ -103,6 +103,25 @@ const elements = {
   triageClose: document.querySelector("#close-triage"),
   triageCancel: document.querySelector("#cancel-triage"),
   openEmergencyManager: document.querySelector("#open-emergency-manager"),
+  workflowAuditDialog: document.querySelector("#workflow-audit-dialog"),
+  workflowAuditSubtitle: document.querySelector("#workflow-audit-subtitle"),
+  workflowAuditJob: document.querySelector("#workflow-audit-job"),
+  workflowAuditStatus: document.querySelector("#workflow-audit-status"),
+  workflowAuditContent: document.querySelector("#workflow-audit-content"),
+  workflowAuditMap: document.querySelector("#workflow-audit-map"),
+  workflowAuditUser: document.querySelector("#workflow-audit-user"),
+  workflowAuditTriaged: document.querySelector("#workflow-audit-triaged"),
+  workflowAuditWritten: document.querySelector("#workflow-audit-written"),
+  workflowAuditState: document.querySelector("#workflow-audit-state"),
+  workflowAuditIncidentId: document.querySelector("#workflow-audit-incident-id"),
+  workflowAuditIncidentName: document.querySelector("#workflow-audit-incident-name"),
+  workflowAuditSource: document.querySelector("#workflow-audit-source"),
+  workflowAuditCurrentStep: document.querySelector("#workflow-audit-current-step"),
+  workflowAuditJobId: document.querySelector("#workflow-audit-job-id"),
+  workflowAuditSolutionRecords: document.querySelector("#workflow-audit-solution-records"),
+  workflowAuditTimeline: document.querySelector("#workflow-audit-timeline"),
+  refreshWorkflowAudit: document.querySelector("#refresh-workflow-audit"),
+  closeWorkflowAudit: document.querySelector("#close-workflow-audit"),
   appAlert: document.querySelector("#app-alert")
 };
 
@@ -149,6 +168,9 @@ const state = {
   triageMetrics: null,
   triageSubmitting: false,
   triageRun: 0,
+  workflowAuditRun: 0,
+  workflowAuditJobs: [],
+  workflowAuditMapLayer: null,
   mapNavigationRun: 0,
   consolidatedPopupRun: 0,
   consolidatedPopupViews: new WeakSet(),
@@ -159,7 +181,7 @@ const state = {
 };
 
 const enrichmentCache = new Map();
-window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openConsolidatedPopup };
+window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openWorkflowAuditReport, openConsolidatedPopup };
 
 esriConfig.portalUrl = APP_CONFIG.portalUrl;
 const oauthInfo = new OAuthInfo({
@@ -190,6 +212,9 @@ elements.triageForm.addEventListener("submit", handleTriageSubmit);
 elements.triageClose.addEventListener("click", () => elements.triageDialog.close());
 elements.triageCancel.addEventListener("click", () => elements.triageDialog.close());
 elements.resetIncidentPoint.addEventListener("click", resetTriageIncidentPoint);
+elements.closeWorkflowAudit.addEventListener("click", () => elements.workflowAuditDialog.close());
+elements.refreshWorkflowAudit.addEventListener("click", () => loadWorkflowAuditJobs({ preserveSelection: true }));
+elements.workflowAuditJob.addEventListener("change", () => loadWorkflowAuditJob(elements.workflowAuditJob.value));
 
 initialize().catch((error) => {
   console.error("Application initialization failed.", error);
@@ -208,6 +233,7 @@ async function initialize() {
   }
   if (window.location.hash === "#polygon-report") await openPolygonReport();
   if (window.location.hash === "#triage") await openTriageWorkflow();
+  if (window.location.hash === "#workflow-audit") await openWorkflowAuditReport();
 }
 
 async function initializeAuthentication() {
@@ -326,7 +352,7 @@ async function initializeMap() {
     await loadOperationalLayers();
   } catch (layerError) {
     console.error("Operational context layers could not be fully initialized.", layerError);
-    window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openConsolidatedPopup };
+    window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openWorkflowAuditReport, openConsolidatedPopup };
     window.__esriLayers ||= {};
     setDataStatus("Map loaded • context layers partial", "partial");
   }
@@ -732,7 +758,7 @@ async function loadOperationalLayers() {
     window.__esriSceneLayers = Object.fromEntries(sceneLayers.map((layer) => [layer.title, layer]));
     if (state.readinessAllFiresSceneLayer) window.__esriSceneLayers[state.readinessAllFiresSceneLayer.title] = state.readinessAllFiresSceneLayer;
   }
-  window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openConsolidatedPopup };
+  window.__app = { APP_CONFIG, state, elements, openPolygonReport, openTriageWorkflow, openWorkflowAuditReport, openConsolidatedPopup };
 
   if (mapLayers.length === APP_CONFIG.operationalLayers.length) {
     setDataStatus(`${mapLayers.length} layers • ${state.sceneReady ? "2D/3D" : "2D"}`, "connected");
@@ -2213,6 +2239,243 @@ async function createTriageAuditJob({ incidentNumber, incidentName, description,
   const jobId = response.data?.jobIds?.[0];
   if (!jobId) throw new Error("Workflow Manager did not return an audit job identifier.");
   return { jobId, triagedAt };
+}
+
+async function workflowManagerRequest(path, { method = "get", body = null, query = null } = {}) {
+  const credential = await esriId.getCredential(`${APP_CONFIG.portalUrl}/sharing`);
+  const options = {
+    method,
+    responseType: "json",
+    headers: {
+      Authorization: `Bearer ${credential.token}`,
+      Accept: "application/json"
+    }
+  };
+  if (query) options.query = query;
+  if (body) {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(body);
+  }
+  const response = await esriRequest(`${APP_CONFIG.triageWorkflowUrl}/${path.replace(/^\//, "")}`, options);
+  if (response.data?.error) throw new Error(response.data.error.message || "Workflow Manager request failed.");
+  return response.data;
+}
+
+function formatAuditDate(value) {
+  if (!value) return "Not recorded";
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf())
+    ? String(value)
+    : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "medium" });
+}
+
+function workflowExtendedProperties(job) {
+  const table = job.extendedProperties?.find((entry) => entry.tableName === "triage_audit");
+  return Object.fromEntries((table?.properties || table?.entries || []).map((property) => [property.propertyName, property.value]));
+}
+
+async function openWorkflowAuditReport() {
+  if (!elements.workflowAuditDialog.open) elements.workflowAuditDialog.showModal();
+  elements.workflowAuditContent.hidden = true;
+  if (!state.signedIn) {
+    elements.workflowAuditStatus.textContent = "Sign in with an authorized Public Safety account to read Workflow Manager audit records.";
+    elements.workflowAuditJob.innerHTML = "<option value=''>Sign-in required</option>";
+    return;
+  }
+  await loadWorkflowAuditJobs({ preserveSelection: true });
+}
+
+async function loadWorkflowAuditJobs({ preserveSelection = false } = {}) {
+  const selected = preserveSelection ? elements.workflowAuditJob.value : "";
+  elements.refreshWorkflowAudit.disabled = true;
+  elements.workflowAuditStatus.textContent = "Loading Workflow Manager audit jobs…";
+  try {
+    const search = await workflowManagerRequest("jobs/search", {
+      method: "post",
+      body: {
+        q: "1=1",
+        fields: ["jobId", "jobName", "createdDate", "createdBy", "jobStatus", "jobTemplateId"],
+        num: 200,
+        start: 0
+      }
+    });
+    const fieldNames = (search.fields || []).map((field) => typeof field === "string" ? field : field.name);
+    const rows = (search.results || []).map((row) => Object.fromEntries(fieldNames.map((field, index) => [field, row[index]])));
+    state.workflowAuditJobs = rows
+      .filter((row) => row.jobTemplateId === APP_CONFIG.triageWorkflowTemplateId)
+      .sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+    elements.workflowAuditJob.replaceChildren();
+    if (!state.workflowAuditJobs.length) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No triage audit jobs found";
+      elements.workflowAuditJob.append(option);
+      elements.workflowAuditStatus.textContent = "No incident triage audit jobs are available.";
+      elements.workflowAuditContent.hidden = true;
+      return;
+    }
+    for (const job of state.workflowAuditJobs) {
+      const option = document.createElement("option");
+      option.value = job.jobId;
+      option.textContent = `${job.jobName} — ${formatAuditDate(job.createdDate)}`;
+      elements.workflowAuditJob.append(option);
+    }
+    elements.workflowAuditJob.value = state.workflowAuditJobs.some((job) => job.jobId === selected)
+      ? selected
+      : state.workflowAuditJobs[0].jobId;
+    await loadWorkflowAuditJob(elements.workflowAuditJob.value);
+  } catch (error) {
+    console.error("Workflow audit job search failed.", error);
+    elements.workflowAuditStatus.textContent = `Workflow audit jobs could not be loaded. ${error?.message || "Check Workflow Manager access."}`;
+    elements.workflowAuditContent.hidden = true;
+  } finally {
+    elements.refreshWorkflowAudit.disabled = false;
+  }
+}
+
+async function drawWorkflowAuditMap(areaFeature, pointFeature) {
+  await elements.workflowAuditMap.viewOnReady();
+  await elements.workflowAuditMap.view.when();
+  if (!state.workflowAuditMapLayer) {
+    state.workflowAuditMapLayer = new GraphicsLayer({ title: "Workflow audit incident records" });
+    elements.workflowAuditMap.map.add(state.workflowAuditMapLayer);
+  }
+  state.workflowAuditMapLayer.removeAll();
+  const graphics = [];
+  if (areaFeature?.geometry) {
+    graphics.push(new Graphic({
+      geometry: areaFeature.geometry,
+      attributes: areaFeature.attributes,
+      symbol: {
+        type: "simple-fill",
+        color: [242, 169, 0, 0.18],
+        outline: { color: [177, 92, 0, 1], width: 2.5 }
+      },
+      popupTemplate: { title: "{incidentnm}", content: "Impacted Area • Incident {incidentid}" }
+    }));
+  }
+  if (pointFeature?.geometry) {
+    graphics.push(new Graphic({
+      geometry: pointFeature.geometry,
+      attributes: pointFeature.attributes,
+      symbol: {
+        type: "simple-marker",
+        style: "circle",
+        size: 15,
+        color: [224, 54, 73, 1],
+        outline: { color: [255, 255, 255, 1], width: 2 }
+      },
+      popupTemplate: { title: "{incidentnm}", content: "Incident Location • Incident {incidentid}" }
+    }));
+  }
+  state.workflowAuditMapLayer.addMany(graphics);
+  if (graphics.length) await elements.workflowAuditMap.view.goTo(graphics, { padding: 35, duration: 0 });
+}
+
+function renderWorkflowAuditTimeline(events) {
+  elements.workflowAuditTimeline.replaceChildren();
+  for (const event of events.sort((a, b) => new Date(a.date) - new Date(b.date))) {
+    const item = document.createElement("li");
+    const marker = document.createElement("span");
+    marker.className = "workflow-audit-marker";
+    const article = document.createElement("article");
+    const heading = document.createElement("strong");
+    heading.textContent = event.title;
+    const meta = document.createElement("span");
+    meta.textContent = `${formatAuditDate(event.date)} • ${event.user || "System"}`;
+    const detail = document.createElement("p");
+    detail.textContent = event.detail || "";
+    article.append(heading, meta, detail);
+    item.append(marker, article);
+    elements.workflowAuditTimeline.append(item);
+  }
+}
+
+async function loadWorkflowAuditJob(jobId) {
+  if (!jobId) return;
+  const run = ++state.workflowAuditRun;
+  elements.workflowAuditStatus.textContent = "Loading audit details, solution records, history, and map…";
+  elements.workflowAuditContent.hidden = true;
+  try {
+    const [job, historyResponse] = await Promise.all([
+      workflowManagerRequest(`jobs/${jobId}`, { query: { extProps: true } }),
+      workflowManagerRequest(`jobs/${jobId}/history`)
+    ]);
+    if (run !== state.workflowAuditRun) return;
+    const audit = workflowExtendedProperties(job);
+    const [areaLayer, pointLayer] = await Promise.all([ensureImpactedAreaLayer(), ensureIncidentLocationLayer()]);
+    const areaObjectId = Number(audit.impacted_area_oid);
+    const pointObjectId = Number(audit.incident_point_oid);
+    const [areaQuery, pointQuery] = await Promise.all([
+      Number.isFinite(areaObjectId)
+        ? areaLayer.queryFeatures({ objectIds: [areaObjectId], outFields: ["*"], returnGeometry: true })
+        : areaLayer.queryFeatures({ where: `incidentid = ${sqlString(audit.incident_id || "")}`, outFields: ["*"], returnGeometry: true }),
+      Number.isFinite(pointObjectId)
+        ? pointLayer.queryFeatures({ objectIds: [pointObjectId], outFields: ["*"], returnGeometry: true })
+        : pointLayer.queryFeatures({ where: `incidentid = ${sqlString(audit.incident_id || "")}`, outFields: ["*"], returnGeometry: true })
+    ]);
+    if (run !== state.workflowAuditRun) return;
+    const areaFeature = areaQuery.features[0] || null;
+    const pointFeature = pointQuery.features[0] || null;
+    const areaCreated = areaFeature?.attributes?.CreationDate;
+    const pointCreated = pointFeature?.attributes?.CreationDate;
+    const writtenDate = [areaCreated, pointCreated].filter(Boolean).sort((a, b) => new Date(b) - new Date(a))[0];
+    const currentSteps = job.currentSteps || [];
+    const currentStepText = currentSteps.length
+      ? currentSteps.map((step) => `${step.stepName || step.stepId} — ${step.assignedType || "Unassigned"}: ${step.assignedTo || "Unassigned"}`).join("; ")
+      : job.closed ? "Workflow closed" : "No current step";
+
+    elements.workflowAuditSubtitle.textContent = job.jobName || audit.incident_name || "Incident triage audit";
+    elements.workflowAuditUser.textContent = audit.triaged_by || job.createdBy || "Not recorded";
+    elements.workflowAuditTriaged.textContent = formatAuditDate(audit.triaged_at || job.createdDate);
+    elements.workflowAuditWritten.textContent = formatAuditDate(writtenDate);
+    elements.workflowAuditState.textContent = job.closed ? "Closed" : `${job.jobStatus || "Open"} • ${job.percentComplete ?? 0}%`;
+    elements.workflowAuditIncidentId.textContent = audit.incident_id || "Not recorded";
+    elements.workflowAuditIncidentName.textContent = audit.incident_name || job.jobName || "Not recorded";
+    elements.workflowAuditSource.textContent = audit.source_polygon || "Not recorded";
+    elements.workflowAuditCurrentStep.textContent = currentStepText;
+    elements.workflowAuditJobId.textContent = job.jobId || jobId;
+    elements.workflowAuditSolutionRecords.textContent = `Impacted Area OID ${audit.impacted_area_oid || "—"}; Incident Point OID ${audit.incident_point_oid || "—"}`;
+
+    const history = historyResponse.jobHistory || historyResponse.history || [];
+    const events = [
+      {
+        date: audit.triaged_at || job.createdDate,
+        user: audit.triaged_by || job.createdBy,
+        title: "Incident initially triaged",
+        detail: `${audit.incident_id || "Incident"} was prepared from ${audit.source_polygon || "the selected planning polygon"}.`
+      }
+    ];
+    if (areaFeature) events.push({
+      date: areaCreated,
+      user: areaFeature.attributes?.Creator,
+      title: "Impacted Area polygon written to the solution",
+      detail: `Impacted Area object ID ${areaFeature.attributes?.[areaLayer.objectIdField]}.`
+    });
+    if (pointFeature) events.push({
+      date: pointCreated,
+      user: pointFeature.attributes?.Creator,
+      title: "Incident Location point written to the solution",
+      detail: `Incident Location object ID ${pointFeature.attributes?.[pointLayer.objectIdField]}.`
+    });
+    for (const entry of history) {
+      events.push({
+        date: entry.date,
+        user: entry.username,
+        title: `Workflow Manager — ${entry.action || "Step event"}`,
+        detail: [entry.stepId ? `Step: ${entry.stepId}` : "", entry.result ? `Result: ${entry.result}` : ""].filter(Boolean).join(" • ")
+      });
+    }
+    renderWorkflowAuditTimeline(events.filter((event) => event.date));
+    elements.workflowAuditContent.hidden = false;
+    await drawWorkflowAuditMap(areaFeature, pointFeature);
+    elements.workflowAuditStatus.textContent = `Audit report loaded — ${events.length} timeline events and ${[areaFeature, pointFeature].filter(Boolean).length} mapped solution records.`;
+  } catch (error) {
+    console.error("Workflow audit report failed.", error);
+    if (run !== state.workflowAuditRun) return;
+    elements.workflowAuditStatus.textContent = `The workflow audit report could not be loaded. ${error?.message || "Check workflow and feature-service access."}`;
+    elements.workflowAuditContent.hidden = true;
+  }
 }
 
 async function handleTriageSubmit(event) {

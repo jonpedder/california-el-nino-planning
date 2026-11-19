@@ -10,10 +10,10 @@
   <meta http-equiv="Expires" content="0">
   <title>California El Niño Planning</title>
   <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css">
-  <link rel="stylesheet" href="./styles.css?v=incident-point1">
+  <link rel="stylesheet" href="./styles.css?v=workflow-audit1">
   <script type="module" src="https://js.arcgis.com/5.1/"></script>
-  <script type="module" src="./header.js?v=incident-point1"></script>
-  <script type="module" src="./app.js?v=incident-point1"></script>
+  <script type="module" src="./header.js?v=workflow-audit1"></script>
+  <script type="module" src="./app.js?v=workflow-audit1"></script>
 </head>
 <body>
   <a class="skip-link" href="#map-region">Skip to map</a>
@@ -26,7 +26,7 @@
     <nav class="app-nav header-actions" aria-label="Primary navigation">
       <div class="header-report-group" aria-label="Reports">
         <label for="report-menu">Reports</label>
-        <select id="report-menu"><option value="" selected>Select a report</option><option value="./index.html#polygon-report">Polygon summary</option><option value="./index.html#triage">Emergency triage</option></select>
+        <select id="report-menu"><option value="" selected>Select a report</option><option value="./index.html#polygon-report">Polygon summary</option><option value="./index.html#triage">Emergency triage</option><option value="./index.html#workflow-audit">Workflow audit report</option></select>
         <button id="open-report" class="header-action header-action-small" type="button" disabled>Open</button>
       </div>
       <a class="app-nav-link active" href="./index.html" aria-current="page">Planning Map</a>
@@ -291,6 +291,45 @@
           <div class="polygon-report-table-wrap"><table><thead><tr><th>Layer</th><th>Category</th><th>Contains</th><th>Intersects</th><th>Within</th><th>Status</th></tr></thead><tbody id="report-layer-table"></tbody></table></div>
         </section>
         <aside id="polygon-report-method" class="analysis-disclaimer polygon-report-method"></aside>
+      </section>
+    </article>
+  </dialog>
+
+  <dialog id="workflow-audit-dialog" class="polygon-report-dialog workflow-audit-dialog" aria-labelledby="workflow-audit-title">
+    <article class="polygon-report-sheet">
+      <header class="polygon-report-header">
+        <div><p class="eyebrow">Workflow Manager report</p><h2 id="workflow-audit-title">Incident triage audit</h2><p id="workflow-audit-subtitle">Select an audited incident to review its complete triage trail.</p></div>
+        <button id="close-workflow-audit" class="report-control" type="button" aria-label="Close workflow audit report">Close</button>
+      </header>
+      <div class="workflow-audit-actions">
+        <label for="workflow-audit-job">Audited incident</label>
+        <select id="workflow-audit-job"><option value="">Loading audit jobs…</option></select>
+        <button id="refresh-workflow-audit" class="report-control" type="button">Refresh audit</button>
+      </div>
+      <p id="workflow-audit-status" class="polygon-report-status" role="status" aria-live="polite">Loading Workflow Manager audit records…</p>
+      <section id="workflow-audit-content" class="workflow-audit-content" hidden>
+        <div class="workflow-audit-map-wrap"><arcgis-map id="workflow-audit-map" basemap="streets-vector" aria-label="Audited impacted area and incident point map"></arcgis-map></div>
+        <section class="workflow-audit-summary" aria-label="Audit summary">
+          <div class="workflow-audit-kpis">
+            <article><span>Triaged by</span><strong id="workflow-audit-user">—</strong></article>
+            <article><span>Triaged at</span><strong id="workflow-audit-triaged">—</strong></article>
+            <article><span>Written to solution</span><strong id="workflow-audit-written">—</strong></article>
+            <article><span>Workflow status</span><strong id="workflow-audit-state">—</strong></article>
+          </div>
+          <dl class="workflow-audit-details">
+            <dt>Incident number</dt><dd id="workflow-audit-incident-id">—</dd>
+            <dt>Incident name</dt><dd id="workflow-audit-incident-name">—</dd>
+            <dt>Planning polygon</dt><dd id="workflow-audit-source">—</dd>
+            <dt>Current workflow step</dt><dd id="workflow-audit-current-step">—</dd>
+            <dt>Workflow job ID</dt><dd id="workflow-audit-job-id">—</dd>
+            <dt>Solution records</dt><dd id="workflow-audit-solution-records">—</dd>
+          </dl>
+        </section>
+        <section class="workflow-audit-timeline-section" aria-labelledby="workflow-audit-timeline-heading">
+          <h3 id="workflow-audit-timeline-heading">Complete audit timeline</h3>
+          <ol id="workflow-audit-timeline" class="workflow-audit-timeline"></ol>
+        </section>
+        <aside class="analysis-disclaimer workflow-audit-method">Workflow Manager history is the audit source for workflow actions. Feature-service editor tracking supplies the solution write times. The map shows the persisted Impacted Area polygon and Incident Locations point for the selected incident.</aside>
       </section>
     </article>
   </dialog>
