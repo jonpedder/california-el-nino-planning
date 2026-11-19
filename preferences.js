@@ -3,7 +3,7 @@ const STORAGE_KEY = "california-el-nino-planning.preferences.v1";
 export const DEFAULT_PREFERENCES = Object.freeze({
   branding: Object.freeze({
     title: "El Niño Planning Console",
-    subtitle: "County threat posture and capability planning",
+    subtitle: "County threat planning, analysis and operations — powered by ArcGIS Workflow Manager",
     logoUrl: "",
     logoData: ""
   }),
@@ -28,8 +28,12 @@ export const DEFAULT_PREFERENCES = Object.freeze({
 });
 
 function mergePreferences(value = {}) {
+  const branding = { ...DEFAULT_PREFERENCES.branding, ...(value.branding || {}) };
+  if (branding.subtitle === "County threat posture and capability planning") {
+    branding.subtitle = DEFAULT_PREFERENCES.branding.subtitle;
+  }
   return {
-    branding: { ...DEFAULT_PREFERENCES.branding, ...(value.branding || {}) },
+    branding,
     theme: { ...DEFAULT_PREFERENCES.theme, ...(value.theme || {}) },
     operation: { ...DEFAULT_PREFERENCES.operation, ...(value.operation || {}) },
     connection: { ...(value.connection || {}) }

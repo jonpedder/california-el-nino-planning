@@ -1,5 +1,5 @@
 import { APP_CONFIG } from "./config.js?v=settings1";
-import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=startup-extent1";
+import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=brand-strong1";
 
 const $ = (id) => document.getElementById(id);
 const preferences = loadPreferences();

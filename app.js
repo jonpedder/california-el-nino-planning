@@ -1,5 +1,5 @@
 import { APP_CONFIG as DEPLOYMENT_CONFIG } from "./config.js?v=workflow-audit1";
-import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=startup-extent1";
+import { loadPreferences, runtimeConfig, applyPreferences } from "./preferences.js?v=brand-strong1";
 
 const APP_PREFERENCES = loadPreferences();
 const APP_CONFIG = runtimeConfig(DEPLOYMENT_CONFIG, APP_PREFERENCES);
