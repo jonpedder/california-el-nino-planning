@@ -82,7 +82,20 @@ export function applyPreferences(preferences = loadPreferences()) {
   const title = document.querySelector("[data-app-title]");
   const subtitle = document.querySelector("[data-app-subtitle]");
   if (title) title.textContent = preferences.branding.title;
-  if (subtitle) subtitle.textContent = preferences.branding.subtitle;
+  if (subtitle) {
+    const value = preferences.branding.subtitle || "";
+    const poweredMatch = value.match(/^(.*?)(?:\s*[—-]\s*)powered by\s+(.+)$/i);
+    subtitle.replaceChildren();
+    if (poweredMatch) {
+      subtitle.append(document.createTextNode(`${poweredMatch[1].trim()} — `));
+      const powered = document.createElement("strong");
+      powered.className = "brand-powered";
+      powered.textContent = `Powered by ${poweredMatch[2].trim()}`;
+      subtitle.append(powered);
+    } else {
+      subtitle.textContent = value;
+    }
+  }
   const logoSource = preferences.branding.logoData || preferences.branding.logoUrl;
   document.querySelectorAll(".brand-mark").forEach((mark) => {
     mark.replaceChildren();

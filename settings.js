@@ -1,5 +1,5 @@
 import { APP_CONFIG } from "./config.js?v=settings1";
-import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=brand-strong1";
+import { DEFAULT_PREFERENCES, loadPreferences, savePreferences, clearPreferences, applyPreferences } from "./preferences.js?v=video-header1";
 
 const $ = (id) => document.getElementById(id);
 const preferences = loadPreferences();
@@ -40,7 +40,7 @@ function toast(message, kind = "success") {
 }
 
 function setTab(name, focus = false) {
-  for (const key of ["preferences", "configuration", "help"]) {
+  for (const key of ["preferences", "configuration", "help", "video"]) {
     const active = key === name;
     const tab = $(`${key}Tab`);
     $(`${key}Panel`).hidden = !active;
@@ -49,9 +49,9 @@ function setTab(name, focus = false) {
     tab.tabIndex = active ? 0 : -1;
     if (active && focus) tab.focus();
   }
-  const help = name === "help";
-  $("save").hidden = help;
-  $("reset").hidden = help;
+  const informational = name === "help" || name === "video";
+  $("save").hidden = informational;
+  $("reset").hidden = informational;
 }
 
 function populate() {
@@ -150,14 +150,14 @@ function renderDiagnostics() {
   }
 }
 
-for (const key of ["preferences", "configuration", "help"]) {
+for (const key of ["preferences", "configuration", "help", "video"]) {
   $(`${key}Tab`).addEventListener("click", () => setTab(key));
 }
 
 $("settings-main").addEventListener("keydown", (event) => {
   if (!event.target.matches(".settings-tab") || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
   event.preventDefault();
-  const keys = ["preferences", "configuration", "help"];
+  const keys = ["preferences", "configuration", "help", "video"];
   const current = keys.findIndex((key) => $(`${key}Tab`) === event.target);
   const next = event.key === "Home" ? 0 : event.key === "End" ? keys.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + keys.length) % keys.length;
   setTab(keys[next], true);

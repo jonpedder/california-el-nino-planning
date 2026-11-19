@@ -6,17 +6,17 @@
   <meta name="description" content="Settings, deployment diagnostics, and operator help for the California El Niño Planning Console.">
   <meta name="color-scheme" content="dark">
   <title>Settings & Help | California El Niño Planning</title>
-  <link rel="stylesheet" href="./styles.css?v=em-manager1">
-  <link rel="stylesheet" href="./settings.css?v=settings1">
+  <link rel="stylesheet" href="./styles.css?v=video-header1">
+  <link rel="stylesheet" href="./settings.css?v=video-header1">
   <script type="module" src="./header.js?v=workflow-audit1"></script>
-  <script type="module" src="./settings.js?v=brand-strong1"></script>
+  <script type="module" src="./settings.js?v=video-header1"></script>
 </head>
 <body class="settings-body">
   <a class="skip-link" href="#settings-main">Skip to settings</a>
   <header class="app-header">
     <a class="brand" href="./index.html" aria-label="El Niño Planning Console home">
       <span class="brand-mark" aria-hidden="true">CA</span>
-      <span class="brand-copy"><strong data-app-title>El Niño Planning Console</strong><span data-app-subtitle>County threat planning, analysis and operations — powered by ArcGIS Workflow Manager</span></span>
+      <span class="brand-copy"><strong data-app-title>El Niño Planning Console</strong><span data-app-subtitle>County threat planning, analysis and operations — <strong class="brand-powered">Powered by ArcGIS Workflow Manager</strong></span></span>
     </a>
     <nav class="app-nav header-actions" aria-label="Primary navigation">
       <div class="header-report-group" aria-label="Reports">
@@ -43,6 +43,7 @@
       <button id="preferencesTab" class="settings-tab active" role="tab" aria-selected="true" aria-controls="preferencesPanel">Settings</button>
       <button id="configurationTab" class="settings-tab" role="tab" aria-selected="false" aria-controls="configurationPanel">Configuration</button>
       <button id="helpTab" class="settings-tab" role="tab" aria-selected="false" aria-controls="helpPanel">Help &amp; How-to</button>
+      <button id="videoTab" class="settings-tab" role="tab" aria-selected="false" aria-controls="videoPanel">Demo Video</button>
     </nav>
 
     <section class="settings-surface">
@@ -130,6 +131,23 @@
             <details id="help-limits" class="help-card"><summary>Methods and limitations</summary><ul><li>Forecasts, observations, advisories, inventories, regulatory hazards, and historical incidents have different meanings and update schedules.</li><li>ACS population estimates are area weighted and assume uniform population distribution inside each tract.</li><li>Shelter capacity is a planning inventory and must be verified operationally.</li><li>Road-network availability does not assert a closure, passability, or damage condition.</li><li>Consolidated popups include visible features returned by the map hit test at the clicked location; hidden, filtered, out-of-scale, or non-rendered records are not included.</li><li>The Time tool filters only layers that publish valid time information.</li><li>Empty NOAA polygons or missing gauge classifications do not prove that no rain or flood risk exists.</li></ul></details>
           </div>
         </div>
+      </section>
+
+      <section id="videoPanel" class="settings-panel video-panel" role="tabpanel" aria-labelledby="videoTab" hidden>
+        <article class="video-help-card">
+          <div class="video-help-copy">
+            <p class="eyebrow">Demo Video - Esri Access</p>
+            <h2>California El Niño Planning Console demonstration</h2>
+            <p>Watch the operator walkthrough for county threat planning, regional analysis, Emergency Management triage, Workflow Manager auditing, and reporting.</p>
+            <p class="settings-callout"><strong>Microsoft 365 access:</strong> The video is hosted in Esri OneDrive and may require an authorized Esri account.</p>
+            <a class="settings-button primary video-link" href="https://esriis-my.sharepoint.com/:v:/g/personal/jon7912_esri_com/IQAmVhWGGAXSSLIyYxVgGP8wAcdc-3Ax7R7-R_plRpiKVEQ?e=psbM1B" target="_blank" rel="noopener noreferrer"><strong>Open Demo Video - Esri Access ↗</strong></a>
+          </div>
+          <div class="video-help-visual" aria-hidden="true">
+            <span class="video-play-icon">▶</span>
+            <strong>County threat planning, analysis and operations</strong>
+            <small>Powered by ArcGIS Workflow Manager</small>
+          </div>
+        </article>
       </section>
     </section>
 

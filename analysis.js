@@ -1,5 +1,5 @@
 import { APP_CONFIG } from "./config.js?v=analysis-summary-map1";
-import { loadPreferences, applyPreferences } from "./preferences.js?v=brand-strong1";
+import { loadPreferences, applyPreferences } from "./preferences.js?v=video-header1";
 applyPreferences(loadPreferences());
 
 const [FeatureLayer, Polygon] = await $arcgis.import([
