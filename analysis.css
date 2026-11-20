@@ -15,7 +15,7 @@
 .analysis-controls label { display: grid; gap: 0.35rem; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .analysis-filter-note { align-self: center; margin: 0; color: var(--muted); font-size: 0.7rem; line-height: 1.4; }
 
-.analysis-main { min-height: calc(100vh - 252px); padding: 1rem; background: linear-gradient(180deg, #061722, var(--bg)); }
+.analysis-main { min-height: calc(100vh - var(--analysis-main-offset)); padding: 1rem; background: linear-gradient(180deg, #061722, var(--bg)); }
 .analysis-loading { min-height: 320px; display: flex; align-items: center; justify-content: center; gap: 0.75rem; color: var(--muted); }
 .analysis-loading.error { color: #ff9cab; }
 
